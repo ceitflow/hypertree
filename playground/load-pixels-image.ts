@@ -1,12 +1,12 @@
 import { dia, shapes } from "@joint/core";
 
-export const loadFromImage = (graph: dia.Graph, paper: dia.Paper) => {
+export const loadPixelsFromImage = (graph: dia.Graph, paper: dia.Paper) => {
   return new Promise<void>(resolve => {
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d')!;
     const img = new Image();
     const size = 5;
-    const limit = 4000;
+    const limit = 1000;
     img.src = '/neo.png'; // Path to the image in the public folder
     img.onload = () => {
       canvas.width = img.width;
@@ -50,4 +50,33 @@ export const loadFromImage = (graph: dia.Graph, paper: dia.Paper) => {
       resolve();
     }
   })
+}
+
+export const renderSVGToCanvas = (svg: SVGElement, canvas: HTMLCanvasElement) => {
+  // Create a Blob from the SVG string
+  const serializer = new XMLSerializer();
+  const string = serializer.serializeToString(svg);
+  const blob = new Blob([string], { type: 'image/svg+xml' });
+  const url = URL.createObjectURL(blob);
+  const svgBase64 = btoa(string);
+  const dataURL = `data:image/svg+xml;base64,${svgBase64}`;
+
+  // Create an image from the SVG
+  const img = new Image();
+  img.onload = function () {
+    // Once the image loads, draw it to the canvas
+    const ctx = canvas.getContext('2d')!;
+    ctx.drawImage(img, 0, 0);
+
+    // Clean up
+    URL.revokeObjectURL(url);
+  };
+
+  img.onerror = function(e) {
+    console.error("Error loading image:", e);
+    console.log("URL was:", url);
+    URL.revokeObjectURL(url);
+  };
+
+  img.src = dataURL;
 }

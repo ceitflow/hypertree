@@ -7,8 +7,20 @@ html, body {
   padding: 0;
 }
 
-#diagramContainer {
+#viewport {
   overflow: hidden;
   height: 100vh;
   width: 100vw;
+
+  .joint-paper {
+    transform-origin: 0 0;
+  }
+
+  .canvas {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    border: 1px solid gray;
+    pointer-events: none;
+  }
 }
