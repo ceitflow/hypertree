@@ -1,7 +1,6 @@
 import './styles.css';
 import { Diagram } from "./diagram.ts";
-import { loadPixelsFromImage } from "./load-pixels-image";
-import { quadtree } from 'd3';
+import { loadPixelsFromImage } from "./util/load-pixels-image";
 
 (async function init() {
   const container = document.getElementById('viewport')!;

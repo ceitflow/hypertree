@@ -8,18 +8,18 @@ export type InertiaOptions = {
 export type Inertia = {
 	start: (_x: number, _y: number) => void;
 	move: (_x: number, _y: number) => void;
-	end: () => void;
+	animate: () => void;
 	interrupt: () => void;
 }
-
+// animates translation over time until it decelerates to 0
 export const createInertia = (opt: InertiaOptions): Inertia => {
 	let x = 0;
 	let y = 0;
 	let prevX = 0;
 	let prevY = 0;
-	let dx = 0;
-	let dy = 0;
-	let frameLoop: Timer;
+	let vdx = 0;
+	let vdy = 0;
+	let frameLoop: Timer | null = null; // runs callback every browser frame (60Hz or more depending on refresh rate)
 
 	function start(_x: number, _y: number): void {
 		interrupt();
@@ -28,8 +28,8 @@ export const createInertia = (opt: InertiaOptions): Inertia => {
 		prevX = _x;
 		prevY = _y;
 		frameLoop = timer(() => {
-			dx = x - prevX;
-			dy = y - prevY;
+			vdx = x - prevX;
+			vdy = y - prevY;
 			prevX = x;
 			prevY = y;
 		});
@@ -37,16 +37,18 @@ export const createInertia = (opt: InertiaOptions): Inertia => {
 
 	function move(_x: number, _y: number): void {
 		x = _x;
-		y = _y
+		y = _y;
 	}
 
-	function end(): void {
-		frameLoop.stop();
+	function animate(): void {
+		frameLoop?.stop();
 		frameLoop = timer(() => {
-			opt.callback(dx, dy);
-			dx *= opt.friction;
-			dy *= opt.friction;
-			if (Math.abs(dx) < 0.1 && Math.abs(dy) < 0.1) frameLoop.stop();
+			opt.callback(vdx, vdy);
+			vdx *= opt.friction;
+			vdy *= opt.friction;
+			if (Math.abs(vdx) < 0.1 && Math.abs(vdy) < 0.1) {
+				frameLoop?.stop();
+			}
 		});
 	}
 
@@ -56,9 +58,9 @@ export const createInertia = (opt: InertiaOptions): Inertia => {
 		y = 0;
 		prevX = 0;
 		prevY = 0;
-		dx = 0;
-		dy = 0;
+		vdx = 0;
+		vdy = 0;
 	}
 
-	return { start, move, end, interrupt };
+	return { start, move, animate, interrupt };
 }
