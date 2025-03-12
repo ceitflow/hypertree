@@ -1,7 +1,7 @@
 import { dia } from "@joint/core";
 import { createInertia } from "./d3-inertia.ts";
 import { D3ZoomEvent, select, ZoomTransform } from 'd3';
-import { Screen } from "./screen.ts";
+import { Screen } from "./screen";
 
 type DiagramOptions = {
 	screen: false | { // false disables screen
@@ -36,7 +36,7 @@ export class Diagram {
 
 		const { paper } = this; // todo onResize store todo new api observers
 		const paperD3 = select(paper.el);
-		const screen = new Screen(paper);
+		const screen = new Screen(paper, container);
 		// const { wheeled, startMove, dblclicked } = d3zoom.bind(d3zoom)();
 
 		// todo expose d3 options (touchable, dblclick)
