@@ -7,8 +7,7 @@ export class Pointer {
   cached = [] as Point[];
   cacheSize = 5;
 
-  constructor(private transform: Transform) {
-  }
+  constructor(private transform: Transform) {}
 
   down(x: number, y: number) {
     const { loop, current, cached, cacheSize } = this;
@@ -21,16 +20,15 @@ export class Pointer {
     const looper = (t: number) => {
       if (loop.active) loop.id = requestAnimationFrame(looper);
 
+      const prevPosition = cached[cached.length - 1];
+
       cached.push([current[0], current[1]]);
       if (cached.length > cacheSize) {
         cached.shift();
       }
 
-      this.transform.transform[0] += current[0] - cached[cached.length - 2][0]; // todo simplify
-      this.transform.transform[1] += current[1] - cached[cached.length - 2][1];
-
-      this.transform.update();
-    }
+      this.transform.translateBy(current[0] - prevPosition[0], current[1] - prevPosition[1]);
+    };
     loop.id = requestAnimationFrame(looper);
   }
 

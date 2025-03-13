@@ -1,6 +1,6 @@
 import './styles.css';
-import { Diagram } from "./diagram.ts";
-import { loadPixelsFromImage } from "./util/load-pixels-image";
+import { Diagram } from './diagram.ts';
+import { loadPixelsFromImage } from './util/load-pixels-image';
 
 (async function init() {
   const container = document.getElementById('viewport')!;

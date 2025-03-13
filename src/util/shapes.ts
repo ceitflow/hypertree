@@ -1,4 +1,4 @@
-import { dia, shapes, util } from "@joint/core";
+import { dia, shapes, util } from '@joint/core';
 
 export const CreateNodeShape = (): dia.Element => {
   return new shapes.standard.Rectangle({
@@ -8,8 +8,8 @@ export const CreateNodeShape = (): dia.Element => {
         width: 'calc(w)',
         height: 'calc(h)',
         x: 0,
-        y: 0
-      }
+        y: 0,
+      },
     },
     markup: util.svg`
      <foreignObject @selector="foreignObject" class="overflow-visible">
@@ -17,6 +17,6 @@ export const CreateNodeShape = (): dia.Element => {
           <span>Name</span>
         </div>
     </foreignObject>
-  `
+  `,
   });
 };

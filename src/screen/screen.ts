@@ -1,9 +1,11 @@
 import { dia } from '@joint/core';
+import { Point } from './types.ts';
 import { Transform } from './transform.ts';
 import { DragInertia, Pointer, Zoom } from './plugins';
 
 export class Screen {
   private transform: Transform;
+  private viewport: Point;
 
   // pipeline architecture for Screen?
   // Events → Normalization → Interpretation → Physics → Constraints → Transformation → Animation → Rendering
@@ -23,15 +25,21 @@ export class Screen {
   // - visible cells (quadtree)
 
   constructor(paper: dia.Paper, container: HTMLElement) {
+    const { width, height } = container.getBoundingClientRect();
+    this.viewport = [width, height];
     this.transform = new Transform(paper.el.style);
     this.zoom = new Zoom(this.transform);
     this.pointer = new Pointer(this.transform);
     this.drag = new DragInertia(this.transform);
 
     const addContainerListener = <Evt extends Event>(type: string, callback: (e: Evt) => void) =>
-        container.addEventListener(type, (e) => {
+      container.addEventListener(
+        type,
+        e => {
           if (e.target === container) callback(e as Evt);
-        }, { passive: true })
+        },
+        { passive: true }
+      );
 
     addContainerListener('mousedown', this.pointerdown.bind(this));
     addContainerListener('mousemove', this.pointermove.bind(this));
@@ -39,9 +47,9 @@ export class Screen {
 
     paper.on({
       'cell:pointerdown': () => this.drag.interrupt(),
-      'blank:pointerdown': (e) => this.pointerdown(e as any),
-      'blank:pointermove': (e) => this.pointermove(e as any),
-      'blank:pointerup': (e) => this.pointerup(),
+      'blank:pointerdown': e => this.pointerdown(e as any),
+      'blank:pointermove': e => this.pointermove(e as any),
+      'blank:pointerup': e => this.pointerup(),
       'cell:mousewheel': (view, e, x, y, delta) => {
         this.zoom.onZoom(delta >= 1, x, y);
       },

@@ -2,14 +2,13 @@ import { Point } from '../types.ts';
 import { Transform } from '../transform.ts';
 
 export class DragInertia {
-  loop= { id: 0, active: false };
-  strengthMultiplier= 0.5;
-  minDistanceTrigger= 0;
-  minVelocity= 1;
-  velocity= [0, 0];
+  loop = { id: 0, active: false };
+  strengthMultiplier = 0.5;
+  minDistanceTrigger = 0;
+  minVelocity = 1;
+  velocity = [0, 0];
 
-  constructor(private transform: Transform) {
-  }
+  constructor(private transform: Transform) {}
 
   startAnimation(cachedPointers: Point[]): void {
     const { loop, velocity, strengthMultiplier, minDistanceTrigger, minVelocity } = this;
@@ -33,11 +32,8 @@ export class DragInertia {
     const animationLoop = (t: number) => {
       if (loop.active) loop.id = requestAnimationFrame(animationLoop);
 
-      const dx = velocity[0];
-      const dy = velocity[1];
-      this.transform.transform[0] += dx;
-      this.transform.transform[1] += dy;
-      this.transform.update();
+      this.transform.translateBy(velocity[0], velocity[1]);
+
       velocity[0] *= 0.92;
       velocity[1] *= 0.92;
 
@@ -47,7 +43,7 @@ export class DragInertia {
         velocity[0] = 0;
         velocity[1] = 0;
       }
-    }
+    };
     loop.active = true;
     loop.id = requestAnimationFrame(animationLoop);
   }

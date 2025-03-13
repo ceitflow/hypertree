@@ -1,4 +1,4 @@
-import { dia, shapes } from "@joint/core";
+import { dia, shapes } from '@joint/core';
 
 export const loadPixelsFromImage = (graph: dia.Graph, paper: dia.Paper) => {
   return new Promise<void>(resolve => {
@@ -19,38 +19,40 @@ export const loadPixelsFromImage = (graph: dia.Graph, paper: dia.Paper) => {
       const imageData = ctx.getImageData(0, 0, img.width, img.height);
       const pixels = imageData.data;
 
-      let nodes: dia.Element[] = [];
+      const nodes: dia.Element[] = [];
       // Iterate over the Uint8ClampedArray in a 2D manner
       for (let y = 0; y < img.height; y++) {
         if (nodes.length >= limit) break;
 
         for (let x = 0; x < img.width; x++) {
           const index = (y * img.width + x) * 4;
-          const r = pixels[index];     // Red component
+          const r = pixels[index]; // Red component
           const g = pixels[index + 1]; // Green component
           const b = pixels[index + 2]; // Blue component
           // const a = pixels[index + 3]; // Alpha component
 
           if (r || g || b) {
-            nodes.push(new shapes.standard.Rectangle({
-              size: { width: size, height: size },
-              position: { x: x * size, y: y * size },
-              attrs: {
-                body: {
-                  fill: `rgb(${r}, ${g}, ${b})`,
-                  strokeWidth: 0,
-                }
-              }
-            }));
+            nodes.push(
+              new shapes.standard.Rectangle({
+                size: { width: size, height: size },
+                position: { x: x * size, y: y * size },
+                attrs: {
+                  body: {
+                    fill: `rgb(${r}, ${g}, ${b})`,
+                    strokeWidth: 0,
+                  },
+                },
+              })
+            );
           }
         }
       }
       graph.addCells(nodes);
       paper.setDimensions(canvas.width * size, canvas.height * size);
       resolve();
-    }
-  })
-}
+    };
+  });
+};
 
 export const renderSVGToCanvas = (svg: SVGElement, canvas: HTMLCanvasElement) => {
   // Create a Blob from the SVG string
@@ -72,11 +74,11 @@ export const renderSVGToCanvas = (svg: SVGElement, canvas: HTMLCanvasElement) =>
     URL.revokeObjectURL(url);
   };
 
-  img.onerror = function(e) {
-    console.error("Error loading image:", e);
-    console.log("URL was:", url);
+  img.onerror = function (e) {
+    console.error('Error loading image:', e);
+    console.log('URL was:', url);
     URL.revokeObjectURL(url);
   };
 
   img.src = dataURL;
-}
+};
