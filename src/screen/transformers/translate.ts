@@ -11,6 +11,7 @@ export function Translate({ transform, translate }: State) {
     },
 
     move: (x: number, y: number) => {
+      if (!translate.active) return;
       const { target } = translate;
       transform[0] += x - target[0]; // prev stored position
       transform[1] += y - target[1];

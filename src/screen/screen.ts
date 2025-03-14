@@ -21,8 +21,9 @@ export class Screen {
 
     inertia: {
       velocity: [0, 0],
-      strength: 1,
-      friction: 0.92,
+      strength: 0.5,
+      friction: 0.93,
+      brakeFriction: 0.78,
       minVelocity: 0.5,
       active: false,
     },
@@ -43,7 +44,7 @@ export class Screen {
   private translate = Translate(this.state);
   private inertia = Inertia(this.state);
   private zoom = Zoom(this.state);
-  private transformers = [this.translate.next, this.inertia.next];
+  private transformers = [this.translate.next, this.inertia.next, this.zoom.next];
 
   /*// private viewport;
 
@@ -88,20 +89,32 @@ export class Screen {
       translate.stop();
       inertia.start();
     });
-    /*addContainerListener('wheel', (evt: WheelEvent) => {
-      zoom.start(evt.deltaY, evt.x, evt.y);
-    });*/
+    addContainerListener('wheel', (e: WheelEvent) => {
+      const { x, y } = this.paper.clientToLocalPoint(e.clientX, e.clientY);
+      zoom.start(-e.deltaY, x, y);
+    });
     paper.on({
       // resize: (width, height, data) => { updateviewport },
-      'cell:pointerdown': () => inertia.stop(),
-      'blank:pointerdown': evt => translate.start(evt.clientX!, evt.clientY!),
-      'blank:pointermove': evt => translate.move(evt.clientX!, evt.clientY!),
+      'cell:pointerdown': () => {
+        inertia.stop();
+      },
+      'blank:pointerdown': evt => {
+        translate.start(evt.clientX!, evt.clientY!);
+        // todo decelerate inertia
+      },
+      'blank:pointermove': evt => {
+        translate.move(evt.clientX!, evt.clientY!);
+      },
       'blank:pointerup': () => {
         translate.stop();
         inertia.start();
       },
-      // 'cell:mousewheel': (view, e, x, y, delta) => zoom.start(delta, x, y),
-      // 'blank:mousewheel': (e, x, y, delta) => zoom.start(delta, x, y),
+      'cell:mousewheel': (view, e, x, y, delta) => {
+        zoom.start(delta, x, y);
+      },
+      'blank:mousewheel': (e, x, y, delta) => {
+        zoom.start(delta, x, y);
+      },
       // 'paper:pinch': (...args) => console.log(args),
     });
 
@@ -120,8 +133,12 @@ export class Screen {
 
     const t = state.transform;
     const ct = state.currentTransform;
-    if (ct[0] !== t[0] || ct[1] !== t[1] || ct[2] !== t[2])
+    if (ct[0] !== t[0] || ct[1] !== t[1] || ct[2] !== t[2]) {
       paper.el.style.transform = `translate(${t[0]}px,${t[1]}px) scale(${t[2]})`;
+      ct[0] = t[0];
+      ct[1] = t[1];
+      ct[2] = t[2];
+    }
   }
 
   onDestroy(): void {

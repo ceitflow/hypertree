@@ -4,20 +4,19 @@ export function Zoom({ transform, zoom, frameStart }: State) {
   return {
     start: (delta: number, ox: number, oy: number) => {
       const curr = transform[2];
-      const step = curr < 1 ? curr * curr : curr * 0.2;
+      const step = curr * 0.2;
       zoom.targetZoom = Math.max(
         zoom.min,
         Math.min(zoom.max, zoom.targetZoom + step * Math.sign(delta))
       );
       if (zoom.targetZoom === curr) return;
 
-      zoom.velocity[0] = transform[0] - ox * (zoom.targetZoom - transform[2]);
-      zoom.velocity[1] = transform[1] - oy * (zoom.targetZoom - transform[2]);
+      zoom.velocity[0] = -ox * (zoom.targetZoom - curr);
+      zoom.velocity[1] = -oy * (zoom.targetZoom - curr);
       zoom.velocity[2] = zoom.targetZoom - curr;
       zoom.startVelocity[0] = zoom.velocity[0];
       zoom.startVelocity[1] = zoom.velocity[1];
       zoom.startVelocity[2] = zoom.velocity[2];
-
       zoom.active = true;
     },
 

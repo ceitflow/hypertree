@@ -34,6 +34,7 @@ export type State = {
     minVelocity: number;
     strength: number;
     friction: number;
+    brakeFriction: number;
     // internal
     velocity: [number, number];
     active: boolean;
