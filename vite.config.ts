@@ -1,13 +1,13 @@
-import { resolve } from 'path'
-import { defineConfig } from 'vite'
-import dts from 'vite-plugin-dts'
-import checker from 'vite-plugin-checker'
+import { resolve } from 'path';
+import { defineConfig } from 'vite';
+import dts from 'vite-plugin-dts';
+import checker from 'vite-plugin-checker';
 
 export default defineConfig({
   plugins: [
     dts({
       rollupTypes: true,
-      tsconfigPath: "./tsconfig.json",
+      tsconfigPath: './tsconfig.json',
     }),
     checker({
       typescript: true,
@@ -16,10 +16,10 @@ export default defineConfig({
   build: {
     copyPublicDir: false,
     lib: {
-      entry: resolve(__dirname, 'lib/main.ts'),
+      entry: resolve(__dirname, 'src/main.ts'),
       formats: ['es'],
-      name: 'JointToolkit',
-      fileName: 'jointToolkit',
-    }
-  }
-})
+      name: 'graphkit',
+      fileName: 'graphkit',
+    },
+  },
+});
