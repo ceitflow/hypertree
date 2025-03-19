@@ -1,6 +1,12 @@
 import { State } from '../types.ts';
 
 export function Translate({ transform, translate }: State) {
+  const addPosToMotion = () => {
+    const { motionPerFrame, target, motionSize } = translate;
+    motionPerFrame.push([target[0], target[1]]);
+    if (motionPerFrame.length > motionSize) motionPerFrame.shift();
+  };
+
   return {
     start: (x: number, y: number) => {
       const { target, motionPerFrame } = translate;
@@ -21,14 +27,12 @@ export function Translate({ transform, translate }: State) {
 
     next: () => {
       if (!translate.active) return;
-      // cache position per frame
-      const { motionPerFrame, target, motionSize } = translate;
-      motionPerFrame.push([target[0], target[1]]);
-      if (motionPerFrame.length > motionSize) motionPerFrame.shift();
+      addPosToMotion(); // caches position per frame
     },
 
     stop: () => {
       translate.active = false;
+      addPosToMotion();
     },
   };
 }

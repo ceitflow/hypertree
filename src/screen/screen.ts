@@ -1,11 +1,13 @@
 import { dia } from '@joint/core';
 import { State } from './types.ts';
 import { Inertia, Translate, Zoom } from './transformers';
+import { pinchZoom, touchDrag } from '../util/event-touch';
+import { Touch } from './touch.ts';
 
 export class Screen {
   private state: State = {
     transform: [0, 0, 1],
-    currentTransform: [0, 0, 1],
+    currentTransform: [0, 0, 1], // for comparing dirty state
 
     frameStart: {
       time: 0,
@@ -15,7 +17,7 @@ export class Screen {
     translate: {
       target: [0, 0],
       motionPerFrame: [],
-      motionSize: 5,
+      motionSize: 6,
       active: false,
     },
 
@@ -44,6 +46,7 @@ export class Screen {
   private translate = Translate(this.state);
   private inertia = Inertia(this.state);
   private zoom = Zoom(this.state);
+  private touch = new Touch();
   private transformers = [this.translate.next, this.inertia.next, this.zoom.next];
 
   /*// private viewport;
@@ -93,20 +96,41 @@ export class Screen {
       const { x, y } = this.paper.clientToLocalPoint(e.clientX, e.clientY);
       zoom.start(-e.deltaY, x, y);
     });
+    addContainerListener('touchstart', e => {
+      e.stopPropagation();
+      e.preventDefault();
+      this.touch.touchStart(e as TouchEvent, this.state.transform, paper);
+    });
+    addContainerListener('touchmove', e => {
+      e.stopPropagation();
+      e.preventDefault();
+      this.touch.touchMove(e as TouchEvent, this.state.transform);
+    });
     paper.on({
+      // all: (...args) => console.log(args),
       // resize: (width, height, data) => { updateviewport },
       'cell:pointerdown': () => {
         inertia.stop();
       },
       'blank:pointerdown': evt => {
-        translate.start(evt.clientX!, evt.clientY!);
-        // todo decelerate inertia
+        if (evt.type === 'touchstart')
+          this.touch.touchStart(evt.originalEvent as TouchEvent, this.state.transform, paper);
+        else translate.start(evt.clientX!, evt.clientY!);
       },
       'blank:pointermove': evt => {
-        translate.move(evt.clientX!, evt.clientY!);
+        if (evt.type === 'touchmove') {
+          evt.stopPropagation();
+          evt.preventDefault();
+          this.touch.touchMove(evt.originalEvent as TouchEvent, this.state.transform);
+        } else translate.move(evt.clientX!, evt.clientY!);
       },
-      'blank:pointerup': () => {
-        translate.stop();
+      'blank:pointerup': evt => {
+        if (evt.type === 'touchend' || evt.type === 'touchcancel') {
+          this.touch.touchEnd(evt.originalEvent as TouchEvent, paper);
+        } else {
+          translate.move(evt.clientX!, evt.clientY!);
+          translate.stop();
+        }
         inertia.start();
       },
       'cell:mousewheel': (view, e, x, y, delta) => {
@@ -115,10 +139,21 @@ export class Screen {
       'blank:mousewheel': (e, x, y, delta) => {
         zoom.start(delta, x, y);
       },
-      // 'paper:pinch': (...args) => console.log(args),
+      'paper:pinch': (e, x, y, delta) => {
+        console.log('PINCH', e, delta);
+      },
     });
 
     this._loopId = requestAnimationFrame(this.loop.bind(this));
+    // setTimeout(() => touchDrag(paper.el, { x: 100, y: 100, x1: 200, y1: 200 }), 1000);
+    // setTimeout(() => {
+    //   pinchZoom(
+    //     paper.el,
+    //     { from: [0, 100], to: [0, 200] },
+    //     { from: [400, 100], to: [500, 200] },
+    //     10
+    //   );
+    // }, 1000);
   }
 
   private loop(currentTime: number): void {

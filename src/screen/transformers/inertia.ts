@@ -26,6 +26,7 @@ export function Inertia({ transform, inertia, translate }: State) {
       transform[1] += velocity[1];
 
       // todo time based
+      // remember pointer down while inertia runs to animate braking and then going back to pointer pos
       const acc = translate.active ? brakeFriction : friction;
       velocity[0] *= acc;
       velocity[1] *= acc;

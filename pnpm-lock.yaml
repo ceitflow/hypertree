@@ -24,6 +24,9 @@ importers:
       '@types/node':
         specifier: ^22.13.1
         version: 22.13.1
+      eruda:
+        specifier: ^3.4.1
+        version: 3.4.1
       eslint:
         specifier: ^9.22.0
         version: 9.22.0
@@ -886,6 +889,9 @@ packages:
   entities@4.5.0:
     resolution: {integrity: sha512-V0hjH4dGPh9Ao5p0MoRY6BVqtwCjhz6vI5LT8AJ55H+4g9/4vbHx1I54fS0XuclLhDHArPQCiMjDxjaL8fPxhw==}
     engines: {node: '>=0.12'}
+
+  eruda@3.4.1:
+    resolution: {integrity: sha512-RmaO5yD97URY/9Q0lye3cmmNPoXNKreeePIw7c/zllbscR92CjGFZFuQ70+0fLIvLcKW3Xha8DS8NFhmeNbEBQ==}
 
   esbuild@0.24.2:
     resolution: {integrity: sha512-+9egpBW8I3CD5XPe0n6BfT5fxLzxrlDzqydF3aviG+9ni1lDC/OvMHcxqEFV0+LANZG5R1bFMWfUrjVsdwxJvA==}
@@ -2335,6 +2341,8 @@ snapshots:
       robust-predicates: 3.0.2
 
   entities@4.5.0: {}
+
+  eruda@3.4.1: {}
 
   esbuild@0.24.2:
     optionalDependencies:
