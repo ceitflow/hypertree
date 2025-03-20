@@ -99,12 +99,17 @@ export class Screen {
     addContainerListener('touchstart', e => {
       e.stopPropagation();
       e.preventDefault();
-      this.touch.touchStart(e as TouchEvent, this.state.transform, paper);
+      this.touch.touchStart(e as TouchEvent, this.paper);
     });
     addContainerListener('touchmove', e => {
       e.stopPropagation();
       e.preventDefault();
       this.touch.touchMove(e as TouchEvent, this.state.transform);
+    });
+    addContainerListener('touchend', e => {
+      e.stopPropagation();
+      e.preventDefault();
+      this.touch.touchEnd(e as TouchEvent, this.paper);
     });
     paper.on({
       // all: (...args) => console.log(args),
@@ -114,7 +119,7 @@ export class Screen {
       },
       'blank:pointerdown': evt => {
         if (evt.type === 'touchstart')
-          this.touch.touchStart(evt.originalEvent as TouchEvent, this.state.transform, paper);
+          this.touch.touchStart(evt.originalEvent as TouchEvent, this.paper);
         else translate.start(evt.clientX!, evt.clientY!);
       },
       'blank:pointermove': evt => {
@@ -126,7 +131,7 @@ export class Screen {
       },
       'blank:pointerup': evt => {
         if (evt.type === 'touchend' || evt.type === 'touchcancel') {
-          this.touch.touchEnd(evt.originalEvent as TouchEvent, paper);
+          this.touch.touchEnd(evt.originalEvent as TouchEvent, this.paper);
         } else {
           translate.move(evt.clientX!, evt.clientY!);
           translate.stop();
@@ -146,14 +151,14 @@ export class Screen {
 
     this._loopId = requestAnimationFrame(this.loop.bind(this));
     // setTimeout(() => touchDrag(paper.el, { x: 100, y: 100, x1: 200, y1: 200 }), 1000);
-    // setTimeout(() => {
-    //   pinchZoom(
-    //     paper.el,
-    //     { from: [0, 100], to: [0, 200] },
-    //     { from: [400, 100], to: [500, 200] },
-    //     10
-    //   );
-    // }, 1000);
+    setTimeout(() => {
+      pinchZoom(
+        paper.el,
+        { from: [0, 100], to: [0, 200] },
+        { from: [400, 100], to: [500, 200] },
+        10
+      );
+    }, 1000);
   }
 
   private loop(currentTime: number): void {

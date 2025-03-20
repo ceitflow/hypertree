@@ -82,7 +82,7 @@ export function pinchZoom(
         force: 1,
       });
       const touch2Start = new Touch({
-        identifier: 0,
+        identifier: 1,
         target: element,
         clientX: touch2.from[0],
         clientY: touch2.from[1],
@@ -113,7 +113,7 @@ export function pinchZoom(
         force: 1,
       });
       const touch2End = new Touch({
-        identifier: 0,
+        identifier: 1,
         target: element,
         clientX: touch2.to[0],
         clientY: touch2.to[1],
@@ -144,7 +144,7 @@ export function pinchZoom(
       force: 1,
     });
     const touch2Move = new Touch({
-      identifier: 0,
+      identifier: 1,
       target: element,
       clientX: touch2.from[0] + i * dxTouch2[0],
       clientY: touch2.from[1] + i * dxTouch2[1],
