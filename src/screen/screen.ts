@@ -1,8 +1,6 @@
 import { dia } from '@joint/core';
 import { State } from './types.ts';
-import { Inertia, Translate, Zoom } from './transformers';
-import { pinchZoom, touchDrag } from '../util/event-touch';
-import { Touch } from './touch.ts';
+import { Inertia, Translate, Zoom, Touch } from './transformers';
 
 export class Screen {
   private state: State = {
@@ -81,7 +79,7 @@ export class Screen {
 
     const { translate, inertia, zoom } = this;
 
-    // events listeners// todo evt.clientX to paper pos
+    // events listeners
     addContainerListener('mousedown', (e: MouseEvent) => {
       translate.start(e.clientX, e.clientY);
     });
@@ -96,21 +94,38 @@ export class Screen {
       const { x, y } = this.paper.clientToLocalPoint(e.clientX, e.clientY);
       zoom.start(-e.deltaY, x, y);
     });
+    // touch support
     addContainerListener('touchstart', e => {
-      e.stopPropagation();
       e.preventDefault();
-      this.touch.touchStart(e as TouchEvent, this.paper);
+      e.stopPropagation();
+      this.touch.touchStart(e as TouchEvent, this.state.transform);
     });
     addContainerListener('touchmove', e => {
-      e.stopPropagation();
       e.preventDefault();
+      e.stopPropagation();
       this.touch.touchMove(e as TouchEvent, this.state.transform);
     });
     addContainerListener('touchend', e => {
-      e.stopPropagation();
       e.preventDefault();
-      this.touch.touchEnd(e as TouchEvent, this.paper);
+      e.stopPropagation();
+      this.touch.touchEnd(e as TouchEvent, this.state.transform);
     });
+    paper.el.addEventListener('touchstart', e => {
+      e.preventDefault();
+      e.stopPropagation();
+      this.touch.touchStart(e as TouchEvent, this.state.transform);
+    });
+    paper.el.addEventListener('touchmove', e => {
+      e.preventDefault();
+      e.stopPropagation();
+      this.touch.touchMove(e as TouchEvent, this.state.transform);
+    });
+    paper.el.addEventListener('touchend', e => {
+      e.preventDefault();
+      e.stopPropagation();
+      this.touch.touchEnd(e as TouchEvent, this.state.transform);
+    });
+
     paper.on({
       // all: (...args) => console.log(args),
       // resize: (width, height, data) => { updateviewport },
@@ -118,25 +133,17 @@ export class Screen {
         inertia.stop();
       },
       'blank:pointerdown': evt => {
-        if (evt.type === 'touchstart')
-          this.touch.touchStart(evt.originalEvent as TouchEvent, this.paper);
-        else translate.start(evt.clientX!, evt.clientY!);
+        if (evt.type === 'mousedown') translate.start(evt.clientX!, evt.clientY!);
       },
       'blank:pointermove': evt => {
-        if (evt.type === 'touchmove') {
-          evt.stopPropagation();
-          evt.preventDefault();
-          this.touch.touchMove(evt.originalEvent as TouchEvent, this.state.transform);
-        } else translate.move(evt.clientX!, evt.clientY!);
+        if (evt.type === 'mousemove') translate.move(evt.clientX!, evt.clientY!);
       },
       'blank:pointerup': evt => {
-        if (evt.type === 'touchend' || evt.type === 'touchcancel') {
-          this.touch.touchEnd(evt.originalEvent as TouchEvent, this.paper);
-        } else {
+        if (evt.type === 'mouseup') {
           translate.move(evt.clientX!, evt.clientY!);
           translate.stop();
+          inertia.start();
         }
-        inertia.start();
       },
       'cell:mousewheel': (view, e, x, y, delta) => {
         zoom.start(delta, x, y);
@@ -144,21 +151,9 @@ export class Screen {
       'blank:mousewheel': (e, x, y, delta) => {
         zoom.start(delta, x, y);
       },
-      'paper:pinch': (e, x, y, delta) => {
-        console.log('PINCH', e, delta);
-      },
     });
 
     this._loopId = requestAnimationFrame(this.loop.bind(this));
-    // setTimeout(() => touchDrag(paper.el, { x: 100, y: 100, x1: 200, y1: 200 }), 1000);
-    setTimeout(() => {
-      pinchZoom(
-        paper.el,
-        { from: [0, 100], to: [0, 200] },
-        { from: [400, 100], to: [500, 200] },
-        10
-      );
-    }, 1000);
   }
 
   private loop(currentTime: number): void {

@@ -3,17 +3,17 @@ import { State } from '../types.ts';
 export function Zoom({ transform, zoom, frameStart }: State) {
   return {
     start: (delta: number, ox: number, oy: number) => {
-      const curr = transform[2];
-      const step = curr * 0.2;
+      const currentZoom = transform[2];
+      const step = currentZoom * 0.2;
       zoom.targetZoom = Math.max(
         zoom.min,
         Math.min(zoom.max, zoom.targetZoom + step * Math.sign(delta))
       );
-      if (zoom.targetZoom === curr) return;
+      if (zoom.targetZoom === currentZoom) return;
 
-      zoom.velocity[0] = -ox * (zoom.targetZoom - curr);
-      zoom.velocity[1] = -oy * (zoom.targetZoom - curr);
-      zoom.velocity[2] = zoom.targetZoom - curr;
+      zoom.velocity[0] = -ox * (zoom.targetZoom - currentZoom);
+      zoom.velocity[1] = -oy * (zoom.targetZoom - currentZoom);
+      zoom.velocity[2] = zoom.targetZoom - currentZoom;
       zoom.startVelocity[0] = zoom.velocity[0];
       zoom.startVelocity[1] = zoom.velocity[1];
       zoom.startVelocity[2] = zoom.velocity[2];

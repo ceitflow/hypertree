@@ -54,6 +54,65 @@ export function touchDrag(
   element.dispatchEvent(touchEndEvent);
 }
 
+export function testTwoTouches(element: HTMLElement) {
+  const touch1 = new Touch({
+    identifier: 0,
+    target: element,
+    clientX: 200,
+    clientY: 200,
+    radiusX: 2.5,
+    radiusY: 2.5,
+    rotationAngle: 0,
+    force: 1,
+  });
+  const touch2 = new Touch({
+    identifier: 1,
+    target: element,
+    clientX: 500,
+    clientY: 500,
+    radiusX: 2.5,
+    radiusY: 2.5,
+    rotationAngle: 0,
+    force: 1,
+  });
+
+  const start1 = new TouchEvent('touchstart', {
+    bubbles: true,
+    cancelable: true,
+    touches: [touch1],
+    targetTouches: [touch1],
+    changedTouches: [touch1],
+  });
+  const start2 = new TouchEvent('touchstart', {
+    bubbles: true,
+    cancelable: true,
+    touches: [touch2],
+    targetTouches: [touch2],
+    changedTouches: [touch2],
+  });
+
+  const end1 = new TouchEvent('touchend', {
+    bubbles: true,
+    cancelable: true,
+    touches: [touch1],
+    targetTouches: [touch1],
+    changedTouches: [touch1],
+  });
+  const end2 = new TouchEvent('touchend', {
+    bubbles: true,
+    cancelable: true,
+    touches: [touch2],
+    targetTouches: [touch2],
+    changedTouches: [touch2],
+  });
+
+  // Dispatch the events
+  element.dispatchEvent(start1);
+  element.dispatchEvent(start2);
+  element.dispatchEvent(end1);
+  element.dispatchEvent(end2);
+}
+
 export function pinchZoom(
   element: HTMLElement,
   touch1: { from: Point; to: Point },
