@@ -25,8 +25,9 @@ export type State = {
 
   translate: {
     target: Point;
-    motionPerFrame: Point[];
-    motionSize: number;
+    first: Point | null;
+    firstTime: number;
+    // last; on pointerup calculate velocity and Add to inertia
     active: boolean;
   };
 
@@ -48,6 +49,13 @@ export type State = {
     targetZoom: number;
     startVelocity: [number, number, number];
     velocity: [number, number, number];
+    active: boolean;
+  };
+
+  touch: {
+    touch0: { id: number; point: Point; fixed: Point } | null;
+    touch1: { id: number; point: Point; fixed: Point } | null;
+    prevS: number | null;
     active: boolean;
   };
 };

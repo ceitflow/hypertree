@@ -1,18 +1,13 @@
 import { State } from '../types.ts';
 
-export function Translate({ transform, translate }: State) {
-  const addPosToMotion = () => {
-    const { motionPerFrame, target, motionSize } = translate;
-    motionPerFrame.push([target[0], target[1]]);
-    if (motionPerFrame.length > motionSize) motionPerFrame.shift();
-  };
-
+export function Translate({ frameStart, transform, translate, inertia }: State) {
   return {
     start: (x: number, y: number) => {
-      const { target, motionPerFrame } = translate;
+      const { target } = translate;
       target[0] = x;
       target[1] = y;
-      motionPerFrame.splice(0, motionPerFrame.length, [x, y]);
+      translate.first = [x, y];
+      translate.firstTime = frameStart.time;
       translate.active = true;
     },
 
@@ -25,14 +20,18 @@ export function Translate({ transform, translate }: State) {
       target[1] = y;
     },
 
-    next: () => {
-      if (!translate.active) return;
-      addPosToMotion(); // caches position per frame
-    },
-
     stop: () => {
       translate.active = false;
-      addPosToMotion();
+      const { first, firstTime, target } = translate;
+      const maxDuration = 300; // before brake is applied
+      const duration = frameStart.time - firstTime;
+      let factor = 1;
+      if (duration > maxDuration) {
+        factor = maxDuration / duration;
+      }
+      inertia.velocity[0] = ((first![0] - target[0]) / -10) * factor;
+      inertia.velocity[1] = ((first![1] - target[1]) / -10) * factor;
+      // todo remove
     },
   };
 }

@@ -14,8 +14,8 @@ export class Screen {
 
     translate: {
       target: [0, 0],
-      motionPerFrame: [],
-      motionSize: 6,
+      first: null,
+      firstTime: 0,
       active: false,
     },
 
@@ -37,6 +37,13 @@ export class Screen {
       velocity: [0, 0, 0],
       active: false,
     },
+
+    touch: {
+      touch0: null,
+      touch1: null,
+      prevS: null,
+      active: false,
+    },
   };
   private _loopId = 0;
 
@@ -44,8 +51,8 @@ export class Screen {
   private translate = Translate(this.state);
   private inertia = Inertia(this.state);
   private zoom = Zoom(this.state);
-  private touch = new Touch();
-  private transformers = [this.translate.next, this.inertia.next, this.zoom.next];
+  private touch = Touch(this.state);
+  private transformers = [this.touch.next, this.inertia.next, this.zoom.next];
 
   /*// private viewport;
 
@@ -77,18 +84,29 @@ export class Screen {
         if (e.target === container) callback(e as Evt);
       });
 
-    const { translate, inertia, zoom } = this;
+    const { translate, touch, inertia, zoom } = this;
 
     // events listeners
     addContainerListener('mousedown', (e: MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
       translate.start(e.clientX, e.clientY);
     });
     addContainerListener('mousemove', (e: MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
       translate.move(e.clientX, e.clientY);
     });
-    addContainerListener('mouseup', () => {
+    addContainerListener('mouseup', (e: MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
       translate.stop();
       inertia.start();
+    });
+    addContainerListener('dblclick', (e: MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      zoom.start(1, e.clientX, e.clientY);
     });
     addContainerListener('wheel', (e: WheelEvent) => {
       const { x, y } = this.paper.clientToLocalPoint(e.clientX, e.clientY);
@@ -98,42 +116,49 @@ export class Screen {
     addContainerListener('touchstart', e => {
       e.preventDefault();
       e.stopPropagation();
-      this.touch.touchStart(e as TouchEvent, this.state.transform);
+      touch.start((e as TouchEvent).touches);
     });
     addContainerListener('touchmove', e => {
       e.preventDefault();
       e.stopPropagation();
-      this.touch.touchMove(e as TouchEvent, this.state.transform);
+      touch.move((e as TouchEvent).changedTouches);
     });
     addContainerListener('touchend', e => {
       e.preventDefault();
       e.stopPropagation();
-      this.touch.touchEnd(e as TouchEvent, this.state.transform);
+      touch.up((e as TouchEvent).changedTouches);
+      inertia.start();
     });
     paper.el.addEventListener('touchstart', e => {
       e.preventDefault();
       e.stopPropagation();
-      this.touch.touchStart(e as TouchEvent, this.state.transform);
+      touch.start((e as TouchEvent).touches);
     });
     paper.el.addEventListener('touchmove', e => {
       e.preventDefault();
       e.stopPropagation();
-      this.touch.touchMove(e as TouchEvent, this.state.transform);
+      touch.move((e as TouchEvent).changedTouches);
     });
     paper.el.addEventListener('touchend', e => {
       e.preventDefault();
       e.stopPropagation();
-      this.touch.touchEnd(e as TouchEvent, this.state.transform);
+      touch.up((e as TouchEvent).changedTouches);
+      inertia.start();
     });
 
     paper.on({
       // all: (...args) => console.log(args),
       // resize: (width, height, data) => { updateviewport },
+      'blank:pointerdblclick': (evt, x, y) => {
+        zoom.start(1, x, y);
+      },
       'cell:pointerdown': () => {
         inertia.stop();
       },
       'blank:pointerdown': evt => {
-        if (evt.type === 'mousedown') translate.start(evt.clientX!, evt.clientY!);
+        if (evt.type === 'mousedown') {
+          translate.start(evt.clientX!, evt.clientY!);
+        }
       },
       'blank:pointermove': evt => {
         if (evt.type === 'mousemove') translate.move(evt.clientX!, evt.clientY!);
