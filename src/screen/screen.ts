@@ -1,6 +1,6 @@
 import { dia } from '@joint/core';
 import { State } from './types.ts';
-import { Inertia, Translate, Zoom, Touch, Dblclick } from './transformers';
+import { Inertia, Translate, Zoom, Touch } from './transformers';
 
 export class Screen {
   private state: State = {
@@ -46,8 +46,8 @@ export class Screen {
       touch1: null,
       prevScale: null,
       taps: 0,
-      touchStartingFn: null,
-      touchFirst: null,
+      prevTouchTimeout: null,
+      firstTouch: null,
       active: false,
     },
   };
@@ -58,9 +58,8 @@ export class Screen {
   private inertia = Inertia(this.state);
   private zoom = Zoom(this.state);
   private touch = Touch(this.state);
-  private dblclick = Dblclick(this.state);
 
-  private transformers = [this.zoom.next, this.inertia.next, this.dblclick.next];
+  private transformers = [this.zoom.next, this.inertia.next];
 
   /*
   // todo squish animation (apple like)
@@ -98,7 +97,6 @@ export class Screen {
       addContainerListener('mousedown', host, (e: MouseEvent) => {
         translate.start(e.clientX, e.clientY);
         inertia.reset();
-        // dblCLick.start(e.clientX, e.clientY); (zoom.start(1, e.clientX, e.clientY);)
       });
       addContainerListener('mousemove', host, (e: MouseEvent) => {
         translate.move(e.clientX, e.clientY);
@@ -106,6 +104,10 @@ export class Screen {
       addContainerListener('mouseup', host, (e: MouseEvent) => {
         translate.stop();
         inertia.start();
+      });
+      addContainerListener('dblclick', host, (e: MouseEvent) => {
+        const { x, y } = this.paper.clientToLocalPoint(e.clientX, e.clientY);
+        zoom.start(1, x, y);
       });
       addContainerListener('wheel', host, (e: WheelEvent) => {
         const { x, y } = this.paper.clientToLocalPoint(e.clientX, e.clientY);
@@ -119,8 +121,12 @@ export class Screen {
       addContainerListener('touchmove', host, e => {
         touch.move((e as TouchEvent).changedTouches);
       });
-      addContainerListener('touchend', host, e => {
-        touch.up((e as TouchEvent).changedTouches);
+      addContainerListener('touchend', host, (e: TouchEvent) => {
+        const { dblTap } = touch.up(e.changedTouches);
+        if (dblTap) {
+          const { x, y } = this.paper.clientToLocalPoint(dblTap[0], dblTap[1]);
+          zoom.start(1, x, y);
+        }
         inertia.start();
       });
     };

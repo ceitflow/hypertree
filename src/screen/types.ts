@@ -58,8 +58,8 @@ export type State = {
     touch0: { id: number; point: Point; fixed: Point } | null;
     touch1: { id: number; point: Point; fixed: Point } | null;
     prevScale: number | null;
-    touchFirst: Point | null;
-    touchStartingFn: NodeJS.Timeout | null;
+    firstTouch: Point | null;
+    prevTouchTimeout: NodeJS.Timeout | null;
     taps: number; // for detecting dbl click
     active: boolean;
   };

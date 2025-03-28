@@ -42,7 +42,7 @@ export function Inertia({
 
     next: () => {
       if (!inertia.active) {
-        addPosToMotion(); // caches position per frame
+        if (translate.active || touch.active) addPosToMotion(); // caches position per frame
         return;
       }
 

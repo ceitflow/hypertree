@@ -12,11 +12,11 @@ export function Touch({ transform, touch }: State) {
             (clientY - transform[1]) / transform[2],
           ];
           touch.touch0 = { point: [clientX, clientY], id: identifier, fixed };
-          touch.taps = 1 + (touch.touchStartingFn ? 1 : 0);
+          touch.taps = 1 + (touch.prevTouchTimeout !== null ? 1 : 0);
           if (touch.taps < 2) {
-            touch.touchFirst = [clientX, clientY];
-            touch.touchStartingFn = setTimeout(
-              () => (touch.touchStartingFn = null),
+            touch.firstTouch = [clientX, clientY];
+            touch.prevTouchTimeout = setTimeout(
+              () => (touch.prevTouchTimeout = null),
               touch.touchDelay
             );
           }
@@ -92,7 +92,9 @@ export function Touch({ transform, touch }: State) {
       }
     },
 
-    up: (changedTouches: TouchList) => {
+    up: (changedTouches: TouchList): { dblTap: Point | null } => {
+      let dblTap: Point | null = null;
+
       for (let i = 0; i < changedTouches.length; i++) {
         const { identifier } = changedTouches[i];
         if (touch.touch0?.id === identifier) {
@@ -115,13 +117,14 @@ export function Touch({ transform, touch }: State) {
           (touch.touch0.point[1] - transform[1]) / transform[2],
         ];
       } else if (touch.taps === 2) {
-        // todo move to dblclick.ts
         const { clientX, clientY } = changedTouches[changedTouches.length - 1];
-        const dst = Math.hypot(touch.touchFirst![0] - clientX, touch.touchFirst![1] - clientY);
-        if (dst < touch.tapDistance) console.log(dst);
+        const dst = Math.hypot(touch.firstTouch![0] - clientX, touch.firstTouch![1] - clientY);
+        if (dst < touch.tapDistance) dblTap = [clientX, clientY];
       }
       if (!touch.touch0 || !touch.touch1) touch.prevScale = null;
       if (!touch.touch0 && !touch.touch1) touch.active = false;
+
+      return { dblTap };
     },
   };
 }
