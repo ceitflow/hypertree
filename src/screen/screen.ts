@@ -59,7 +59,7 @@ export class Screen {
   private zoom = Zoom(this.state);
   private touch = Touch(this.state);
 
-  private transformers = [this.zoom.next, this.inertia.next];
+  private transformers = [this.translate.next, this.touch.next, this.zoom.next, this.inertia.next];
 
   /*
   // todo squish animation (apple like)
@@ -96,7 +96,6 @@ export class Screen {
       // events listeners
       addContainerListener('mousedown', host, (e: MouseEvent) => {
         translate.start(e.clientX, e.clientY);
-        inertia.reset();
       });
       addContainerListener('mousemove', host, (e: MouseEvent) => {
         translate.move(e.clientX, e.clientY);
@@ -116,7 +115,6 @@ export class Screen {
       // touch support
       addContainerListener('touchstart', host, e => {
         touch.start((e as TouchEvent).touches);
-        inertia.reset();
       });
       addContainerListener('touchmove', host, e => {
         touch.move((e as TouchEvent).changedTouches);
@@ -126,8 +124,8 @@ export class Screen {
         if (dblTap) {
           const { x, y } = this.paper.clientToLocalPoint(dblTap[0], dblTap[1]);
           zoom.start(1, x, y);
-        }
-        inertia.start();
+          inertia.stop();
+        } else inertia.start();
       });
     };
 

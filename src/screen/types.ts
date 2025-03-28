@@ -60,7 +60,7 @@ export type State = {
     prevScale: number | null;
     firstTouch: Point | null;
     prevTouchTimeout: NodeJS.Timeout | null;
-    taps: number; // for detecting dbl click
+    taps: number; // for dbl click
     active: boolean;
   };
 };

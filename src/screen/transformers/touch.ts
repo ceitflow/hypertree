@@ -1,11 +1,18 @@
 import { Point, State } from '../types.ts';
 
-export function Touch({ transform, touch }: State) {
+export function Touch({ transform, touch, motionPerFrame, motionSize }: State) {
+  const addMotion = (x: number, y: number, reset?: boolean) => {
+    if (reset) motionPerFrame.splice(0, motionPerFrame.length, [x, y]);
+    else motionPerFrame.push([x, y]);
+    if (motionPerFrame.length > motionSize) motionPerFrame.shift();
+  };
+
   return {
     start: (touches: TouchList) => {
       for (let i = 0; i < touches.length; i++) {
         const { clientX, clientY, identifier } = touches[i];
         if (!touch.touch0) {
+          addMotion(clientX, clientY, true);
           // add first touch
           const fixed: Point = [
             (clientX - transform[0]) / transform[2],
@@ -92,6 +99,13 @@ export function Touch({ transform, touch }: State) {
       }
     },
 
+    next: () => {
+      if (touch.active) {
+        const t0 = touch.touch0?.point;
+        if (t0) addMotion(t0[0], t0[1]);
+      }
+    },
+
     up: (changedTouches: TouchList): { dblTap: Point | null } => {
       let dblTap: Point | null = null;
 
@@ -116,6 +130,7 @@ export function Touch({ transform, touch }: State) {
           (touch.touch0.point[0] - transform[0]) / transform[2],
           (touch.touch0.point[1] - transform[1]) / transform[2],
         ];
+        addMotion(touch.touch0.point[0], touch.touch0.point[1]);
       } else if (touch.taps === 2) {
         const { clientX, clientY } = changedTouches[changedTouches.length - 1];
         const dst = Math.hypot(touch.firstTouch![0] - clientX, touch.firstTouch![1] - clientY);
