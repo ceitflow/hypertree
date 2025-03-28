@@ -1,4 +1,4 @@
-import { dia, g } from '@joint/core';
+import { dia } from '@joint/core';
 import { State } from './types.ts';
 import { Constrain, Inertia, Touch, Translate, Zoom } from './transformers';
 
