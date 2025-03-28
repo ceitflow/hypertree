@@ -1,6 +1,6 @@
-import { dia } from '@joint/core';
+import { dia, g } from '@joint/core';
 import { State } from './types.ts';
-import { Inertia, Translate, Zoom, Touch } from './transformers';
+import { Constrain, Inertia, Touch, Translate, Zoom } from './transformers';
 
 export class Screen {
   private state: State = {
@@ -8,6 +8,11 @@ export class Screen {
     currentTransform: [0, 0, 1], // for comparing dirty state
     motionPerFrame: [],
     motionSize: 5,
+
+    constrain: {
+      viewport: [0, 0, 1700, 800],
+      translateExtent: [-500, -500, 3000, 2000],
+    },
 
     frameStart: {
       time: 0,
@@ -58,8 +63,15 @@ export class Screen {
   private inertia = Inertia(this.state);
   private zoom = Zoom(this.state);
   private touch = Touch(this.state);
+  private constraint = Constrain(this.state);
 
-  private transformers = [this.translate.next, this.touch.next, this.zoom.next, this.inertia.next];
+  private transformers = [
+    this.translate.next,
+    this.touch.next,
+    this.zoom.next,
+    this.inertia.next,
+    this.constraint.next,
+  ];
 
   /*
   // todo squish animation (apple like)
@@ -77,68 +89,79 @@ export class Screen {
     private paper: dia.Paper,
     container: HTMLElement
   ) {
-    const addListeners = (host: HTMLElement) => {
-      const { translate, touch, inertia, zoom } = this;
+    const { translate, touch, inertia, zoom } = this;
 
-      const addContainerListener = <Evt extends Event>(
-        type: string,
-        target: HTMLElement,
-        callback: (e: Evt) => void
-      ) =>
-        target.addEventListener(type, e => {
-          if (target.contains(e.target as Element)) {
-            e.preventDefault();
-            e.stopPropagation();
-            callback(e as Evt);
-          }
-        });
+    const addContainerListener = <Evt extends Event>(
+      type: string,
+      target: HTMLElement,
+      callback: (e: Evt) => void
+    ) =>
+      target.addEventListener(type, e => {
+        if (target.contains(e.target as Element)) {
+          e.preventDefault();
+          e.stopPropagation();
+          callback(e as Evt);
+        }
+      });
 
-      // events listeners
-      addContainerListener('mousedown', host, (e: MouseEvent) => {
-        translate.start(e.clientX, e.clientY);
-      });
-      addContainerListener('mousemove', host, (e: MouseEvent) => {
-        translate.move(e.clientX, e.clientY);
-      });
-      addContainerListener('mouseup', host, (e: MouseEvent) => {
-        translate.stop();
-        inertia.start();
-      });
-      addContainerListener('dblclick', host, (e: MouseEvent) => {
-        const { x, y } = this.paper.clientToLocalPoint(e.clientX, e.clientY);
+    // events listeners
+    addContainerListener('mousedown', container, (e: MouseEvent) => {
+      translate.start(e.clientX, e.clientY);
+    });
+    addContainerListener('mousemove', container, (e: MouseEvent) => {
+      translate.move(e.clientX, e.clientY);
+    });
+    addContainerListener('mouseup', container, (e: MouseEvent) => {
+      translate.stop();
+      inertia.start();
+    });
+    addContainerListener('dblclick', container, (e: MouseEvent) => {
+      const { x, y } = this.paper.clientToLocalPoint(e.clientX, e.clientY);
+      zoom.start(1, x, y);
+    });
+    addContainerListener('wheel', container, (e: WheelEvent) => {
+      const { x, y } = this.paper.clientToLocalPoint(e.clientX, e.clientY);
+      zoom.start(-e.deltaY, x, y);
+    });
+    // touch support
+    addContainerListener('touchstart', container, e => {
+      touch.start((e as TouchEvent).touches);
+    });
+    addContainerListener('touchmove', container, e => {
+      touch.move((e as TouchEvent).changedTouches);
+    });
+    addContainerListener('touchend', container, (e: TouchEvent) => {
+      const { dblTap } = touch.up(e.changedTouches);
+      if (dblTap) {
+        const { x, y } = this.paper.clientToLocalPoint(dblTap[0], dblTap[1]);
         zoom.start(1, x, y);
-      });
-      addContainerListener('wheel', host, (e: WheelEvent) => {
-        const { x, y } = this.paper.clientToLocalPoint(e.clientX, e.clientY);
-        zoom.start(-e.deltaY, x, y);
-      });
-      // touch support
-      addContainerListener('touchstart', host, e => {
-        touch.start((e as TouchEvent).touches);
-      });
-      addContainerListener('touchmove', host, e => {
-        touch.move((e as TouchEvent).changedTouches);
-      });
-      addContainerListener('touchend', host, (e: TouchEvent) => {
-        const { dblTap } = touch.up(e.changedTouches);
-        if (dblTap) {
-          const { x, y } = this.paper.clientToLocalPoint(dblTap[0], dblTap[1]);
-          zoom.start(1, x, y);
-          inertia.stop();
-        } else inertia.start();
-      });
-    };
-
-    addListeners(container);
-
-    /*paper.on({
-      // all: (...args) => console.log(args),
-      // resize: (width, height, data) => { updateviewport },
-      'cell:pointerdown': () => {
         inertia.stop();
-      },
-    });*/
+      } else inertia.start();
+    });
 
+    paper.on({
+      // all: (...args) => console.log(args),
+      resize: (width, height, data) => {
+        this.state.constrain.translateExtent[0] = 0;
+        this.state.constrain.translateExtent[1] = 0;
+        this.state.constrain.translateExtent[2] = width;
+        this.state.constrain.translateExtent[3] = height;
+      },
+      // 'cell:pointerdown': () => {
+      //   inertia.stop();
+      // },
+    });
+
+    const viewport = container.getBoundingClientRect();
+    const content = paper.getComputedSize();
+    this.state.constrain.viewport[0] = 0;
+    this.state.constrain.viewport[1] = 0;
+    this.state.constrain.viewport[2] = viewport.width;
+    this.state.constrain.viewport[3] = viewport.height;
+    this.state.constrain.translateExtent[0] = 0;
+    this.state.constrain.translateExtent[1] = 0;
+    this.state.constrain.translateExtent[2] = content.width;
+    this.state.constrain.translateExtent[3] = content.height;
     this._loopId = requestAnimationFrame(this.loop.bind(this));
   }
 

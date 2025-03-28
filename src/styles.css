@@ -8,6 +8,15 @@ body {
   padding: 0;
 }
 
+@keyframes scrollAnimation {
+  0% {
+    transform: translateX(0)
+  }
+  100% {
+    transform: translateX(calc(-24px - 100%))
+  }
+}
+
 body {
   height: 100vh;
   width: 100vw;
@@ -18,14 +27,29 @@ body {
   .toolbar {
     flex-shrink: 0;
     display: flex;
+    gap: 24px;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
     height: 54px;
     width: 100%;
-    border-bottom: 1px solid lightgray;
+
+    span {
+      animation: scrollAnimation 2s linear infinite;
+      font-size: 36px;
+      font-weight: 500;
+      font-style: italic;
+      margin-top: -8px;
+      text-shadow:
+          -1px -1px 0 #d0d0d0,
+          1px -1px 0 #d0d0d0,
+          -1px 1px 0 #d0d0d0,
+          1px 1px 0 #d0d0d0;
+      color: white;
+    }
   }
 
   #viewport {
+    border-top: 1px solid lightgray;
     overflow: hidden;
     height: 100%;
     width: 100%;

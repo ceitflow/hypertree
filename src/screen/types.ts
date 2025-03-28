@@ -1,5 +1,6 @@
 export type TransformType = [number, number, number]; // x, y, scale
 export type Point = [number, number];
+export type Rect = [number, number, number, number]; // origin.x origin.y corner.x corner.y
 
 // optimization
 // const TRANSLATE_STRUCT = {
@@ -18,6 +19,11 @@ export type State = {
   currentTransform: TransformType;
   motionPerFrame: Point[];
   motionSize: number;
+
+  constrain: {
+    viewport: Rect;
+    translateExtent: Rect;
+  };
 
   frameStart: {
     time: number;
