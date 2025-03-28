@@ -1,26 +1,50 @@
 import { State } from '../types.ts';
 
-export function Inertia({ transform, inertia, translate }: State) {
+export function Inertia({
+  transform,
+  touch,
+  inertia,
+  translate,
+  motionPerFrame,
+  motionSize,
+}: State) {
+  const addPosToMotion = (clear?: boolean) => {
+    if (clear) motionPerFrame.splice(0, motionPerFrame.length, [transform[0], transform[1]]);
+    else motionPerFrame.push([transform[0], transform[1]]);
+    if (motionPerFrame.length > motionSize) motionPerFrame.shift();
+  };
+
   return {
+    reset: () => {
+      addPosToMotion(true);
+    },
+
     start: () => {
-      // const { velocity, strength, motionPerFrame } = inertia;
-      // velocity[0] = 0;
-      // velocity[1] = 0;
-      // for (let i = 1; i < motionPerFrame.length; i++) {
-      //   const prev = motionPerFrame[i - 1];
-      //   const current = motionPerFrame[i];
-      //   const ratio = i / motionPerFrame.length;
-      //   const weight = ratio * strength;
-      //   velocity[0] += weight * (current[0] - prev[0]);
-      //   velocity[1] += weight * (current[1] - prev[1]);
-      // }
-      // console.log('start inertia', velocity, motionPerFrame.toString().split(','));
-      console.log(inertia.velocity);
+      addPosToMotion();
+      const { velocity, strength } = inertia;
+      velocity[0] = 0;
+      velocity[1] = 0;
+      for (let i = 1; i < motionPerFrame.length; i++) {
+        const prev = motionPerFrame[i - 1];
+        const current = motionPerFrame[i];
+        const ratio = i / motionPerFrame.length;
+        const weight = ratio * strength;
+        velocity[0] += weight * (current[0] - prev[0]);
+        velocity[1] += weight * (current[1] - prev[1]);
+      }
+      // console.log(
+      //   'start inertia',
+      //   velocity,
+      //   motionPerFrame.reduce((prev, curr) => prev + ` x: ${curr[0]}, y: ${curr[1]},`, '')
+      // );
       inertia.active = true;
     },
 
     next: () => {
-      if (!inertia.active) return;
+      if (!inertia.active) {
+        addPosToMotion(); // caches position per frame
+        return;
+      }
 
       const { velocity, brakeFriction, friction, minVelocity } = inertia;
 
@@ -29,7 +53,7 @@ export function Inertia({ transform, inertia, translate }: State) {
 
       // todo time based
       // remember pointer pos while inertia runs to animate braking and then going back to pointer pos
-      const acc = translate.active ? brakeFriction : friction;
+      const acc = translate.active || touch.active ? brakeFriction : friction;
       velocity[0] *= acc;
       velocity[1] *= acc;
 

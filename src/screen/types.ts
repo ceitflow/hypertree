@@ -1,5 +1,4 @@
 export type TransformType = [number, number, number]; // x, y, scale
-export type Rect = [number, number, number, number]; // x, y, width, height
 export type Point = [number, number];
 
 // optimization
@@ -17,6 +16,8 @@ export type Point = [number, number];
 export type State = {
   transform: TransformType;
   currentTransform: TransformType;
+  motionPerFrame: Point[];
+  motionSize: number;
 
   frameStart: {
     time: number;
@@ -25,9 +26,6 @@ export type State = {
 
   translate: {
     target: Point;
-    first: Point | null;
-    firstTime: number;
-    // last; on pointerup calculate velocity and Add to inertia
     active: boolean;
   };
 
@@ -53,9 +51,16 @@ export type State = {
   };
 
   touch: {
+    touchDelay: number;
+    tapDistance: number; // dbl tap has to be near previous tap
+    // wheelDelay = 150,
+    // clickDistance2 = 0,
     touch0: { id: number; point: Point; fixed: Point } | null;
     touch1: { id: number; point: Point; fixed: Point } | null;
-    prevS: number | null;
+    prevScale: number | null;
+    touchFirst: Point | null;
+    touchStartingFn: NodeJS.Timeout | null;
+    taps: number; // for detecting dbl click
     active: boolean;
   };
 };

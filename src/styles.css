@@ -8,21 +8,33 @@ body {
   padding: 0;
 }
 
-#viewport {
-  overflow: hidden;
+body {
   height: 100vh;
   width: 100vw;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 
-  .joint-paper {
-    transform-origin: 0 0;
-    overflow: hidden;
+  .toolbar {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 54px;
+    width: 100%;
+    border-bottom: 1px solid lightgray;
   }
 
-  .canvas {
-    position: absolute;
-    top: 4px;
-    right: 4px;
-    border: 1px solid gray;
-    pointer-events: none;
+  #viewport {
+    overflow: hidden;
+    height: 100%;
+    width: 100%;
+
+    .joint-paper {
+      transform-origin: 0 0;
+      overflow: hidden;
+    }
   }
 }
+
+

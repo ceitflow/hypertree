@@ -6,17 +6,28 @@ export function Touch({ transform, touch }: State) {
       for (let i = 0; i < touches.length; i++) {
         const { clientX, clientY, identifier } = touches[i];
         if (!touch.touch0) {
+          // add first touch
           const fixed: Point = [
             (clientX - transform[0]) / transform[2],
             (clientY - transform[1]) / transform[2],
           ];
           touch.touch0 = { point: [clientX, clientY], id: identifier, fixed };
+          touch.taps = 1 + (touch.touchStartingFn ? 1 : 0);
+          if (touch.taps < 2) {
+            touch.touchFirst = [clientX, clientY];
+            touch.touchStartingFn = setTimeout(
+              () => (touch.touchStartingFn = null),
+              touch.touchDelay
+            );
+          }
         } else if (!touch.touch1 && identifier !== touch.touch0.id) {
+          // add second touch
           const fixed: Point = [
             (clientX - transform[0]) / transform[2],
             (clientY - transform[1]) / transform[2],
           ];
           touch.touch1 = { point: [clientX, clientY], id: identifier, fixed };
+          touch.taps = 0;
         }
       }
       touch.active = true;
@@ -33,7 +44,8 @@ export function Touch({ transform, touch }: State) {
         else if (touch1?.id === identifier) updated1 = [clientX, clientY];
       }
 
-      if (touch1 && touch0 && (updated0 || updated1)) {
+      if (touch1 && touch0) {
+        if (!updated0 && !updated1) return;
         // pinch
         updated0 = updated0 ?? touch0.point;
         updated1 = updated1 ?? touch1.point;
@@ -46,7 +58,7 @@ export function Touch({ transform, touch }: State) {
           (touch1.fixed[1] - touch0.fixed[1]) * (touch1.fixed[1] - touch0.fixed[1]);
         const dScale = Math.sqrt(dp / dl); // this is ratio of current dst / prev dst
 
-        if (touch.prevS === null) touch.prevS = dScale;
+        if (touch.prevScale === null) touch.prevScale = dScale;
 
         const currentMidPointX = (updated0[0] + updated1[0]) / 2;
         const currentMidPointY = (updated0[1] + updated1[1]) / 2;
@@ -57,16 +69,16 @@ export function Touch({ transform, touch }: State) {
 
         const x = currentMidPointX - fixedMidPointX * dScale;
         const y = currentMidPointY - fixedMidPointY * dScale;
-        const prevX = prevMidPointX - fixedMidPointX * touch.prevS;
-        const prevY = prevMidPointY - fixedMidPointY * touch.prevS;
+        const prevX = prevMidPointX - fixedMidPointX * touch.prevScale;
+        const prevY = prevMidPointY - fixedMidPointY * touch.prevScale;
 
         transform[0] += x - prevX;
         transform[1] += y - prevY;
-        transform[2] += dScale - touch.prevS;
+        transform[2] += dScale - touch.prevScale;
 
         touch0.point = updated0;
         touch1.point = updated1;
-        touch.prevS = dScale;
+        touch.prevScale = dScale;
         return;
       }
 
@@ -90,6 +102,7 @@ export function Touch({ transform, touch }: State) {
         }
       }
 
+      // swap touch1 with touch0 if touch0 was released
       if (touch.touch1 && !touch.touch0) {
         touch.touch0 = touch.touch1;
         touch.touch1 = null;
@@ -101,13 +114,14 @@ export function Touch({ transform, touch }: State) {
           (touch.touch0.point[0] - transform[0]) / transform[2],
           (touch.touch0.point[1] - transform[1]) / transform[2],
         ];
+      } else if (touch.taps === 2) {
+        // todo move to dblclick.ts
+        const { clientX, clientY } = changedTouches[changedTouches.length - 1];
+        const dst = Math.hypot(touch.touchFirst![0] - clientX, touch.touchFirst![1] - clientY);
+        if (dst < touch.tapDistance) console.log(dst);
       }
-      if (!touch.touch0 || !touch.touch1) touch.prevS = null;
+      if (!touch.touch0 || !touch.touch1) touch.prevScale = null;
       if (!touch.touch0 && !touch.touch1) touch.active = false;
-    },
-
-    next: () => {
-      if (!touch.active) return;
     },
   };
 }
