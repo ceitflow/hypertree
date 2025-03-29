@@ -17,13 +17,11 @@ export type Rect = [number, number, number, number]; // origin.x origin.y corner
 export type State = {
   transform: TransformType;
   currentTransform: TransformType;
+  viewport: Rect; // todo viewport and currentViewport to trigger constrain snap
+  extent: Rect;
+
   motionPerFrame: Point[];
   motionSize: number;
-
-  constrain: {
-    viewport: Rect;
-    translateExtent: Rect;
-  };
 
   frameStart: {
     time: number;

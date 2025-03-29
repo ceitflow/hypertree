@@ -10,10 +10,25 @@ body {
 
 @keyframes scrollAnimation {
   0% {
-    transform: translateX(0)
+    transform: translateX(0);
+    text-shadow: -1px -1px 0 whitesmoke,
+    1px -1px 0 whitesmoke,
+    -1px 1px 0 whitesmoke,
+    1px 1px 0 whitesmoke;
+  }
+  50% {
+    transform: translateX(calc(-12px - 50%));
+    text-shadow: -1px -1px 0 indianred,
+    1px -1px 0 indianred,
+    -1px 1px 0 indianred,
+    1px 1px 0 indianred;
   }
   100% {
-    transform: translateX(calc(-24px - 100%))
+    transform: translateX(calc(-24px - 100%));
+    text-shadow: -1px -1px 0 whitesmoke,
+    1px -1px 0 whitesmoke,
+    -1px 1px 0 whitesmoke,
+    1px 1px 0 whitesmoke;
   }
 }
 
@@ -39,11 +54,6 @@ body {
       font-weight: 500;
       font-style: italic;
       margin-top: -8px;
-      text-shadow:
-          -1px -1px 0 #d0d0d0,
-          1px -1px 0 #d0d0d0,
-          -1px 1px 0 #d0d0d0,
-          1px 1px 0 #d0d0d0;
       color: white;
     }
   }

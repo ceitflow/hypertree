@@ -1,10 +1,6 @@
 import { State } from '../types.ts';
 
-export function Constrain({
-  transform: t,
-  currentTransform: ct,
-  constrain: { viewport, translateExtent },
-}: State) {
+export function Constrain({ transform: t, currentTransform: ct, viewport, extent }: State) {
   return {
     next: () => {
       if (ct[0] === t[0] && ct[1] === t[1] && ct[2] === t[2]) return;
@@ -17,10 +13,10 @@ export function Constrain({
       const scale = t[2];
       const xPadding = (viewport[2] - 200) / scale; // todo apply padding in the end to avoid multiplying by scale
       const yPadding = (viewport[3] - 200) / scale;
-      const dx0 = (viewport[0] - x) / scale - translateExtent[0] + xPadding; // origin.X
-      const dy0 = (viewport[1] - y) / scale - translateExtent[1] + yPadding; // origin.Y
-      const dx1 = (viewport[2] - x) / scale - translateExtent[2] - xPadding; // corner.X
-      const dy1 = (viewport[3] - y) / scale - translateExtent[3] - yPadding; // corner.Y
+      const dx0 = (viewport[0] - x) / scale - extent[0] + xPadding; // origin.X
+      const dy0 = (viewport[1] - y) / scale - extent[1] + yPadding; // origin.Y
+      const dx1 = (viewport[2] - x) / scale - extent[2] - xPadding; // corner.X
+      const dy1 = (viewport[3] - y) / scale - extent[3] - yPadding; // corner.Y
 
       // if d0 is negative - viewport is past origin
       // if d1 is positive - viewport is past corner

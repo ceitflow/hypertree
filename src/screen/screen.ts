@@ -6,13 +6,11 @@ export class Screen {
   private state: State = {
     transform: [0, 0, 1],
     currentTransform: [0, 0, 1], // for comparing dirty state
+    viewport: [0, 0, 1700, 800],
+    extent: [-500, -500, 3000, 2000],
+
     motionPerFrame: [],
     motionSize: 5,
-
-    constrain: {
-      viewport: [0, 0, 1700, 800],
-      translateExtent: [-500, -500, 3000, 2000],
-    },
 
     frameStart: {
       time: 0,
@@ -91,6 +89,27 @@ export class Screen {
   ) {
     const { translate, touch, inertia, zoom } = this;
 
+    const resize = new ResizeObserver(entries => {
+      for (const entry of entries) {
+        // test ui
+        const { width, height } = entry.contentRect;
+        const toolbar = document.getElementById('toolbar')!;
+        const spanWidth = toolbar.getElementsByTagName('span')[0].getBoundingClientRect().width;
+        let temp = width * 2;
+        while (temp > 0) {
+          const s = document.createElement('span');
+          s.innerText = 'Graphkit';
+          toolbar.append(s);
+          temp -= spanWidth;
+        }
+        //
+
+        this.state.viewport[2] = width;
+        this.state.viewport[3] = height;
+      }
+    });
+    resize.observe(container);
+
     const addContainerListener = <Evt extends Event>(
       type: string,
       target: HTMLElement,
@@ -142,10 +161,10 @@ export class Screen {
     paper.on({
       // all: (...args) => console.log(args),
       resize: (width, height, data) => {
-        this.state.constrain.translateExtent[0] = 0;
-        this.state.constrain.translateExtent[1] = 0;
-        this.state.constrain.translateExtent[2] = width;
-        this.state.constrain.translateExtent[3] = height;
+        this.state.extent[0] = 0;
+        this.state.extent[1] = 0;
+        this.state.extent[2] = width;
+        this.state.extent[3] = height;
       },
       // 'cell:pointerdown': () => {
       //   inertia.stop();
@@ -154,14 +173,14 @@ export class Screen {
 
     const viewport = container.getBoundingClientRect();
     const content = paper.getComputedSize();
-    this.state.constrain.viewport[0] = 0;
-    this.state.constrain.viewport[1] = 0;
-    this.state.constrain.viewport[2] = viewport.width;
-    this.state.constrain.viewport[3] = viewport.height;
-    this.state.constrain.translateExtent[0] = 0;
-    this.state.constrain.translateExtent[1] = 0;
-    this.state.constrain.translateExtent[2] = content.width;
-    this.state.constrain.translateExtent[3] = content.height;
+    this.state.viewport[0] = 0;
+    this.state.viewport[1] = 0;
+    this.state.viewport[2] = viewport.width;
+    this.state.viewport[3] = viewport.height;
+    this.state.extent[0] = 0;
+    this.state.extent[1] = 0;
+    this.state.extent[2] = content.width;
+    this.state.extent[3] = content.height;
     this._loopId = requestAnimationFrame(this.loop.bind(this));
   }
 
