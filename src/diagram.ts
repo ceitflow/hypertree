@@ -34,7 +34,6 @@ export class Diagram {
       },
     });
 
-    // todo onResize store todo new api observers
-    const screen = new Screen(this.paper, container);
+    new Screen(this.paper, container);
   }
 }

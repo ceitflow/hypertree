@@ -106,8 +106,18 @@ export function Touch({ transform, touch, motionPerFrame, motionSize }: State) {
       }
     },
 
-    up: (changedTouches: TouchList): { dblTap: Point | null } => {
+    up: (changedTouches: TouchList): { dblTap: Point | null; multiReleased: boolean } => {
       let dblTap: Point | null = null;
+
+      const isTimeoutRunning = !!touch.endMultitouchTimeout;
+
+      if (touch.touch0 && touch.touch1) {
+        if (touch.endMultitouchTimeout) clearTimeout(touch.endMultitouchTimeout);
+        touch.endMultitouchTimeout = setTimeout(
+          () => (touch.endMultitouchTimeout = null),
+          touch.touchDelay
+        );
+      }
 
       for (let i = 0; i < changedTouches.length; i++) {
         const { identifier } = changedTouches[i];
@@ -122,6 +132,7 @@ export function Touch({ transform, touch, motionPerFrame, motionSize }: State) {
       if (touch.touch1 && !touch.touch0) {
         touch.touch0 = touch.touch1;
         touch.touch1 = null;
+        addMotion(touch.touch0.point[0], touch.touch0.point[1], true);
       }
 
       // updates ref point
@@ -130,16 +141,21 @@ export function Touch({ transform, touch, motionPerFrame, motionSize }: State) {
           (touch.touch0.point[0] - transform[0]) / transform[2],
           (touch.touch0.point[1] - transform[1]) / transform[2],
         ];
-        addMotion(touch.touch0.point[0], touch.touch0.point[1]);
       } else if (touch.taps === 2) {
         const { clientX, clientY } = changedTouches[changedTouches.length - 1];
         const dst = Math.hypot(touch.firstTouch![0] - clientX, touch.firstTouch![1] - clientY);
         if (dst < touch.tapDistance) dblTap = [clientX, clientY];
       }
       if (!touch.touch0 || !touch.touch1) touch.prevScale = null;
-      if (!touch.touch0 && !touch.touch1) touch.active = false;
+      if (!touch.touch0 && !touch.touch1) {
+        touch.active = false;
+        if (touch.endMultitouchTimeout) {
+          clearTimeout(touch.endMultitouchTimeout);
+          touch.endMultitouchTimeout = null;
+        }
+      }
 
-      return { dblTap };
+      return { dblTap, multiReleased: isTimeoutRunning && !touch.active };
     },
   };
 }

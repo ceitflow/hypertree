@@ -64,6 +64,7 @@ export type State = {
     prevScale: number | null;
     firstTouch: Point | null;
     prevTouchTimeout: NodeJS.Timeout | null;
+    endMultitouchTimeout: NodeJS.Timeout | null;
     taps: number; // for dbl click
     active: boolean;
   };

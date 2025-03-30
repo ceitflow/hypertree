@@ -50,6 +50,7 @@ export class Screen {
       prevScale: null,
       taps: 0,
       prevTouchTimeout: null,
+      endMultitouchTimeout: null,
       firstTouch: null,
       active: false,
     },
@@ -87,28 +88,13 @@ export class Screen {
     private paper: dia.Paper,
     container: HTMLElement
   ) {
+    this.addResizeListener(container);
     const { translate, touch, inertia, zoom } = this;
 
-    const resize = new ResizeObserver(entries => {
-      for (const entry of entries) {
-        // test ui
-        const { width, height } = entry.contentRect;
-        const toolbar = document.getElementById('toolbar')!;
-        const spanWidth = toolbar.getElementsByTagName('span')[0].getBoundingClientRect().width;
-        let temp = width * 2;
-        while (temp > 0) {
-          const s = document.createElement('span');
-          s.innerText = 'Graphkit';
-          toolbar.append(s);
-          temp -= spanWidth;
-        }
-        //
-
-        this.state.viewport[2] = width;
-        this.state.viewport[3] = height;
-      }
-    });
-    resize.observe(container);
+    const prevent = (e: Event) => {
+      e.preventDefault();
+      e.stopPropagation();
+    };
 
     const addContainerListener = <Evt extends Event>(
       type: string,
@@ -117,22 +103,29 @@ export class Screen {
     ) =>
       target.addEventListener(type, e => {
         if (target.contains(e.target as Element)) {
-          e.preventDefault();
-          e.stopPropagation();
           callback(e as Evt);
         }
       });
 
     // events listeners
     addContainerListener('mousedown', container, (e: MouseEvent) => {
-      translate.start(e.clientX, e.clientY);
+      const view = paper.findView(e.target);
+      if (view) {
+        inertia.stop();
+      } else {
+        translate.start(e.clientX, e.clientY);
+      }
     });
     addContainerListener('mousemove', container, (e: MouseEvent) => {
-      translate.move(e.clientX, e.clientY);
+      if (this.state.translate.active) {
+        translate.move(e.clientX, e.clientY);
+      }
     });
     addContainerListener('mouseup', container, (e: MouseEvent) => {
-      translate.stop();
-      inertia.start();
+      if (this.state.translate.active) {
+        translate.stop();
+        inertia.start();
+      }
     });
     addContainerListener('dblclick', container, (e: MouseEvent) => {
       const { x, y } = this.paper.clientToLocalPoint(e.clientX, e.clientY);
@@ -144,43 +137,47 @@ export class Screen {
     });
     // touch support
     addContainerListener('touchstart', container, e => {
-      touch.start((e as TouchEvent).touches);
+      const view = paper.findView(e.target);
+      if (view) {
+        // TODO jointjs doesn't scale translate with zoom
+        inertia.stop();
+      } else {
+        // prevent(e);
+        touch.start((e as TouchEvent).touches);
+      }
     });
     addContainerListener('touchmove', container, e => {
-      touch.move((e as TouchEvent).changedTouches);
+      if (this.state.touch.active) {
+        prevent(e);
+        touch.move((e as TouchEvent).changedTouches);
+      }
     });
     addContainerListener('touchend', container, (e: TouchEvent) => {
-      const { dblTap } = touch.up(e.changedTouches);
-      if (dblTap) {
-        const { x, y } = this.paper.clientToLocalPoint(dblTap[0], dblTap[1]);
-        zoom.start(1, x, y);
-        inertia.stop();
-      } else inertia.start();
+      if (this.state.touch.active) {
+        const { dblTap, multiReleased } = touch.up(e.changedTouches);
+        if (dblTap) {
+          const { x, y } = this.paper.clientToLocalPoint(dblTap[0], dblTap[1]);
+          zoom.start(1, x, y);
+          inertia.stop();
+        }
+        console.log(multiReleased);
+        if (!this.state.touch.active && !multiReleased) {
+          inertia.start();
+        }
+      }
     });
 
     paper.on({
       // all: (...args) => console.log(args),
-      resize: (width, height, data) => {
-        this.state.extent[0] = 0;
-        this.state.extent[1] = 0;
-        this.state.extent[2] = width;
-        this.state.extent[3] = height;
-      },
+      // 'element:pointermove': (elementView, evt, x, y) => console.log(x, y),
+      resize: (width, height) => this.updateContentArea({ width, height }),
       // 'cell:pointerdown': () => {
       //   inertia.stop();
       // },
     });
 
-    const viewport = container.getBoundingClientRect();
-    const content = paper.getComputedSize();
-    this.state.viewport[0] = 0;
-    this.state.viewport[1] = 0;
-    this.state.viewport[2] = viewport.width;
-    this.state.viewport[3] = viewport.height;
-    this.state.extent[0] = 0;
-    this.state.extent[1] = 0;
-    this.state.extent[2] = content.width;
-    this.state.extent[3] = content.height;
+    this.updateViewport(container.getBoundingClientRect());
+    this.updateContentArea(paper.getComputedSize());
     this._loopId = requestAnimationFrame(this.loop.bind(this));
   }
 
@@ -202,6 +199,29 @@ export class Screen {
       ct[1] = t[1];
       ct[2] = t[2];
     }
+  }
+
+  private updateViewport(data: dia.Size): void {
+    const v = this.state.viewport;
+    v[0] = 0;
+    v[1] = 0;
+    v[2] = data.width;
+    v[3] = data.height;
+  }
+
+  private updateContentArea(data: dia.Size): void {
+    const e = this.state.extent;
+    e[0] = 0;
+    e[1] = 0;
+    e[2] = data.width;
+    e[3] = data.height;
+  }
+
+  private addResizeListener(container: HTMLElement) {
+    const resize = new ResizeObserver(entries => {
+      this.updateViewport(entries[0].contentRect);
+    });
+    resize.observe(container);
   }
 
   onDestroy(): void {

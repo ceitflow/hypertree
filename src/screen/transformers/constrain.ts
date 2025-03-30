@@ -24,14 +24,14 @@ export function Constrain({ transform: t, currentTransform: ct, viewport, extent
       let dy: number;
 
       if (dx1 > dx0) {
-        // left and right corner in viewport
+        // left and right sides both visible in viewport
         dx = (dx0 + dx1) / 2;
       } else {
         dx = Math.min(0, dx0) || Math.max(0, dx1);
       }
 
       if (dy1 > dy0) {
-        // top and bottom corner in viewport
+        // top and bottom sides both visible in viewport
         dy = (dy0 + dy1) / 2;
       } else {
         dy = Math.min(0, dy0) || Math.max(0, dy1);
