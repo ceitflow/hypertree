@@ -98,7 +98,6 @@ export class Screen {
 
     const ua = navigator.userAgent;
     if ((/AppleWebKit/.test(ua) && !/Chrome/.test(ua)) || /\b(iPad|iPhone|iPod)\b/.test(ua)) {
-      console.log('WEBKIT');
       paper.cells.getScreenCTM = () => {
         const matrix = paper.svg.getScreenCTM();
         if (!matrix) return matrix;

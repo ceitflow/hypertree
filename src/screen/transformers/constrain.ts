@@ -12,30 +12,41 @@ export function Constrain({ transform: t, currentTransform: ct, viewport, extent
       const x = t[0];
       const y = t[1];
       const scale = t[2];
-      const xPadding = (viewport[2] - 200) / scale;
-      const yPadding = (viewport[3] - 200) / scale;
-      const dx0 = (viewport[0] - x) / scale - extent[0] + xPadding; // origin.X
-      const dy0 = (viewport[1] - y) / scale - extent[1] + yPadding; // origin.Y
-      const dx1 = (viewport[2] - x) / scale - extent[2] - xPadding; // corner.X
-      const dy1 = (viewport[3] - y) / scale - extent[3] - yPadding; // corner.Y
+      const dstToLeft = (x - viewport[0]) / scale - extent[0];
+      const dstToTop = (y - viewport[1]) / scale - extent[1];
+      const dstToRight = (viewport[2] - x) / scale - extent[2];
+      const dstToBottom = (viewport[3] - y) / scale - extent[3];
 
-      // if d0 is negative - viewport is past origin
-      // if d1 is positive - viewport is past corner
-      let dx: number;
-      let dy: number;
+      let leftPadding = viewport[2] / 2 / scale;
+      let rightPadding = viewport[2] / 2 / scale;
+      let topPadding = viewport[3] / 2 / scale;
+      let bottomPadding = viewport[3] / 2 / scale;
 
-      if (dx1 > dx0) {
-        // left and right sides both visible in viewport
-        dx = (dx0 + dx1) / 2;
-      } else {
-        dx = Math.min(0, dx0) || Math.max(0, dx1);
+      const heightFitInViewport = extent[3] * scale <= viewport[3];
+      const widthFitInViewport = extent[2] * scale <= viewport[2];
+
+      if (widthFitInViewport) {
+        leftPadding = Math.max(leftPadding, dstToLeft + dstToRight);
+        rightPadding = Math.max(rightPadding, dstToLeft + dstToRight);
+      }
+      if (heightFitInViewport) {
+        topPadding = Math.max(topPadding, dstToTop + dstToBottom);
+        bottomPadding = Math.max(bottomPadding, dstToTop + dstToBottom);
       }
 
-      if (dy1 > dy0) {
-        // top and bottom sides both visible in viewport
-        dy = (dy0 + dy1) / 2;
-      } else {
-        dy = Math.min(0, dy0) || Math.max(0, dy1);
+      let dx = 0;
+      let dy = 0;
+
+      if (dstToLeft > leftPadding) {
+        dx = leftPadding - dstToLeft;
+      } else if (dstToRight > rightPadding) {
+        dx = dstToRight - rightPadding;
+      }
+
+      if (dstToTop > topPadding) {
+        dy = topPadding - dstToTop;
+      } else if (dstToBottom > bottomPadding) {
+        dy = dstToBottom - bottomPadding;
       }
 
       t[0] += dx * scale;
