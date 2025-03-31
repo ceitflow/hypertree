@@ -96,6 +96,19 @@ export class Screen {
       e.stopPropagation();
     };
 
+    const ua = navigator.userAgent;
+    if ((/AppleWebKit/.test(ua) && !/Chrome/.test(ua)) || /\b(iPad|iPhone|iPod)\b/.test(ua)) {
+      console.log('WEBKIT');
+      paper.cells.getScreenCTM = () => {
+        const matrix = paper.svg.getScreenCTM();
+        if (!matrix) return matrix;
+        const t = this.state.transform;
+        matrix.a = t[2]; // scaleX
+        matrix.d = t[2]; // scaleY
+        return matrix;
+      };
+    }
+
     const addContainerListener = <Evt extends Event>(
       type: string,
       target: HTMLElement,
@@ -132,24 +145,24 @@ export class Screen {
       zoom.start(1, x, y);
     });
     addContainerListener('wheel', container, (e: WheelEvent) => {
+      prevent(e);
       const { x, y } = this.paper.clientToLocalPoint(e.clientX, e.clientY);
       zoom.start(-e.deltaY, x, y);
     });
     // touch support
-    addContainerListener('touchstart', container, e => {
+    addContainerListener('touchstart', container, (e: TouchEvent) => {
       const view = paper.findView(e.target);
       if (view) {
-        // TODO jointjs doesn't scale translate with zoom
         inertia.stop();
       } else {
-        // prevent(e);
         touch.start((e as TouchEvent).touches);
       }
     });
-    addContainerListener('touchmove', container, e => {
+    addContainerListener('touchmove', container, (e: TouchEvent) => {
       if (this.state.touch.active) {
         prevent(e);
         touch.move((e as TouchEvent).changedTouches);
+      } else {
       }
     });
     addContainerListener('touchend', container, (e: TouchEvent) => {
@@ -160,7 +173,6 @@ export class Screen {
           zoom.start(1, x, y);
           inertia.stop();
         }
-        console.log(multiReleased);
         if (!this.state.touch.active && !multiReleased) {
           inertia.start();
         }
@@ -169,7 +181,7 @@ export class Screen {
 
     paper.on({
       // all: (...args) => console.log(args),
-      // 'element:pointermove': (elementView, evt, x, y) => console.log(x, y),
+      // 'element:pointermove': (elementView, evt, x, y) => console.log(evt.clientX, evt.clientY),
       resize: (width, height) => this.updateContentArea({ width, height }),
       // 'cell:pointerdown': () => {
       //   inertia.stop();

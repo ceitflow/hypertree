@@ -5,13 +5,14 @@ export function Constrain({ transform: t, currentTransform: ct, viewport, extent
     next: () => {
       if (ct[0] === t[0] && ct[1] === t[1] && ct[2] === t[2]) return;
 
-      // todo inertia
+      // todo constrain inertia
       // and hard limit
+      // todo apply friction to inertia if touching the viewport border
 
       const x = t[0];
       const y = t[1];
       const scale = t[2];
-      const xPadding = (viewport[2] - 200) / scale; // todo apply padding in the end to avoid multiplying by scale
+      const xPadding = (viewport[2] - 200) / scale;
       const yPadding = (viewport[3] - 200) / scale;
       const dx0 = (viewport[0] - x) / scale - extent[0] + xPadding; // origin.X
       const dy0 = (viewport[1] - y) / scale - extent[1] + yPadding; // origin.Y
