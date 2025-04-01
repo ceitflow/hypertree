@@ -25,7 +25,6 @@ export class Diagram {
       el: host,
       model: this.graph,
       autoFreeze: true,
-      background: { color: 'whitesmoke' },
       width: 2500,
       height: 1700,
       async: true,

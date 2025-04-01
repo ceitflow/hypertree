@@ -1,6 +1,7 @@
 import { Point, State } from '../types.ts';
+import { SoftConstraint } from './constrain-util.ts';
 
-export function Touch({ transform, touch, motionPerFrame, motionSize }: State) {
+export function Touch({ transform, touch, motionPerFrame, motionSize, viewport, extent }: State) {
   const addMotion = (x: number, y: number, reset?: boolean) => {
     if (reset) motionPerFrame.splice(0, motionPerFrame.length, [x, y]);
     else motionPerFrame.push([x, y]);
@@ -79,8 +80,9 @@ export function Touch({ transform, touch, motionPerFrame, motionSize }: State) {
         const prevX = prevMidPointX - fixedMidPointX * touch.prevScale;
         const prevY = prevMidPointY - fixedMidPointY * touch.prevScale;
 
-        transform[0] += x - prevX;
-        transform[1] += y - prevY;
+        const { dx, dy } = SoftConstraint(x - prevX, y - prevY, transform, viewport, extent);
+        transform[0] += dx;
+        transform[1] += dy;
         transform[2] += dScale - touch.prevScale;
 
         touch0.point = updated0;
@@ -94,8 +96,9 @@ export function Touch({ transform, touch, motionPerFrame, motionSize }: State) {
         if (!updated0) return; // if no movement then skip
         const diff = [updated0[0] - touch0.point[0], updated0[1] - touch0.point[1]];
         touch0.point = updated0;
-        transform[0] += diff[0];
-        transform[1] += diff[1];
+        const { dx, dy } = SoftConstraint(diff[0], diff[1], transform, viewport, extent);
+        transform[0] += dx;
+        transform[1] += dy;
       }
     },
 

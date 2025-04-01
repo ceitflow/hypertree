@@ -9,14 +9,15 @@
         <script>eruda.init();</script>
   </head>
   <body>
-    <div class="toolbar" id="toolbar">
-      <span>Graphkit</span>
-    </div>
+    <div class="wrapper"> <!-- have to use wrapper because body styles are broken on mobile-->
+      <div class="toolbar" id="toolbar">
+        <span>Graphkit</span>
+      </div>
 
-    <div id="viewport">
-      <div id="paper"></div>
+      <div id="viewport">
+        <div id="paper"></div>
+      </div>
     </div>
-
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

@@ -4,6 +4,9 @@ import { Rect, TransformType } from '../types.ts';
 export function SoftConstraint(dx: number, dy: number, t: TransformType, view: Rect, extent: Rect) {
   // todo smooth brake and hard constraint limit
   // todo apply friction to inertia if touching the viewport border
+
+  // todo try to simplify
+
   const x = t[0] + dx;
   const y = t[1] + dy;
   const scale = t[2];
@@ -23,12 +26,12 @@ export function SoftConstraint(dx: number, dy: number, t: TransformType, view: R
 
   if (widthFitInViewport) {
     // override padding to prevent diagram go beyond viewport edge
-    leftPadding = dstToLeft + dstToRight;
-    rightPadding = dstToLeft + dstToRight;
+    leftPadding = Math.max(leftPadding, dstToLeft + dstToRight);
+    rightPadding = Math.max(rightPadding, dstToLeft + dstToRight);
   }
   if (heightFitInViewport) {
-    topPadding = dstToTop + dstToBottom;
-    bottomPadding = dstToTop + dstToBottom;
+    topPadding = Math.max(topPadding, dstToTop + dstToBottom);
+    bottomPadding = Math.max(bottomPadding, dstToTop + dstToBottom);
   }
 
   let constrainDx = 0;

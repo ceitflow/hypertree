@@ -4,8 +4,16 @@
 
 html,
 body {
+  position: fixed;
+  overflow: hidden;
+  inset: 0;
   margin: 0;
   padding: 0;
+  border: 0;
+  font-size: 100%;
+  font: inherit;
+  vertical-align: baseline;
+  line-height: 1;
 }
 
 @keyframes scrollAnimation {
@@ -32,12 +40,13 @@ body {
   }
 }
 
-body {
+.wrapper {
   height: 100vh;
   width: 100vw;
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  position: absolute;
 
   .toolbar {
     flex-shrink: 0;
@@ -65,8 +74,10 @@ body {
     width: 100%;
 
     .joint-paper {
+      background-color: #fcfcfc;
       transform-origin: 0 0;
-      overflow: hidden;
+      overflow: visible;
+      box-shadow: 0 3px 3px -2px rgba(0, 0, 0, 0.2), 0 3px 4px 0 rgba(0, 0, 0, 0.14), 0 1px 8px 0 rgba(0, 0, 0, 0.12);
     }
   }
 }
