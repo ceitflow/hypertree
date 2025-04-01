@@ -1,6 +1,6 @@
 import { dia } from '@joint/core';
 import { State } from './types.ts';
-import { Constrain, Inertia, Touch, Translate, Zoom } from './transformers';
+import { Inertia, Touch, Translate, Zoom } from './transformers';
 
 export class Screen {
   private state: State = {
@@ -62,15 +62,8 @@ export class Screen {
   private inertia = Inertia(this.state);
   private zoom = Zoom(this.state);
   private touch = Touch(this.state);
-  private constraint = Constrain(this.state);
 
-  private transformers = [
-    this.translate.next,
-    this.touch.next,
-    this.zoom.next,
-    this.inertia.next,
-    this.constraint.next,
-  ];
+  private transformers = [this.translate.next, this.touch.next, this.zoom.next, this.inertia.next];
 
   /*
   // todo squish animation (apple like)
@@ -108,19 +101,17 @@ export class Screen {
       };
     }
 
-    const addContainerListener = <Evt extends Event>(
-      type: string,
-      target: HTMLElement,
-      callback: (e: Evt) => void
-    ) =>
-      target.addEventListener(type, e => {
-        if (target.contains(e.target as Element)) {
+    const addContainerListener = <Evt extends Event>(type: string, callback: (e: Evt) => void) => {
+      document.addEventListener(type, e => {
+        if (container.contains(e.target as Element)) {
           callback(e as Evt);
         }
       });
+    };
 
     // events listeners
-    addContainerListener('mousedown', container, (e: MouseEvent) => {
+    addContainerListener('mousedown', (e: MouseEvent) => {
+      container.setPointerCapture(1);
       const view = paper.findView(e.target);
       if (view) {
         inertia.stop();
@@ -128,28 +119,34 @@ export class Screen {
         translate.start(e.clientX, e.clientY);
       }
     });
-    addContainerListener('mousemove', container, (e: MouseEvent) => {
+    addContainerListener('mousemove', (e: MouseEvent) => {
       if (this.state.translate.active) {
-        translate.move(e.clientX, e.clientY);
+        if (e.buttons === 0)
+          // edge case if mouse goes outside window and back
+          container.dispatchEvent(
+            new MouseEvent('mouseup', { clientX: e.clientX, clientY: e.clientY })
+          );
+        else translate.move(e.clientX, e.clientY);
       }
     });
-    addContainerListener('mouseup', container, (e: MouseEvent) => {
+    addContainerListener('mouseup', (e: MouseEvent) => {
+      container.releasePointerCapture(1);
       if (this.state.translate.active) {
         translate.stop();
         inertia.start();
       }
     });
-    addContainerListener('dblclick', container, (e: MouseEvent) => {
+    addContainerListener('dblclick', (e: MouseEvent) => {
       const { x, y } = this.paper.clientToLocalPoint(e.clientX, e.clientY);
       zoom.start(1, x, y);
     });
-    addContainerListener('wheel', container, (e: WheelEvent) => {
+    addContainerListener('wheel', (e: WheelEvent) => {
       prevent(e);
       const { x, y } = this.paper.clientToLocalPoint(e.clientX, e.clientY);
       zoom.start(-e.deltaY, x, y);
     });
     // touch support
-    addContainerListener('touchstart', container, (e: TouchEvent) => {
+    addContainerListener('touchstart', (e: TouchEvent) => {
       const view = paper.findView(e.target);
       if (view) {
         inertia.stop();
@@ -157,14 +154,14 @@ export class Screen {
         touch.start((e as TouchEvent).touches);
       }
     });
-    addContainerListener('touchmove', container, (e: TouchEvent) => {
+    addContainerListener('touchmove', (e: TouchEvent) => {
       if (this.state.touch.active) {
         prevent(e);
         touch.move((e as TouchEvent).changedTouches);
       } else {
       }
     });
-    addContainerListener('touchend', container, (e: TouchEvent) => {
+    addContainerListener('touchend', (e: TouchEvent) => {
       if (this.state.touch.active) {
         const { dblTap, multiReleased } = touch.up(e.changedTouches);
         if (dblTap) {

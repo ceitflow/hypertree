@@ -1,6 +1,15 @@
 import { State } from '../types.ts';
+import { SoftConstraint } from './constrain-util.ts';
 
-export function Inertia({ transform, touch, inertia, translate, motionPerFrame }: State) {
+export function Inertia({
+  transform,
+  touch,
+  inertia,
+  translate,
+  motionPerFrame,
+  viewport,
+  extent,
+}: State) {
   return {
     start: () => {
       const { velocity, strength } = inertia;
@@ -14,10 +23,7 @@ export function Inertia({ transform, touch, inertia, translate, motionPerFrame }
         velocity[0] += weight * (current[0] - prev[0]);
         velocity[1] += weight * (current[1] - prev[1]);
       }
-      // console.log(
-      //   velocity,
-      //   motionPerFrame.reduce((prev, curr) => prev + ` x: ${curr[0]}, y: ${curr[1]},`, '')
-      // );
+      // console.log(velocity,motionPerFrame.reduce((prev, curr) => prev + ` x: ${curr[0]}, y: ${curr[1]},`, ''));
       inertia.active = true;
     },
 
@@ -26,8 +32,9 @@ export function Inertia({ transform, touch, inertia, translate, motionPerFrame }
 
       const { velocity, brakeFriction, friction, minVelocity } = inertia;
 
-      transform[0] += velocity[0];
-      transform[1] += velocity[1];
+      const { dx, dy } = SoftConstraint(velocity[0], velocity[1], transform, viewport, extent);
+      transform[0] += dx;
+      transform[1] += dy;
 
       // todo time based
       // remember pointer pos while inertia runs to animate braking and then going back to pointer pos
