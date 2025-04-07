@@ -1,5 +1,5 @@
-import { State } from './types.ts';
 import { dia } from '@joint/core';
+import { State } from './types.ts';
 
 export type StoreType = ReturnType<typeof Store>;
 
@@ -10,26 +10,42 @@ export function Store() {
     viewport: [0, 0, 1700, 800],
     extent: [-500, -500, 3000, 2000],
 
-    motionPerFrame: [],
-    motionSize: 5,
-
     frameStart: {
       time: 0,
       deltaTime: 0,
     },
 
-    translate: {
-      target: [0, 0],
-      active: false,
-    },
+    motion: {
+      cache: [],
+      cacheSize: 5,
 
-    inertia: {
-      velocity: [0, 0],
-      strength: 0.5,
-      friction: 0.93,
-      brakeFriction: 0.78,
-      minVelocity: 0.5,
-      active: false,
+      mouse: {
+        target: [0, 0],
+        active: false,
+      },
+
+      inertia: {
+        velocity: [0, 0],
+        strength: 0.5,
+        friction: 0.93,
+        brakeFriction: 0.78,
+        minVelocity: 0.5,
+        active: false,
+      },
+
+      touch: {
+        touchDelay: 500,
+        tapDistance: 10,
+
+        touch0: null,
+        touch1: null,
+        prevScale: null,
+        taps: 0,
+        prevTouchTimeout: null,
+        endMultitouchTimeout: null,
+        firstTouch: null,
+        active: false,
+      },
     },
 
     zoom: {
@@ -41,27 +57,13 @@ export function Store() {
       velocity: [0, 0, 0],
       active: false,
     },
-
-    touch: {
-      touchDelay: 500,
-      tapDistance: 10,
-
-      touch0: null,
-      touch1: null,
-      prevScale: null,
-      taps: 0,
-      prevTouchTimeout: null,
-      endMultitouchTimeout: null,
-      firstTouch: null,
-      active: false,
-    },
   };
 
   const addMotion = (x: number, y: number, reset?: boolean): void => {
-    const { motionSize, motionPerFrame } = state;
-    if (reset) motionPerFrame.splice(0, motionPerFrame.length, [x, y]);
-    else motionPerFrame.push([x, y]);
-    if (motionPerFrame.length > motionSize) motionPerFrame.shift();
+    const { cache, cacheSize } = state.motion;
+    if (reset) cache.splice(0, cache.length, [x, y]);
+    else cache.push([x, y]);
+    if (cache.length > cacheSize) cache.shift();
   };
 
   const updateViewport = (data: dia.Size): void => {

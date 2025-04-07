@@ -2,13 +2,16 @@ import { Point } from '../types.ts';
 import { StoreType } from '../store.ts';
 import { SoftConstraint, ZoomConstraint } from './constrain-util.ts';
 
-export function Touch({ state: { transform, touch, zoom, motionPerFrame, motionSize, viewport, extent } }: StoreType) {
-  const addMotion = (x: number, y: number, reset?: boolean) => {
-    if (reset) motionPerFrame.splice(0, motionPerFrame.length, [x, y]);
-    else motionPerFrame.push([x, y]);
-    if (motionPerFrame.length > motionSize) motionPerFrame.shift();
-  };
-
+export function Touch({
+  state: {
+    transform,
+    motion: { touch },
+    zoom,
+    viewport,
+    extent,
+  },
+  addMotion,
+}: StoreType) {
   return {
     start: (touches: TouchList) => {
       for (let i = 0; i < touches.length; i++) {

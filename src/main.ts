@@ -1,6 +1,6 @@
 import './styles.css';
 import { Diagram } from './diagram.ts';
-import { createTestUI } from './test-ui';
+import { createTestUI } from './toolbar-test-ui';
 import { loadPixelsFromImage } from './util/load-pixels-image';
 
 (async function init() {

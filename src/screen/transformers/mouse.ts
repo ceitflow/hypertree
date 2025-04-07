@@ -1,19 +1,27 @@
 import { StoreType } from '../store.ts';
 import { SoftConstraint } from './constrain-util.ts';
 
-export function Translate({ state: { transform: t, translate, viewport, extent }, addMotion }: StoreType) {
+export function Mouse({
+  state: {
+    transform: t,
+    motion: { mouse },
+    viewport,
+    extent,
+  },
+  addMotion,
+}: StoreType) {
   return {
     start: (x: number, y: number) => {
-      const { target } = translate;
+      const { target } = mouse;
       target[0] = x;
       target[1] = y;
-      translate.active = true;
+      mouse.active = true;
       addMotion(x, y, true);
     },
 
     move: (x: number, y: number) => {
-      if (!translate.active) return;
-      const { target } = translate;
+      if (!mouse.active) return;
+      const { target } = mouse;
       const { dx, dy } = SoftConstraint(x - target[0], y - target[1], t, viewport, extent);
       t[0] += dx;
       t[1] += dy;
@@ -22,11 +30,11 @@ export function Translate({ state: { transform: t, translate, viewport, extent }
     },
 
     next: () => {
-      if (translate.active) addMotion(translate.target[0], translate.target[1]);
+      if (mouse.active) addMotion(mouse.target[0], mouse.target[1]);
     },
 
     stop: () => {
-      translate.active = false;
+      mouse.active = false;
     },
   };
 }

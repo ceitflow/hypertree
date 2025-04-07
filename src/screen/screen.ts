@@ -1,6 +1,7 @@
 import { dia } from '@joint/core';
 import { Store, StoreType } from './store.ts';
-import { Inertia, Touch, Translate, Zoom } from './transformers';
+import { addContainerListeners } from './util.ts';
+import { Inertia, Touch, Mouse, Zoom } from './transformers';
 
 export type ScreenType = ReturnType<typeof Screen>;
 
@@ -9,83 +10,76 @@ export function Screen(paper: dia.Paper, container: HTMLElement) {
   const store: StoreType = Store();
   const paperStyle = paper.el.style;
 
-  const translate = Translate(store);
+  const translate = Mouse(store);
   const inertia = Inertia(store);
   const zoom = Zoom(store);
   const touch = Touch(store);
   const transformers = [translate.next, touch.next, inertia.next, zoom.next];
 
-  const addContainerListener = <Evt extends Event>(type: string, callback: (e: Evt) => void) => {
-    document.addEventListener(type, e => {
-      if (container.contains(e.target as Element)) {
-        callback(e as Evt);
-      }
-    });
-  };
-
-  // listeners
-  addContainerListener('mousedown', (e: MouseEvent) => {
-    container.setPointerCapture(1);
-    const view = paper.findView(e.target);
-    if (view) {
-      inertia.stop();
-    } else {
-      translate.start(e.clientX, e.clientY);
-    }
-  });
-  addContainerListener('mousemove', (e: MouseEvent) => {
-    if (store.state.translate.active) {
-      if (e.buttons === 0)
-        // edge case if mouse goes outside window and back
-        container.dispatchEvent(new MouseEvent('mouseup', { clientX: e.clientX, clientY: e.clientY }));
-      else translate.move(e.clientX, e.clientY);
-    }
-  });
-  addContainerListener('mouseup', (e: MouseEvent) => {
-    container.releasePointerCapture(1);
-    if (store.state.translate.active) {
-      translate.stop();
-      inertia.start();
-    }
-  });
-  addContainerListener('dblclick', (e: MouseEvent) => {
-    const { x, y } = paper.clientToLocalPoint(e.clientX, e.clientY);
-    zoom.zoomByStep(1, x, y);
-  });
-  addContainerListener('wheel', (e: WheelEvent) => {
-    const { x, y } = paper.clientToLocalPoint(e.clientX, e.clientY);
-    zoom.zoomByStep(-e.deltaY, x, y);
-  });
-
-  // touch support
-  addContainerListener('touchstart', (e: TouchEvent) => {
-    const view = paper.findView(e.target);
-    if (view) {
-      // todo if not multitouch
-      inertia.stop();
-    } else {
-      touch.start((e as TouchEvent).touches);
-    }
-  });
-  addContainerListener('touchmove', (e: TouchEvent) => {
-    if (store.state.touch.active) {
-      e.preventDefault();
-      e.stopPropagation();
-      touch.move((e as TouchEvent).changedTouches);
-    }
-  });
-  addContainerListener('touchend', (e: TouchEvent) => {
-    if (store.state.touch.active) {
-      const { dblTap, multiReleased } = touch.up(e.changedTouches);
-      if (dblTap) {
-        const { x, y } = paper.clientToLocalPoint(dblTap[0], dblTap[1]);
-        zoom.zoomByStep(1, x, y);
+  addContainerListeners(container, {
+    mousedown: (e: MouseEvent) => {
+      container.setPointerCapture(1);
+      const view = paper.findView(e.target);
+      if (view) {
         inertia.stop();
+      } else {
+        translate.start(e.clientX, e.clientY);
       }
-      if (!store.state.touch.active && !multiReleased) {
+    },
+    mousemove: (e: MouseEvent) => {
+      if (store.state.motion.mouse.active) {
+        if (e.buttons === 0)
+          // edge case if mouse goes outside window and back
+          container.dispatchEvent(new MouseEvent('mouseup', { clientX: e.clientX, clientY: e.clientY }));
+        else translate.move(e.clientX, e.clientY);
+      }
+    },
+    mouseup: (e: MouseEvent) => {
+      container.releasePointerCapture(1);
+      if (store.state.motion.mouse.active) {
+        translate.stop();
         inertia.start();
       }
-    }
+    },
+    dblclick: (e: MouseEvent) => {
+      const { x, y } = paper.clientToLocalPoint(e.clientX, e.clientY);
+      zoom.zoomByStep(1, x, y);
+    },
+    wheel: (e: WheelEvent) => {
+      const { x, y } = paper.clientToLocalPoint(e.clientX, e.clientY);
+      zoom.zoomByStep(-e.deltaY, x, y);
+    },
+
+    // touch support
+    touchstart: (e: TouchEvent) => {
+      const view = paper.findView(e.target);
+      if (view) {
+        // todo if not multitouch
+        inertia.stop();
+      } else {
+        touch.start((e as TouchEvent).touches);
+      }
+    },
+    touchmove: (e: TouchEvent) => {
+      if (store.state.motion.touch.active) {
+        e.preventDefault();
+        e.stopPropagation();
+        touch.move((e as TouchEvent).changedTouches);
+      }
+    },
+    touchend: (e: TouchEvent) => {
+      if (store.state.motion.touch.active) {
+        const { dblTap, multiReleased } = touch.up(e.changedTouches);
+        if (dblTap) {
+          const { x, y } = paper.clientToLocalPoint(dblTap[0], dblTap[1]);
+          zoom.zoomByStep(1, x, y);
+          inertia.stop();
+        }
+        if (!store.state.motion.touch.active && !multiReleased) {
+          inertia.start();
+        }
+      }
+    },
   });
 
   paper.on({

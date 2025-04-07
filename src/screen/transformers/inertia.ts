@@ -1,16 +1,23 @@
 import { StoreType } from '../store.ts';
 import { SoftConstraint } from './constrain-util.ts';
 
-export function Inertia({ state: { transform, touch, inertia, translate, motionPerFrame, viewport, extent } }: StoreType) {
+export function Inertia({
+  state: {
+    transform,
+    motion: { cache, inertia, mouse, touch },
+    viewport,
+    extent,
+  },
+}: StoreType) {
   return {
     start: () => {
       const { velocity, strength } = inertia;
       velocity[0] = 0;
       velocity[1] = 0;
-      for (let i = 1; i < motionPerFrame.length; i++) {
-        const prev = motionPerFrame[i - 1];
-        const current = motionPerFrame[i];
-        const ratio = i / motionPerFrame.length;
+      for (let i = 1; i < cache.length; i++) {
+        const prev = cache[i - 1];
+        const current = cache[i];
+        const ratio = i / cache.length;
         const weight = ratio * strength;
         velocity[0] += weight * (current[0] - prev[0]);
         velocity[1] += weight * (current[1] - prev[1]);
@@ -30,7 +37,7 @@ export function Inertia({ state: { transform, touch, inertia, translate, motionP
 
       // todo time based
       // remember pointer pos while inertia runs to animate braking and then going back to pointer pos
-      const acc = translate.active || touch.active ? brakeFriction : friction;
+      const acc = mouse.active || touch.active ? brakeFriction : friction;
       velocity[0] *= acc;
       velocity[1] *= acc;
 
