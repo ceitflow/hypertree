@@ -1,20 +1,7 @@
-import { State } from '../types.ts';
+import { StoreType } from '../store.ts';
 import { SoftConstraint } from './constrain-util.ts';
 
-export function Translate({
-  transform: t,
-  translate,
-  motionPerFrame,
-  motionSize,
-  viewport,
-  extent,
-}: State) {
-  const addMotion = (x: number, y: number, reset?: boolean) => {
-    if (reset) motionPerFrame.splice(0, motionPerFrame.length, [x, y]);
-    else motionPerFrame.push([x, y]);
-    if (motionPerFrame.length > motionSize) motionPerFrame.shift();
-  };
-
+export function Translate({ state: { transform: t, translate, viewport, extent }, addMotion }: StoreType) {
   return {
     start: (x: number, y: number) => {
       const { target } = translate;

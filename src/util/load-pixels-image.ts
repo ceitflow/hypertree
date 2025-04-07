@@ -6,7 +6,7 @@ export const loadPixelsFromImage = (graph: dia.Graph, paper: dia.Paper) => {
     const ctx = canvas.getContext('2d')!;
     const img = new Image();
     const size = 5;
-    const limit = 1000;
+    const limit = 100;
     img.src = '/neo.png'; // Path to the image in the public folder
     img.onload = () => {
       canvas.width = img.width;

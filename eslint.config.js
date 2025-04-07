@@ -11,6 +11,7 @@ export default [
   {
     files: ['**/*.ts'],
     rules: {
+      // "function-paren-newline": ["warn",  { "minItems": 3 }],
       '@typescript-eslint/no-unused-vars': 'warn',
       '@typescript-eslint/no-empty-object-type': 'warn',
       '@typescript-eslint/no-explicit-any': 'warn',

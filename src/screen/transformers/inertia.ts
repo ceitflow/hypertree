@@ -1,15 +1,7 @@
-import { State } from '../types.ts';
+import { StoreType } from '../store.ts';
 import { SoftConstraint } from './constrain-util.ts';
 
-export function Inertia({
-  transform,
-  touch,
-  inertia,
-  translate,
-  motionPerFrame,
-  viewport,
-  extent,
-}: State) {
+export function Inertia({ state: { transform, touch, inertia, translate, motionPerFrame, viewport, extent } }: StoreType) {
   return {
     start: () => {
       const { velocity, strength } = inertia;

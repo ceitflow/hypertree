@@ -44,7 +44,7 @@ export function SoftConstraint(dx: number, dy: number, t: TransformType, view: R
   else if (dstToBottom > bottomPadding) constrainDy = dstToBottom - bottomPadding;
 
   const restrictedDx = dx + constrainDx * scale;
-  const isDxOppositeToConstraint = dx === 0 || (dx >= 0 ? constrainDx >= 0 : constrainDx <= 0);
+  const isDxOppositeToConstraint = dx === 0 || (dx >= 0 ? constrainDx >= 0 : constrainDx <= 0); // if true then allow movement
   const canDxMoveAfterConstraint = dx >= 0 ? restrictedDx >= 0 : restrictedDx <= 0; // is there partial dx to hit the constraint
 
   const restrictedDy = dy + constrainDy * scale;
@@ -55,4 +55,19 @@ export function SoftConstraint(dx: number, dy: number, t: TransformType, view: R
     dx: isDxOppositeToConstraint ? dx : canDxMoveAfterConstraint ? restrictedDx : 0,
     dy: isDyOppositeToConstraint ? dy : canDyMoveAfterConstraint ? restrictedDy : 0,
   };
+}
+
+export function ZoomConstraint(deltaZoom: number, t: TransformType, min: number, max: number): number {
+  const zoom = t[2] + deltaZoom;
+  if (zoom > max) {
+    return max - t[2];
+  }
+  if (zoom < min) {
+    return min - t[2];
+  }
+  return deltaZoom;
+}
+
+export function DragElementConstraint() {
+  // todo
 }

@@ -1,238 +1,129 @@
 import { dia } from '@joint/core';
-import { State } from './types.ts';
+import { Store, StoreType } from './store.ts';
 import { Inertia, Touch, Translate, Zoom } from './transformers';
 
-export class Screen {
-  private state: State = {
-    transform: [0, 0, 1],
-    currentTransform: [0, 0, 1], // for comparing dirty state
-    viewport: [0, 0, 1700, 800],
-    extent: [-500, -500, 3000, 2000],
+export type ScreenType = ReturnType<typeof Screen>;
 
-    motionPerFrame: [],
-    motionSize: 5,
+export function Screen(paper: dia.Paper, container: HTMLElement) {
+  let _loopId = 0;
+  const store: StoreType = Store();
+  const paperStyle = paper.el.style;
 
-    frameStart: {
-      time: 0,
-      deltaTime: 0,
-    },
+  const translate = Translate(store);
+  const inertia = Inertia(store);
+  const zoom = Zoom(store);
+  const touch = Touch(store);
+  const transformers = [translate.next, touch.next, inertia.next, zoom.next];
 
-    translate: {
-      target: [0, 0],
-      active: false,
-    },
-
-    inertia: {
-      velocity: [0, 0],
-      strength: 0.5,
-      friction: 0.93,
-      brakeFriction: 0.78,
-      minVelocity: 0.5,
-      active: false,
-    },
-
-    zoom: {
-      min: 0.1,
-      max: 4,
-      durationMs: 150,
-      targetZoom: 1,
-      startVelocity: [0, 0, 0],
-      velocity: [0, 0, 0],
-      active: false,
-    },
-
-    touch: {
-      touchDelay: 500,
-      tapDistance: 10,
-
-      touch0: null,
-      touch1: null,
-      prevScale: null,
-      taps: 0,
-      prevTouchTimeout: null,
-      endMultitouchTimeout: null,
-      firstTouch: null,
-      active: false,
-    },
+  const addContainerListener = <Evt extends Event>(type: string, callback: (e: Evt) => void) => {
+    document.addEventListener(type, e => {
+      if (container.contains(e.target as Element)) {
+        callback(e as Evt);
+      }
+    });
   };
-  private _loopId = 0;
 
-  // screen transformers
-  private translate = Translate(this.state);
-  private inertia = Inertia(this.state);
-  private zoom = Zoom(this.state);
-  private touch = Touch(this.state);
+  // listeners
+  addContainerListener('mousedown', (e: MouseEvent) => {
+    container.setPointerCapture(1);
+    const view = paper.findView(e.target);
+    if (view) {
+      inertia.stop();
+    } else {
+      translate.start(e.clientX, e.clientY);
+    }
+  });
+  addContainerListener('mousemove', (e: MouseEvent) => {
+    if (store.state.translate.active) {
+      if (e.buttons === 0)
+        // edge case if mouse goes outside window and back
+        container.dispatchEvent(new MouseEvent('mouseup', { clientX: e.clientX, clientY: e.clientY }));
+      else translate.move(e.clientX, e.clientY);
+    }
+  });
+  addContainerListener('mouseup', (e: MouseEvent) => {
+    container.releasePointerCapture(1);
+    if (store.state.translate.active) {
+      translate.stop();
+      inertia.start();
+    }
+  });
+  addContainerListener('dblclick', (e: MouseEvent) => {
+    const { x, y } = paper.clientToLocalPoint(e.clientX, e.clientY);
+    zoom.zoomByStep(1, x, y);
+  });
+  addContainerListener('wheel', (e: WheelEvent) => {
+    const { x, y } = paper.clientToLocalPoint(e.clientX, e.clientY);
+    zoom.zoomByStep(-e.deltaY, x, y);
+  });
 
-  private transformers = [this.translate.next, this.touch.next, this.zoom.next, this.inertia.next];
-
-  /*
-  // todo squish animation (apple like)
-  // animation transformer can be self correcting (if user translates it compensates with some delay)
-  // extent (size of screen) // default is container getClientBBox()
-  // scaleExtent
-  // translateExtent
-
-  // output
-  // - viewport
-  // - visible cells (quadtree)
-*/
-
-  constructor(
-    private paper: dia.Paper,
-    container: HTMLElement
-  ) {
-    this.addResizeListener(container);
-    const { translate, touch, inertia, zoom } = this;
-
-    const prevent = (e: Event) => {
+  // touch support
+  addContainerListener('touchstart', (e: TouchEvent) => {
+    const view = paper.findView(e.target);
+    if (view) {
+      // todo if not multitouch
+      inertia.stop();
+    } else {
+      touch.start((e as TouchEvent).touches);
+    }
+  });
+  addContainerListener('touchmove', (e: TouchEvent) => {
+    if (store.state.touch.active) {
       e.preventDefault();
       e.stopPropagation();
-    };
-
-    const ua = navigator.userAgent;
-    if ((/AppleWebKit/.test(ua) && !/Chrome/.test(ua)) || /\b(iPad|iPhone|iPod)\b/.test(ua)) {
-      paper.cells.getScreenCTM = () => {
-        const matrix = paper.svg.getScreenCTM();
-        if (!matrix) return matrix;
-        const t = this.state.transform;
-        matrix.a = t[2]; // scaleX
-        matrix.d = t[2]; // scaleY
-        return matrix;
-      };
+      touch.move((e as TouchEvent).changedTouches);
     }
-
-    const addContainerListener = <Evt extends Event>(type: string, callback: (e: Evt) => void) => {
-      document.addEventListener(type, e => {
-        if (container.contains(e.target as Element)) {
-          callback(e as Evt);
-        }
-      });
-    };
-
-    // events listeners
-    addContainerListener('mousedown', (e: MouseEvent) => {
-      container.setPointerCapture(1);
-      const view = paper.findView(e.target);
-      if (view) {
+  });
+  addContainerListener('touchend', (e: TouchEvent) => {
+    if (store.state.touch.active) {
+      const { dblTap, multiReleased } = touch.up(e.changedTouches);
+      if (dblTap) {
+        const { x, y } = paper.clientToLocalPoint(dblTap[0], dblTap[1]);
+        zoom.zoomByStep(1, x, y);
         inertia.stop();
-      } else {
-        translate.start(e.clientX, e.clientY);
       }
-    });
-    addContainerListener('mousemove', (e: MouseEvent) => {
-      if (this.state.translate.active) {
-        if (e.buttons === 0)
-          // edge case if mouse goes outside window and back
-          container.dispatchEvent(
-            new MouseEvent('mouseup', { clientX: e.clientX, clientY: e.clientY })
-          );
-        else translate.move(e.clientX, e.clientY);
-      }
-    });
-    addContainerListener('mouseup', (e: MouseEvent) => {
-      container.releasePointerCapture(1);
-      if (this.state.translate.active) {
-        translate.stop();
+      if (!store.state.touch.active && !multiReleased) {
         inertia.start();
       }
-    });
-    addContainerListener('dblclick', (e: MouseEvent) => {
-      const { x, y } = this.paper.clientToLocalPoint(e.clientX, e.clientY);
-      zoom.start(1, x, y);
-    });
-    addContainerListener('wheel', (e: WheelEvent) => {
-      prevent(e);
-      const { x, y } = this.paper.clientToLocalPoint(e.clientX, e.clientY);
-      zoom.start(-e.deltaY, x, y);
-    });
-    // touch support
-    addContainerListener('touchstart', (e: TouchEvent) => {
-      const view = paper.findView(e.target);
-      if (view) {
-        inertia.stop();
-      } else {
-        touch.start((e as TouchEvent).touches);
-      }
-    });
-    addContainerListener('touchmove', (e: TouchEvent) => {
-      if (this.state.touch.active) {
-        prevent(e);
-        touch.move((e as TouchEvent).changedTouches);
-      } else {
-      }
-    });
-    addContainerListener('touchend', (e: TouchEvent) => {
-      if (this.state.touch.active) {
-        const { dblTap, multiReleased } = touch.up(e.changedTouches);
-        if (dblTap) {
-          const { x, y } = this.paper.clientToLocalPoint(dblTap[0], dblTap[1]);
-          zoom.start(1, x, y);
-          inertia.stop();
-        }
-        if (!this.state.touch.active && !multiReleased) {
-          inertia.start();
-        }
-      }
-    });
+    }
+  });
 
-    paper.on({
-      // all: (...args) => console.log(args),
-      // 'element:pointermove': (elementView, evt, x, y) => console.log(evt.clientX, evt.clientY),
-      resize: (width, height) => this.updateContentArea({ width, height }),
-      // 'cell:pointerdown': () => {
-      //   inertia.stop();
-      // },
-    });
+  paper.on({
+    // all: (...args) => console.log(args),
+    resize: (width, height) => store.updateContentArea({ width, height }),
+  });
 
-    this.updateViewport(container.getBoundingClientRect());
-    this.updateContentArea(paper.getComputedSize());
-    this._loopId = requestAnimationFrame(this.loop.bind(this));
-  }
+  // resize browser callback
+  new ResizeObserver(entries => {
+    store.updateViewport(entries[0].contentRect);
+  }).observe(container);
 
-  private loop(currentTime: number): void {
-    const { paper, loop, state } = this;
-    const frame = state.frameStart;
-    this._loopId = requestAnimationFrame(loop.bind(this));
+  const loop = (currentTime: number): void => {
+    const { frameStart, transform: t, currentTransform: ct } = store.state;
+    _loopId = requestAnimationFrame(loop);
 
-    frame.deltaTime = currentTime - frame.time;
-    frame.time = currentTime;
+    frameStart.deltaTime = currentTime - frameStart.time;
+    frameStart.time = currentTime;
 
-    this.transformers.forEach(filter => filter());
+    transformers.forEach(filter => filter());
 
-    const t = state.transform;
-    const ct = state.currentTransform;
     if (ct[0] !== t[0] || ct[1] !== t[1] || ct[2] !== t[2]) {
-      paper.el.style.transform = `translate(${t[0]}px,${t[1]}px) scale(${t[2]})`;
+      paperStyle.transform = `matrix(${t[2]}, 0, 0, ${t[2]}, ${t[0]}, ${t[1]})`;
       ct[0] = t[0];
       ct[1] = t[1];
       ct[2] = t[2];
     }
-  }
+  };
 
-  private updateViewport(data: dia.Size): void {
-    const v = this.state.viewport;
-    v[0] = 0;
-    v[1] = 0;
-    v[2] = data.width;
-    v[3] = data.height;
-  }
+  store.updateViewport(container.getBoundingClientRect());
+  store.updateContentArea(paper.getComputedSize());
+  _loopId = requestAnimationFrame(loop);
 
-  private updateContentArea(data: dia.Size): void {
-    const e = this.state.extent;
-    e[0] = 0;
-    e[1] = 0;
-    e[2] = data.width;
-    e[3] = data.height;
-  }
-
-  private addResizeListener(container: HTMLElement) {
-    const resize = new ResizeObserver(entries => {
-      this.updateViewport(entries[0].contentRect);
-    });
-    resize.observe(container);
-  }
-
-  onDestroy(): void {
-    cancelAnimationFrame(this._loopId);
-  }
+  return {
+    state: store.state,
+    zoom,
+    onDestroy: (): void => {
+      cancelAnimationFrame(_loopId);
+    },
+  };
 }

@@ -1,7 +1,8 @@
-import { Point, State } from '../types.ts';
-import { SoftConstraint } from './constrain-util.ts';
+import { Point } from '../types.ts';
+import { StoreType } from '../store.ts';
+import { SoftConstraint, ZoomConstraint } from './constrain-util.ts';
 
-export function Touch({ transform, touch, motionPerFrame, motionSize, viewport, extent }: State) {
+export function Touch({ state: { transform, touch, zoom, motionPerFrame, motionSize, viewport, extent } }: StoreType) {
   const addMotion = (x: number, y: number, reset?: boolean) => {
     if (reset) motionPerFrame.splice(0, motionPerFrame.length, [x, y]);
     else motionPerFrame.push([x, y]);
@@ -15,25 +16,16 @@ export function Touch({ transform, touch, motionPerFrame, motionSize, viewport, 
         if (!touch.touch0) {
           addMotion(clientX, clientY, true);
           // add first touch
-          const fixed: Point = [
-            (clientX - transform[0]) / transform[2],
-            (clientY - transform[1]) / transform[2],
-          ];
+          const fixed: Point = [(clientX - transform[0]) / transform[2], (clientY - transform[1]) / transform[2]];
           touch.touch0 = { point: [clientX, clientY], id: identifier, fixed };
           touch.taps = 1 + (touch.prevTouchTimeout !== null ? 1 : 0);
           if (touch.taps < 2) {
             touch.firstTouch = [clientX, clientY];
-            touch.prevTouchTimeout = setTimeout(
-              () => (touch.prevTouchTimeout = null),
-              touch.touchDelay
-            );
+            touch.prevTouchTimeout = setTimeout(() => (touch.prevTouchTimeout = null), touch.touchDelay);
           }
         } else if (!touch.touch1 && identifier !== touch.touch0.id) {
           // add second touch
-          const fixed: Point = [
-            (clientX - transform[0]) / transform[2],
-            (clientY - transform[1]) / transform[2],
-          ];
+          const fixed: Point = [(clientX - transform[0]) / transform[2], (clientY - transform[1]) / transform[2]];
           touch.touch1 = { point: [clientX, clientY], id: identifier, fixed };
           touch.taps = 0;
         }
@@ -59,8 +51,7 @@ export function Touch({ transform, touch, motionPerFrame, motionSize, viewport, 
         updated1 = updated1 ?? touch1.point;
 
         const dp =
-          (updated1[0] - updated0[0]) * (updated1[0] - updated0[0]) +
-          (updated1[1] - updated0[1]) * (updated1[1] - updated0[1]);
+          (updated1[0] - updated0[0]) * (updated1[0] - updated0[0]) + (updated1[1] - updated0[1]) * (updated1[1] - updated0[1]);
         const dl =
           (touch1.fixed[0] - touch0.fixed[0]) * (touch1.fixed[0] - touch0.fixed[0]) +
           (touch1.fixed[1] - touch0.fixed[1]) * (touch1.fixed[1] - touch0.fixed[1]);
@@ -79,11 +70,14 @@ export function Touch({ transform, touch, motionPerFrame, motionSize, viewport, 
         const y = currentMidPointY - fixedMidPointY * dScale;
         const prevX = prevMidPointX - fixedMidPointX * touch.prevScale;
         const prevY = prevMidPointY - fixedMidPointY * touch.prevScale;
+        const constraintDscale = ZoomConstraint(dScale - touch.prevScale, transform, zoom.min, zoom.max);
+        // todo animated pinch zoom (inertia zoom) stops when new touch applied
 
-        const { dx, dy } = SoftConstraint(x - prevX, y - prevY, transform, viewport, extent);
-        transform[0] += dx;
-        transform[1] += dy;
-        transform[2] += dScale - touch.prevScale;
+        if (constraintDscale) {
+          transform[0] += x - prevX;
+          transform[1] += y - prevY;
+          transform[2] += constraintDscale;
+        }
 
         touch0.point = updated0;
         touch1.point = updated1;
@@ -116,10 +110,7 @@ export function Touch({ transform, touch, motionPerFrame, motionSize, viewport, 
 
       if (touch.touch0 && touch.touch1) {
         if (touch.endMultitouchTimeout) clearTimeout(touch.endMultitouchTimeout);
-        touch.endMultitouchTimeout = setTimeout(
-          () => (touch.endMultitouchTimeout = null),
-          touch.touchDelay
-        );
+        touch.endMultitouchTimeout = setTimeout(() => (touch.endMultitouchTimeout = null), touch.touchDelay);
       }
 
       for (let i = 0; i < changedTouches.length; i++) {

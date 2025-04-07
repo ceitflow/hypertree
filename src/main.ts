@@ -1,6 +1,5 @@
 import './styles.css';
 import { Diagram } from './diagram.ts';
-import { shapes } from '@joint/core';
 import { createTestUI } from './test-ui';
 import { loadPixelsFromImage } from './util/load-pixels-image';
 
@@ -10,16 +9,5 @@ import { loadPixelsFromImage } from './util/load-pixels-image';
   const diagram = new Diagram(paper, container);
   createTestUI(container);
   await loadPixelsFromImage(diagram.graph, diagram.paper);
-
-  new shapes.standard.Rectangle({
-    position: { x: 100, y: 100 },
-    size: { width: 140, height: 68 },
-    attrs: {
-      body: {
-        fill: 'orange',
-        strokeWidth: 1,
-        stroke: 'gold',
-      },
-    },
-  }).addTo(diagram.graph);
+  diagram.screen.zoom.zoomAbsolute(0, 500, 200);
 })();
