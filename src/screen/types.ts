@@ -1,22 +1,15 @@
 export type TransformType = [number, number, number]; // x, y, scale
-export type Point = [number, number];
+export type Vector2 = [number, number];
+export type Vector3 = [number, number, number];
+export type Vector4 = [number, number, number, number];
 export type Rect = [number, number, number, number]; // origin.x origin.y corner.x corner.y
 
-// todo create Options type
-
 export type State = {
-  /*
-    // transformers force
-    dx,
-    dy,
-
-    // constraint force
-    contrDx
-    contrDy
-  */
   transform: TransformType;
-  currentTransform: TransformType;
+  physicsTransform: Vector4;
+  currentTransform: Vector4; // transform + physicsTransform
   viewport: Rect;
+  viewportPadding: number; // 0 - 1.0 percentage of current viewport to use as padding
   extent: Rect;
 
   frameStart: {
@@ -24,48 +17,39 @@ export type State = {
     deltaTime: number; // duration between last frame and current
   };
 
-  motion: {
-    cache: Point[];
-    cacheSize: number;
-    // animation: [number, number, number, number];
+  // inputs
+  drag: {
+    active: boolean;
+    first: Vector2;
+    current: Vector2;
 
-    mouse: {
-      target: Point;
-      active: boolean;
-    };
-
-    touch: {
-      touchDelay: number;
-      tapDistance: number; // dbl tap has to be near previous tap
-      touch0: { id: number; point: Point; fixed: Point } | null;
-      touch1: { id: number; point: Point; fixed: Point } | null;
-      prevScale: number | null;
-      firstTouch: Point | null;
-      prevTouchTimeout: NodeJS.Timeout | null;
-      endMultitouchTimeout: NodeJS.Timeout | null;
-      taps: number; // for dbl click
-      active: boolean;
-    };
-
-    inertia: {
-      minVelocity: number;
-      strength: number;
-      friction: number;
-      brakeFriction: number;
-
-      velocity: [number, number];
-      active: boolean;
-    };
+    prevCurrent: Vector2;
   };
-
   zoom: {
+    active: boolean;
     min: number;
     max: number;
     durationMs: number;
-
     targetZoom: number;
-    startVelocity: [number, number, number];
-    velocity: [number, number, number];
+    velocity: Vector4; // dx, dy, ds, durationMsRemaining
+  };
+
+  // input extras
+  constraint: {
+    dx: number;
+    dy: number;
+    lastValidX: number | null;
+    lastValidY: number | null;
+    forces: Vector2; // negative - left, top, positive - right, bottom
+  };
+  inertia: {
     active: boolean;
+    cache: Vector2[];
+    cacheSize: number;
+    velocityThreshold: number;
+    varStrength: number;
+    minVelocity: number; // if lower then stop inertia
+    strength: number;
+    velocity: Vector2; // dx, dy, durationMsRemaining
   };
 };

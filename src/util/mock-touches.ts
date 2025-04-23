@@ -1,9 +1,6 @@
-import { Point } from '../screen/types.ts';
+import { Vector2 } from '../screen/types.ts';
 
-export function touchDrag(
-  element: HTMLElement,
-  touch: { x: number; y: number; x1: number; y1: number }
-) {
+export function touchDrag(element: HTMLElement, touch: { x: number; y: number; x1: number; y1: number }) {
   // Create TouchList from the provided touch points
   const start = new Touch({
     identifier: 0,
@@ -115,8 +112,8 @@ export function testTwoTouches(element: HTMLElement) {
 
 export function pinchZoom(
   element: HTMLElement,
-  touch1: { from: Point; to: Point },
-  touch2: { from: Point; to: Point },
+  touch1: { from: Vector2; to: Vector2 },
+  touch2: { from: Vector2; to: Vector2 },
   interpolateStepCount = 10
 ) {
   const dxTouch1 = [

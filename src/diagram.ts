@@ -1,6 +1,5 @@
 import { Screen, ScreenType } from './screen';
 import { dia, shapes, util } from '@joint/core';
-import { paperPatch } from './browser-patches';
 
 type DiagramOptions = {
   screen:
@@ -37,7 +36,6 @@ export class Diagram {
 
     this.screen = Screen(this.paper, container);
     console.log(this.screen);
-    paperPatch(this.paper, this.screen.state.transform);
 
     new shapes.standard.Rectangle({
       position: { x: 2180, y: 1300 },

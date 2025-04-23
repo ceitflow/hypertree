@@ -9,5 +9,5 @@ import { loadPixelsFromImage } from './util/load-pixels-image';
   const diagram = new Diagram(paper, container);
   createTestUI(container);
   await loadPixelsFromImage(diagram.graph, diagram.paper);
-  diagram.screen.zoom.zoomAbsolute(0, 500, 200);
+  // diagram.screen.inputTransformer.zoomAbsolute(0, 500, 200);
 })();
