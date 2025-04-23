@@ -37,13 +37,13 @@ body {
   position: absolute;
 
   .toolbar {
-    background-color: #4f3625;
+    background-color: antiquewhite;
     flex-shrink: 0;
     display: flex;
     gap: 24px;
     align-items: center;
     justify-content: flex-start;
-    height: 54px;
+    height: 48px;
     width: 100%;
 
     span {
@@ -52,7 +52,7 @@ body {
       font-weight: 500;
       font-style: italic;
       margin-top: -8px;
-      color: white;
+      color: floralwhite;
     }
   }
 

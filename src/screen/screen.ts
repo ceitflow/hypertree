@@ -33,7 +33,7 @@ export function Screen(paper: dia.Paper, container: HTMLElement) {
       timeStart: 0,
       min: 0.1,
       max: 3,
-      durationMs: 200,
+      durationMs: 300,
       inputStep: 1,
       velocity: [0, 0, 0],
     },
@@ -48,13 +48,12 @@ export function Screen(paper: dia.Paper, container: HTMLElement) {
     },
     inertia: {
       active: false,
+      timeStart: 0,
       // todo options: 1. strength (duration, quick or long), 2. distance (multiplier)
       cache: [],
-      cacheSize: 2,
-      velocityThreshold: 4,
-      varStrength: 0,
       minVelocity: 0.1, // if lower then stop inertia
-      strength: 70,
+      friction: 0.92,
+      durationMs: 1000,
       velocity: [0, 0],
     },
   };

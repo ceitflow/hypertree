@@ -6,6 +6,11 @@
 
 // t: current time, c: 100% of value, d: duration
 export class Ease {
+  // todo various themes (more like for physics)
+  // - glitch like
+  // - space like (low gravity)
+  // todo matrix demo with falling shapes
+
   static inQuad(t: number, c: number, d: number) {
     return c * (t /= d) * t;
   }

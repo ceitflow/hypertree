@@ -17,11 +17,11 @@ export function InputTransformer({
 }: State) {
   //
   const cacheMotionForInertia = (x: number, y: number, reset?: boolean): void => {
-    const { cache, cacheSize } = inertia;
+    const { cache } = inertia;
     if (reset) {
       cache.splice(0, cache.length, [x, y]);
     } else cache.push([x, y]);
-    if (cache.length > cacheSize) cache.shift();
+    if (cache.length > 2) cache.shift();
   };
 
   const invert = (x: number, y: number): Vector2 => {
@@ -64,7 +64,7 @@ export function InputTransformer({
     },
 
     startInertia: () => {
-      const { velocity, cache, velocityThreshold } = inertia;
+      const { velocity, minVelocity, cache, friction } = inertia;
       // todo if distance small - strength low, distance large - strength big
       // calculates initial velocity
       // for (let i = 1; i < cache.length; i++) {
@@ -80,14 +80,20 @@ export function InputTransformer({
       // 3. multiply by totalForce
       // 4. subtract prev force to only apply dx dy
 
-      velocity[0] = cache[cache.length - 1][0] - cache[0][0];
-      velocity[1] = cache[cache.length - 1][1] - cache[0][1];
+      const getLimit = (v: number) =>
+        Math.abs(v) <= minVelocity ? 0 : (Math.log(minVelocity) - Math.log(Math.abs(v))) / Math.log(friction);
 
-      const str = (Math.abs(velocity[0]) + Math.abs(velocity[1])) / velocityThreshold;
+      const integral = (v: number, limit: number) =>
+        (Math.abs(v) * Math.pow(friction, limit)) / Math.log(friction) - Math.abs(v) / Math.log(friction);
 
-      inertia.varStrength = Math.min(inertia.strength + str, 96);
+      const vx = cache[cache.length - 1][0] - cache[0][0];
+      const vy = cache[cache.length - 1][1] - cache[0][1];
+      const xLimit = getLimit(vx);
+      const yLimit = getLimit(vy);
 
-      // console.log(velocity, inertia.varStrength); // time stamp for each cache?
+      velocity[0] = Math.sign(vx) * integral(vx, xLimit);
+      velocity[1] = Math.sign(vy) * integral(vy, yLimit);
+      inertia.timeStart = frameStart.time;
       inertia.active = true;
     },
 
@@ -130,16 +136,9 @@ export function InputTransformer({
         cacheMotionForInertia(current[0], current[1]);
         const diffX = current[0] - prevCurrent[0];
         const diffY = current[1] - prevCurrent[1];
-        const { dx, dy, isConstrainedX, isConstrainedY } = ExtentConstraint(
-          diffX,
-          diffY,
-          transform,
-          viewport,
-          viewportPadding,
-          extent
-        );
+        const force = ExtentConstraint(diffX, diffY, transform, viewport, viewportPadding, extent);
 
-        if (isConstrainedX) {
+        if (force.isConstrainedX) {
           if (constraint.lastValidX === null) constraint.lastValidX = current[0];
           const force = current[0] - constraint.lastValidX;
           // transformOffset[0] += (force - prevForce) / 1000;
@@ -150,60 +149,50 @@ export function InputTransformer({
 
         prevCurrent[0] = current[0];
         prevCurrent[1] = current[1];
-        constraint.dx = dx;
-        constraint.dy = dy;
+        constraint.dx = force.xForce;
+        constraint.dy = force.yForce;
 
-        transform[0] += diffX + dx;
-        transform[1] += diffY + dy;
+        transform[0] += diffX + force.xForce;
+        transform[1] += diffY + force.yForce;
       }
 
-      // todo animation fn, swappable easing animations
       if (zoom.active) {
-        const { velocity, durationMs } = zoom;
-        let time = frameStart.time - zoom.timeStart;
+        const { velocity, durationMs, timeStart } = zoom;
+        let time = frameStart.time - timeStart;
         if (time >= durationMs) {
           time = durationMs;
           zoom.active = false;
         }
         const prevTime = Math.max(0, time - frameStart.deltaTime);
-        const easeFn = Ease.outBounce;
 
-        const prevX = easeFn(prevTime, velocity[0], durationMs);
-        const prevY = easeFn(prevTime, velocity[1], durationMs);
-        const prevS = easeFn(prevTime, velocity[2], durationMs);
-        const currX = easeFn(time, velocity[0], durationMs);
-        const currY = easeFn(time, velocity[1], durationMs);
-        const currS = easeFn(time, velocity[2], durationMs);
+        const easeFn = Ease.outQuint; // todo put in opt. Ease.inOutBack;
 
-        transform[0] += currX - prevX;
-        transform[1] += currY - prevY;
-        transform[2] += currS - prevS;
+        transform[0] += easeFn(time, velocity[0], durationMs) - easeFn(prevTime, velocity[0], durationMs);
+        transform[1] += easeFn(time, velocity[1], durationMs) - easeFn(prevTime, velocity[1], durationMs);
+        transform[2] += easeFn(time, velocity[2], durationMs) - easeFn(prevTime, velocity[2], durationMs);
       }
 
-      // todo animation fn, swappable easing animations
       if (inertia.active) {
-        const { velocity, varStrength, minVelocity } = inertia; // todo apply friction to inertia if touching the viewport border
-        // todo various time functions
-        // - glitch like etc.
-        // - space like (low gravity)
+        const { velocity, durationMs, timeStart } = inertia;
+        // todo apply friction to inertia if touching the viewport border
         // todo remember pointer pos while inertia runs to animate braking and then going back to pointer pos
-        // translate.active || touch.active ? brakeFriction : friction;
 
-        if (Math.abs(velocity[0]) < minVelocity) velocity[0] = 0;
-        if (Math.abs(velocity[1]) < minVelocity) velocity[1] = 0;
-
-        if (!velocity[0] && !velocity[1]) {
+        let time = frameStart.time - timeStart;
+        if (time >= durationMs) {
+          time = durationMs;
           inertia.active = false;
-          return;
         }
-        const { dx, dy } = ExtentConstraint(velocity[0], velocity[1], transform, viewport, viewportPadding, extent);
+        const prevTime = Math.max(0, time - frameStart.deltaTime);
 
-        transform[0] += velocity[0] + dx;
-        transform[1] += velocity[1] + dy;
+        const easeFn = Ease.inOutBack;
 
-        const friction = varStrength / 100;
-        velocity[0] *= friction;
-        velocity[1] *= friction;
+        const dx = easeFn(time, velocity[0], durationMs) - easeFn(prevTime, velocity[0], durationMs);
+        const dy = easeFn(time, velocity[1], durationMs) - easeFn(prevTime, velocity[1], durationMs);
+
+        const force = ExtentConstraint(dx, dy, transform, viewport, viewportPadding, extent);
+
+        transform[0] += dx + force.xForce;
+        transform[1] += dy + force.yForce;
       }
     },
   };
@@ -256,8 +245,8 @@ export function ExtentConstraint(dx: number, dy: number, t: TransformType, view:
   const resultY = Math.sign(constrainDy) * Math.min(Math.abs(constrainDy * scale), Math.abs(dy));
 
   return {
-    dx: isDxOppositeToConstraint ? 0 : resultX,
-    dy: isDyOppositeToConstraint ? 0 : resultY,
+    xForce: isDxOppositeToConstraint ? 0 : resultX,
+    yForce: isDyOppositeToConstraint ? 0 : resultY,
     isConstrainedX: constrainDx !== 0,
     isConstrainedY: constrainDy !== 0,
   };

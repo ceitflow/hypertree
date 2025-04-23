@@ -45,12 +45,11 @@ export type State = {
   };
   inertia: {
     active: boolean;
+    timeStart: number;
     cache: Vector2[];
-    cacheSize: number;
-    velocityThreshold: number;
-    varStrength: number;
-    minVelocity: number; // if lower then stop inertia
-    strength: number;
-    velocity: Vector2; // dx, dy, durationMsRemaining
+    minVelocity: number; // if lower then stops inertia
+    friction: number;
+    durationMs: number;
+    velocity: Vector2; // dx, dy
   };
 };
