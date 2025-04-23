@@ -64,35 +64,30 @@ export function InputTransformer({
     },
 
     startInertia: () => {
-      const { velocity, minVelocity, cache, friction } = inertia;
-      // todo if distance small - strength low, distance large - strength big
-      // calculates initial velocity
-      // for (let i = 1; i < cache.length; i++) {
-      //   const prev = cache[i - 1];
-      //   const current = cache[i];
-      //   const ratio = i / cache.length;
-      //   velocity[0] += (current[0] - prev[0]) * ratio;
-      //   velocity[1] += (current[1] - prev[1]) * ratio;
-      // }
+      const { velocity, stopVelocity, cache, modes } = inertia;
 
-      // 1. integral x^0.92 up to when x^0.92 = 0.1 <- summed force applied
-      // 2. use 0-1 function to output 0-1
-      // 3. multiply by totalForce
-      // 4. subtract prev force to only apply dx dy
-
-      const getLimit = (v: number) =>
-        Math.abs(v) <= minVelocity ? 0 : (Math.log(minVelocity) - Math.log(Math.abs(v))) / Math.log(friction);
-
-      const integral = (v: number, limit: number) =>
+      // f(x) = velocity * friction^x
+      const integral = (v: number, friction: number, limit: number) =>
         (Math.abs(v) * Math.pow(friction, limit)) / Math.log(friction) - Math.abs(v) / Math.log(friction);
+
+      // f(x) = 0.1 => (ln(minVelocity) - ln(velocity)) / ln(friction)
+      const getLimit = (v: number, friction: number) =>
+        Math.abs(v) <= stopVelocity ? 0 : (Math.log(stopVelocity) - Math.log(Math.abs(v))) / Math.log(friction);
 
       const vx = cache[cache.length - 1][0] - cache[0][0];
       const vy = cache[cache.length - 1][1] - cache[0][1];
-      const xLimit = getLimit(vx);
-      const yLimit = getLimit(vy);
+      const vSum = Math.abs(vx) + Math.abs(vy);
+      modes.forEach(m => {
+        if (m.atVelocityThreshold <= vSum) inertia.currentMode = m;
+      });
+      const friction = inertia.currentMode.friction;
 
-      velocity[0] = Math.sign(vx) * integral(vx, xLimit);
-      velocity[1] = Math.sign(vy) * integral(vy, yLimit);
+      const xLimit = getLimit(vx, friction);
+      const yLimit = getLimit(vy, friction);
+
+      velocity[0] = Math.sign(vx) * integral(vx, friction, xLimit);
+      velocity[1] = Math.sign(vy) * integral(vy, friction, yLimit);
+
       inertia.timeStart = frameStart.time;
       inertia.active = true;
     },
@@ -165,7 +160,7 @@ export function InputTransformer({
         }
         const prevTime = Math.max(0, time - frameStart.deltaTime);
 
-        const easeFn = Ease.outQuint; // todo put in opt. Ease.inOutBack;
+        const easeFn = Ease.outQuint; // todo put in opt
 
         transform[0] += easeFn(time, velocity[0], durationMs) - easeFn(prevTime, velocity[0], durationMs);
         transform[1] += easeFn(time, velocity[1], durationMs) - easeFn(prevTime, velocity[1], durationMs);
@@ -173,7 +168,11 @@ export function InputTransformer({
       }
 
       if (inertia.active) {
-        const { velocity, durationMs, timeStart } = inertia;
+        const {
+          velocity,
+          timeStart,
+          currentMode: { durationMs, easeFn },
+        } = inertia;
         // todo apply friction to inertia if touching the viewport border
         // todo remember pointer pos while inertia runs to animate braking and then going back to pointer pos
 
@@ -183,8 +182,6 @@ export function InputTransformer({
           inertia.active = false;
         }
         const prevTime = Math.max(0, time - frameStart.deltaTime);
-
-        const easeFn = Ease.inOutBack;
 
         const dx = easeFn(time, velocity[0], durationMs) - easeFn(prevTime, velocity[0], durationMs);
         const dy = easeFn(time, velocity[1], durationMs) - easeFn(prevTime, velocity[1], durationMs);

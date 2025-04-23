@@ -3,6 +3,7 @@ export type Vector2 = [number, number];
 export type Vector3 = [number, number, number];
 export type Vector4 = [number, number, number, number];
 export type Rect = [number, number, number, number]; // origin.x origin.y corner.x corner.y
+export type EaseFunction = (t: number, c: number, d: number) => number;
 
 export type State = {
   transform: TransformType;
@@ -47,9 +48,16 @@ export type State = {
     active: boolean;
     timeStart: number;
     cache: Vector2[];
-    minVelocity: number; // if lower then stops inertia
-    friction: number;
-    durationMs: number;
     velocity: Vector2; // dx, dy
+    stopVelocity: number; // if lower then stops inertia
+    currentMode: InertiaMode;
+    modes: InertiaMode[];
   };
+};
+
+export type InertiaMode = {
+  atVelocityThreshold: number;
+  friction: number;
+  durationMs: number;
+  easeFn: EaseFunction;
 };

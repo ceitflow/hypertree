@@ -1,7 +1,8 @@
-/* ============================================================
- * Copyright © 2008 George McGinley Smith
- * All rights reserved.
- * https://raw.github.com/danro/jquery-easing/master/LICENSE
+/* ===========================================================
+ * Based on:
+ *  Copyright © 2008 George McGinley Smith
+ *  All rights reserved.
+ *  https://raw.github.com/danro/jquery-easing/master/LICENSE
  * ======================================================== */
 
 // t: current time, c: 100% of value, d: duration
@@ -10,6 +11,10 @@ export class Ease {
   // - glitch like
   // - space like (low gravity)
   // todo matrix demo with falling shapes
+
+  static linear(t: number, c: number, d: number) {
+    return c * (t / d);
+  }
 
   static inQuad(t: number, c: number, d: number) {
     return c * (t /= d) * t;

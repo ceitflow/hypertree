@@ -4,6 +4,7 @@ import { Mouse, Touch } from './inputs';
 import { paperPatch } from '../patches';
 import { addContainerListeners } from './util.ts';
 import { InputTransformer, PhysicsTransformer, ScreenTransformer } from './transformers';
+import { Ease } from './ease.ts';
 
 export type ScreenType = ReturnType<typeof Screen>;
 
@@ -49,12 +50,24 @@ export function Screen(paper: dia.Paper, container: HTMLElement) {
     inertia: {
       active: false,
       timeStart: 0,
-      // todo options: 1. strength (duration, quick or long), 2. distance (multiplier)
       cache: [],
-      minVelocity: 0.1, // if lower then stop inertia
-      friction: 0.92,
-      durationMs: 1000,
       velocity: [0, 0],
+      stopVelocity: 0.1, // if lower then stop inertia
+      currentMode: null as any,
+      modes: [
+        {
+          atVelocityThreshold: 0,
+          friction: 0.81,
+          durationMs: 300,
+          easeFn: Ease.outBack,
+        },
+        {
+          atVelocityThreshold: 32,
+          friction: 0.91,
+          durationMs: 1000,
+          easeFn: Ease.outQuint,
+        },
+      ],
     },
   };
   let loopId = 0;
