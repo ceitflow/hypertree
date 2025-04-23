@@ -11,6 +11,7 @@ export function Mouse(input: InputControllerType, paper: dia.Paper, container: H
       if (paper.findView(e.target)) input.stopInertia();
       else {
         isDragging = true;
+        input.stopInertia();
         input.dragStart(e.clientX, e.clientY);
       }
     },

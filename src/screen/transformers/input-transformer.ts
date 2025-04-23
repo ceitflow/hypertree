@@ -13,6 +13,7 @@ export function InputTransformer({
   viewportPadding,
   extent,
 }: State) {
+  //
   const cacheMotionForInertia = (x: number, y: number, reset?: boolean): void => {
     const { cache, cacheSize } = inertia;
     if (reset) {
@@ -26,6 +27,9 @@ export function InputTransformer({
   };
 
   const { first, current, prevCurrent } = drag;
+
+  // translate current zoom to initial value for easing function
+  zoom.easingInput = ((Math.log(transform[2]) - Math.log(zoom.min)) * zoom.max) / (Math.log(zoom.max) - Math.log(zoom.min));
 
   return {
     invert,
@@ -51,7 +55,6 @@ export function InputTransformer({
 
     startInertia: () => {
       const { velocity, cache, velocityThreshold } = inertia;
-      // todo calculate speed of motion between firstPos and lastPos?
       // todo if distance small - strength low, distance large - strength big
       // calculates initial velocity
       // for (let i = 1; i < cache.length; i++) {
@@ -61,6 +64,12 @@ export function InputTransformer({
       //   velocity[0] += (current[0] - prev[0]) * ratio;
       //   velocity[1] += (current[1] - prev[1]) * ratio;
       // }
+
+      // 1. integral x^0.92 up to when x^0.92 = 0.1 <- summed force applied
+      // 2. use 0-1 function to output 0-1
+      // 3. multiply by totalForce
+      // 4. subtract prev force to only apply dx dy
+
       velocity[0] = cache[cache.length - 1][0] - cache[0][0];
       velocity[1] = cache[cache.length - 1][1] - cache[0][1];
 
@@ -68,7 +77,7 @@ export function InputTransformer({
 
       inertia.varStrength = Math.min(inertia.strength + str, 96);
 
-      console.log(velocity, inertia.varStrength); // time stamp for each cache?
+      // console.log(velocity, inertia.varStrength); // time stamp for each cache?
       inertia.active = true;
     },
 
@@ -78,18 +87,23 @@ export function InputTransformer({
 
     zoom: (origin: Vector2, dir: 1 | -1) => {
       const currentZoom = transform[2];
-      const step = 0.1 * dir;
-      zoom.targetZoom = Math.max(zoom.min, Math.min(zoom.max, zoom.targetZoom + step));
-      if (zoom.targetZoom === currentZoom) return;
+      const minLog = Math.log(zoom.min);
+      const maxLog = Math.log(zoom.max);
+      const step = zoom.strength * dir;
+      const output = Math.exp(minLog + ((zoom.easingInput + step) / zoom.max) * (maxLog - minLog));
+      zoom.easingInput = Math.max(zoom.min, Math.min(zoom.max, zoom.easingInput + step));
 
-      zoom.velocity[0] = -origin[0] * (zoom.targetZoom - currentZoom);
-      zoom.velocity[1] = -origin[1] * (zoom.targetZoom - currentZoom);
-      zoom.velocity[2] = zoom.targetZoom - currentZoom;
+      if (output === currentZoom) return;
+
+      zoom.velocity[0] = -origin[0] * (output - currentZoom);
+      zoom.velocity[1] = -origin[1] * (output - currentZoom);
+      zoom.velocity[2] = output - currentZoom;
       zoom.velocity[3] = zoom.durationMs;
       zoom.active = true;
     },
 
     nextFrame: () => {
+      // todo animation fn, swappable easing animations
       if (drag.active) {
         cacheMotionForInertia(current[0], current[1]);
         const diffX = current[0] - prevCurrent[0];
@@ -121,6 +135,7 @@ export function InputTransformer({
         transform[1] += diffY + dy;
       }
 
+      // todo animation fn, swappable easing animations
       if (zoom.active) {
         const { velocity, durationMs } = zoom;
         if (!velocity[3]) {
@@ -136,13 +151,14 @@ export function InputTransformer({
           velocity[3] -= dt;
         }
 
-        const ratio = dt / durationMs;
+        const ratio = dt / durationMs; // linear
 
         transform[0] += velocity[0] * ratio;
         transform[1] += velocity[1] * ratio;
         transform[2] += velocity[2] * ratio;
       }
 
+      // todo animation fn, swappable easing animations
       if (inertia.active) {
         const { velocity, varStrength, minVelocity } = inertia; // todo apply friction to inertia if touching the viewport border
         // todo various time functions

@@ -32,8 +32,9 @@ export function Screen(paper: dia.Paper, container: HTMLElement) {
       active: false,
       min: 0.1,
       max: 3,
-      durationMs: 150,
-      targetZoom: 1,
+      durationMs: 200,
+      strength: 0.2,
+      easingInput: 1,
       velocity: [0, 0, 0, 0],
     },
 
@@ -108,7 +109,9 @@ export function Screen(paper: dia.Paper, container: HTMLElement) {
 
   paper.on({
     // all: (...args) => console.log(args),
-    resize: (width, height) => screenTransformer.updateContentArea({ width, height }),
+    resize: (width, height) => {
+      screenTransformer.updateContentArea({ width, height });
+    },
   });
 
   // resize browser callback

@@ -29,8 +29,9 @@ export type State = {
     active: boolean;
     min: number;
     max: number;
+    strength: number;
     durationMs: number;
-    targetZoom: number;
+    easingInput: number;
     velocity: Vector4; // dx, dy, ds, durationMsRemaining
   };
 
