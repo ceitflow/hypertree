@@ -1,3 +1,5 @@
+import { g } from '@joint/core';
+import { Ease } from '../ease.ts';
 import { Rect, State, TransformType, Vector2 } from '../types.ts';
 
 export type InputControllerType = ReturnType<typeof InputTransformer>;
@@ -26,10 +28,18 @@ export function InputTransformer({
     return [(x - transform[0]) / transform[2], (y - transform[1]) / transform[2]];
   };
 
+  const invertScaleToZoomStep = (scale: number) => {
+    zoom.inputStep = ZoomConstraint(
+      ((Math.log(scale) - Math.log(zoom.min)) * zoom.max) / (Math.log(zoom.max) - Math.log(zoom.min)),
+      zoom.min,
+      zoom.max
+    );
+  };
+
   const { first, current, prevCurrent } = drag;
 
-  // translate current zoom to initial value for easing function
-  zoom.easingInput = ((Math.log(transform[2]) - Math.log(zoom.min)) * zoom.max) / (Math.log(zoom.max) - Math.log(zoom.min));
+  // translate current zoom to zoom step
+  invertScaleToZoomStep(transform[2]);
 
   return {
     invert,
@@ -85,21 +95,33 @@ export function InputTransformer({
       inertia.active = false;
     },
 
-    zoom: (origin: Vector2, dir: 1 | -1) => {
-      const currentZoom = transform[2];
+    zoom: (origin: Vector2, step: number) => {
+      zoom.inputStep = ZoomConstraint(zoom.inputStep + step, zoom.min, zoom.max);
       const minLog = Math.log(zoom.min);
-      const maxLog = Math.log(zoom.max);
-      const step = zoom.strength * dir;
-      const output = Math.exp(minLog + ((zoom.easingInput + step) / zoom.max) * (maxLog - minLog));
-      zoom.easingInput = Math.max(zoom.min, Math.min(zoom.max, zoom.easingInput + step));
+      const output = Math.exp(minLog + (zoom.inputStep / zoom.max) * (Math.log(zoom.max) - minLog));
+      const currentZoom = transform[2];
 
       if (output === currentZoom) return;
 
+      zoom.timeStart = frameStart.time;
       zoom.velocity[0] = -origin[0] * (output - currentZoom);
       zoom.velocity[1] = -origin[1] * (output - currentZoom);
       zoom.velocity[2] = output - currentZoom;
-      zoom.velocity[3] = zoom.durationMs;
       zoom.active = true;
+    },
+
+    zoomToFit: (padding: Vector2 = [0, 0], animated = false, ignoreConstraint = true) => {
+      const viewRect = new g.Rect(viewport[0], viewport[1], viewport[2] - viewport[0], viewport[3] - viewport[1]);
+      const extentRect = new g.Rect(extent[0], extent[1], extent[2] - extent[0], extent[3] - extent[1]);
+      const extentToViewportScale = Math.min(
+        (viewRect.width - padding[0] * 2) / extentRect.width,
+        (viewRect.height - padding[1] * 2) / extentRect.height
+      );
+      invertScaleToZoomStep(extentToViewportScale);
+
+      transform[0] = -(extentRect.width * extentToViewportScale - viewRect.width) / 2;
+      transform[1] = -(extentRect.height * extentToViewportScale - viewRect.height) / 2;
+      transform[2] = extentToViewportScale;
     },
 
     nextFrame: () => {
@@ -138,24 +160,24 @@ export function InputTransformer({
       // todo animation fn, swappable easing animations
       if (zoom.active) {
         const { velocity, durationMs } = zoom;
-        if (!velocity[3]) {
+        let time = frameStart.time - zoom.timeStart;
+        if (time >= durationMs) {
+          time = durationMs;
           zoom.active = false;
-          return;
         }
-        let dt = frameStart.deltaTime;
+        const prevTime = Math.max(0, time - frameStart.deltaTime);
+        const easeFn = Ease.outBounce;
 
-        if (dt > velocity[3]) {
-          dt = velocity[3];
-          velocity[3] = 0;
-        } else {
-          velocity[3] -= dt;
-        }
+        const prevX = easeFn(prevTime, velocity[0], durationMs);
+        const prevY = easeFn(prevTime, velocity[1], durationMs);
+        const prevS = easeFn(prevTime, velocity[2], durationMs);
+        const currX = easeFn(time, velocity[0], durationMs);
+        const currY = easeFn(time, velocity[1], durationMs);
+        const currS = easeFn(time, velocity[2], durationMs);
 
-        const ratio = dt / durationMs; // linear
-
-        transform[0] += velocity[0] * ratio;
-        transform[1] += velocity[1] * ratio;
-        transform[2] += velocity[2] * ratio;
+        transform[0] += currX - prevX;
+        transform[1] += currY - prevY;
+        transform[2] += currS - prevS;
       }
 
       // todo animation fn, swappable easing animations
@@ -241,9 +263,6 @@ export function ExtentConstraint(dx: number, dy: number, t: TransformType, view:
   };
 }
 
-export function ZoomConstraint(deltaZoom: number, currentScale: number, min: number, max: number): number {
-  const zoom = currentScale + deltaZoom;
-  if (zoom > max) return max - currentScale;
-  if (zoom < min) return min - currentScale;
-  return deltaZoom;
+export function ZoomConstraint(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, value));
 }

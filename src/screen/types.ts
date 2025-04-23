@@ -1,4 +1,4 @@
-export type TransformType = [number, number, number]; // x, y, scale
+export type TransformType = Vector3; // x, y, scale
 export type Vector2 = [number, number];
 export type Vector3 = [number, number, number];
 export type Vector4 = [number, number, number, number];
@@ -27,12 +27,12 @@ export type State = {
   };
   zoom: {
     active: boolean;
+    timeStart: number;
     min: number;
     max: number;
-    strength: number;
     durationMs: number;
-    easingInput: number;
-    velocity: Vector4; // dx, dy, ds, durationMsRemaining
+    inputStep: number;
+    velocity: Vector3; // dx, dy, ds
   };
 
   // input extras

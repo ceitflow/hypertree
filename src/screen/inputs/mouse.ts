@@ -1,9 +1,10 @@
-import { InputControllerType } from '../transformers';
 import { dia } from '@joint/core';
+import { InputControllerType } from '../transformers';
 
 export function Mouse(input: InputControllerType, paper: dia.Paper, container: HTMLElement) {
   let isDragging = false;
   const pointerCaptureId = 1;
+  const wheelStrength = 0.2;
 
   return {
     start: (e: MouseEvent) => {
@@ -31,7 +32,7 @@ export function Mouse(input: InputControllerType, paper: dia.Paper, container: H
 
     zoom: (delta: number, ox: number, oy: number) => {
       if (delta !== 0) {
-        input.zoom(input.invert(ox, oy), Math.sign(delta) as 1 | -1);
+        input.zoom(input.invert(ox, oy), wheelStrength * Math.sign(delta));
       }
     },
 

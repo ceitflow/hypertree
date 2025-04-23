@@ -6,7 +6,6 @@ export function ScreenTransformer(
   paperStyle: CSSStyleDeclaration
 ) {
   // sets currentTransform based on transform + transformOffset
-
   return {
     nextFrame: () => {
       const t0 = t[0] + off[1];
@@ -21,6 +20,7 @@ export function ScreenTransformer(
         ct[3] = t3;
       }
     },
+
     updateViewport: (data: dia.Size): void => {
       viewport[0] = 0;
       viewport[1] = 0;
@@ -28,7 +28,7 @@ export function ScreenTransformer(
       viewport[3] = data.height;
     },
 
-    updateContentArea: (data: dia.Size): void => {
+    updateExtentArea: (data: dia.Size): void => {
       extent[0] = 0;
       extent[1] = 0;
       extent[2] = data.width;

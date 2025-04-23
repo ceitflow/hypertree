@@ -30,12 +30,12 @@ export function Screen(paper: dia.Paper, container: HTMLElement) {
     },
     zoom: {
       active: false,
+      timeStart: 0,
       min: 0.1,
       max: 3,
       durationMs: 200,
-      strength: 0.2,
-      easingInput: 1,
-      velocity: [0, 0, 0, 0],
+      inputStep: 1,
+      velocity: [0, 0, 0],
     },
 
     // input extras
@@ -110,7 +110,7 @@ export function Screen(paper: dia.Paper, container: HTMLElement) {
   paper.on({
     // all: (...args) => console.log(args),
     resize: (width, height) => {
-      screenTransformer.updateContentArea({ width, height });
+      screenTransformer.updateExtentArea({ width, height });
     },
   });
 
@@ -131,7 +131,7 @@ export function Screen(paper: dia.Paper, container: HTMLElement) {
   };
 
   screenTransformer.updateViewport(container.getBoundingClientRect());
-  screenTransformer.updateContentArea(paper.getComputedSize());
+  screenTransformer.updateExtentArea(paper.getComputedSize());
   loopId = requestAnimationFrame(loop);
 
   paperPatch(paper, state.transform);
