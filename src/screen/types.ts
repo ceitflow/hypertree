@@ -34,6 +34,7 @@ export type State = {
     durationMs: number;
     inputStep: number;
     velocity: Vector3; // dx, dy, ds
+    easeFn: EaseFunction;
   };
 
   // input extras
@@ -50,14 +51,15 @@ export type State = {
     cache: Vector2[];
     velocity: Vector2; // dx, dy
     stopVelocity: number; // if lower then stops inertia
-    currentMode: InertiaMode;
-    modes: InertiaMode[];
+    durationMs: number; // dynamic
+    easeFn: EaseFunction; // dynamic
+    thresholds: InertiaThreshold[];
   };
 };
 
-export type InertiaMode = {
+export type InertiaThreshold = {
   atVelocityThreshold: number;
   friction: number;
-  durationMs: number;
+  speed: number; // 1 - normal, 0.5 slow, 2 fast etc
   easeFn: EaseFunction;
 };

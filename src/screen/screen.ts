@@ -37,6 +37,7 @@ export function Screen(paper: dia.Paper, container: HTMLElement) {
       durationMs: 300,
       inputStep: 1,
       velocity: [0, 0, 0],
+      easeFn: Ease.outQuint,
     },
 
     // input extras
@@ -53,19 +54,26 @@ export function Screen(paper: dia.Paper, container: HTMLElement) {
       cache: [],
       velocity: [0, 0],
       stopVelocity: 0.1, // if lower then stop inertia
-      currentMode: null as any,
-      modes: [
+      durationMs: 0,
+      easeFn: Ease.outQuint,
+      thresholds: [
         {
           atVelocityThreshold: 0,
-          friction: 0.81,
-          durationMs: 300,
-          easeFn: Ease.outBack,
+          friction: 0.14,
+          speed: 1,
+          easeFn: Ease.outExpo,
         },
         {
-          atVelocityThreshold: 32,
-          friction: 0.91,
-          durationMs: 1000,
+          atVelocityThreshold: 40,
+          friction: 0.09,
+          speed: 1.5,
           easeFn: Ease.outQuint,
+        },
+        {
+          atVelocityThreshold: 130,
+          friction: 0.08,
+          speed: 2,
+          easeFn: Ease.outExpo,
         },
       ],
     },

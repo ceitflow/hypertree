@@ -1,6 +1,6 @@
 import { g } from '@joint/core';
 import { Ease } from '../ease.ts';
-import { Rect, State, TransformType, Vector2 } from '../types.ts';
+import { InertiaThreshold, Rect, State, TransformType, Vector2 } from '../types.ts';
 
 export type InputControllerType = ReturnType<typeof InputTransformer>;
 
@@ -64,7 +64,7 @@ export function InputTransformer({
     },
 
     startInertia: () => {
-      const { velocity, stopVelocity, cache, modes } = inertia;
+      const { velocity, stopVelocity, cache, thresholds } = inertia;
 
       // f(x) = velocity * friction^x
       const integral = (v: number, friction: number, limit: number) =>
@@ -77,13 +77,21 @@ export function InputTransformer({
       const vx = cache[cache.length - 1][0] - cache[0][0];
       const vy = cache[cache.length - 1][1] - cache[0][1];
       const vSum = Math.abs(vx) + Math.abs(vy);
-      modes.forEach(m => {
-        if (m.atVelocityThreshold <= vSum) inertia.currentMode = m;
+
+      if (vSum <= stopVelocity) return;
+
+      let threshold!: InertiaThreshold;
+      thresholds.forEach(m => {
+        if (m.atVelocityThreshold <= vSum) threshold = m;
       });
-      const friction = inertia.currentMode.friction;
+      const friction = 1 - Math.max(0.01, Math.min(1, threshold.friction));
 
       const xLimit = getLimit(vx, friction);
       const yLimit = getLimit(vy, friction);
+
+      const duration = Math.max(xLimit * frameStart.deltaTime, yLimit * frameStart.deltaTime);
+      inertia.durationMs = duration / threshold.speed;
+      inertia.easeFn = threshold.easeFn;
 
       velocity[0] = Math.sign(vx) * integral(vx, friction, xLimit);
       velocity[1] = Math.sign(vy) * integral(vy, friction, yLimit);
@@ -152,7 +160,7 @@ export function InputTransformer({
       }
 
       if (zoom.active) {
-        const { velocity, durationMs, timeStart } = zoom;
+        const { velocity, durationMs, timeStart, easeFn } = zoom;
         let time = frameStart.time - timeStart;
         if (time >= durationMs) {
           time = durationMs;
@@ -160,19 +168,13 @@ export function InputTransformer({
         }
         const prevTime = Math.max(0, time - frameStart.deltaTime);
 
-        const easeFn = Ease.outQuint; // todo put in opt
-
         transform[0] += easeFn(time, velocity[0], durationMs) - easeFn(prevTime, velocity[0], durationMs);
         transform[1] += easeFn(time, velocity[1], durationMs) - easeFn(prevTime, velocity[1], durationMs);
         transform[2] += easeFn(time, velocity[2], durationMs) - easeFn(prevTime, velocity[2], durationMs);
       }
 
       if (inertia.active) {
-        const {
-          velocity,
-          timeStart,
-          currentMode: { durationMs, easeFn },
-        } = inertia;
+        const { velocity, timeStart, durationMs, easeFn } = inertia;
         // todo apply friction to inertia if touching the viewport border
         // todo remember pointer pos while inertia runs to animate braking and then going back to pointer pos
 
