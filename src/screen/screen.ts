@@ -1,12 +1,25 @@
+import { Ease } from './ease.ts';
 import { dia } from '@joint/core';
 import { State } from './types.ts';
 import { Mouse, Touch } from './inputs';
 import { paperPatch } from '../patches';
-import { addContainerListeners } from './util.ts';
 import { InputTransformer, PhysicsTransformer, ScreenTransformer } from './transformers';
-import { Ease } from './ease.ts';
 
 export type ScreenType = ReturnType<typeof Screen>;
+
+export const addContainerListeners = (container: HTMLElement, map: { [type: string]: (e: any) => void }) => {
+  Object.entries(map).forEach(([type, callback]) => {
+    document.addEventListener(
+      type,
+      e => {
+        if (container.contains(e.target as Element)) {
+          callback(e);
+        }
+      },
+      { passive: false }
+    );
+  });
+};
 
 export function Screen(paper: dia.Paper, container: HTMLElement) {
   const state: State = {
@@ -86,45 +99,18 @@ export function Screen(paper: dia.Paper, container: HTMLElement) {
   const transformers = [inputTransformer.nextFrame, physicsTransformer.nextFrame, screenTransformer.nextFrame];
 
   const mouse = Mouse(inputTransformer, paper, container);
-  const touch = Touch(inputTransformer);
+  const touch = Touch(inputTransformer, paper);
 
   addContainerListeners(container, {
     mousedown: mouse.start,
     mousemove: mouse.move,
     mouseup: mouse.up,
-    dblclick: (e: MouseEvent) => mouse.zoom(1, e.clientX, e.clientY),
-    wheel: (e: WheelEvent) => mouse.zoom(-e.deltaY, e.clientX, e.clientY),
+    dblclick: mouse.dblClick,
+    wheel: mouse.zoom,
 
-    // touch support
-    touchstart: (e: TouchEvent) => {
-      const view = paper.findView(e.target);
-      if (view) {
-        // todo if not multitouch
-        // inertia.up();
-      } else {
-        touch.start((e as TouchEvent).touches);
-      }
-    },
-    touchmove: (e: TouchEvent) => {
-      if (touch.isActive()) {
-        e.preventDefault();
-        e.stopPropagation();
-        touch.move((e as TouchEvent).changedTouches);
-      }
-    },
-    touchend: (e: TouchEvent) => {
-      if (touch.isActive()) {
-        const { dblTap, multiReleased } = touch.up(e.changedTouches);
-        if (dblTap) {
-          const { x, y } = paper.clientToLocalPoint(dblTap[0], dblTap[1]);
-          // zoom.zoomByStep(1, x, y);
-          // inertia.up();
-        }
-        if (!touch.isActive() && !multiReleased) {
-          // inertia.start();
-        }
-      }
-    },
+    touchstart: touch.start,
+    touchmove: touch.move,
+    touchend: touch.up,
   });
 
   paper.on({
@@ -143,10 +129,8 @@ export function Screen(paper: dia.Paper, container: HTMLElement) {
 
   const loop = (currentTime: number): void => {
     loopId = requestAnimationFrame(loop);
-
     frameStart.deltaTime = currentTime - frameStart.time;
     frameStart.time = currentTime;
-
     transformers.forEach(fn => fn());
   };
 

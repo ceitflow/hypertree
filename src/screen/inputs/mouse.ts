@@ -5,6 +5,7 @@ export function Mouse(input: InputControllerType, paper: dia.Paper, container: H
   let isDragging = false;
   const pointerCaptureId = 1;
   const wheelStrength = 0.2;
+  const dblClickStrength = 1;
 
   return {
     start: (e: MouseEvent) => {
@@ -30,12 +31,15 @@ export function Mouse(input: InputControllerType, paper: dia.Paper, container: H
       isDragging = false;
     },
 
-    zoom: (delta: number, ox: number, oy: number) => {
-      if (delta !== 0) {
-        input.zoom(input.invert(ox, oy), wheelStrength * Math.sign(delta));
-      }
+    dblClick: (e: MouseEvent) => {
+      input.zoom(input.invert(e.clientX, e.clientY), dblClickStrength);
     },
 
-    isDragging: () => isDragging,
+    zoom: (e: WheelEvent) => {
+      const delta = -e.deltaY;
+      if (delta !== 0) {
+        input.zoom(input.invert(e.clientX, e.clientY), wheelStrength * Math.sign(delta));
+      }
+    },
   };
 }

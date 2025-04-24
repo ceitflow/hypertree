@@ -1,33 +1,41 @@
+import { dia } from '@joint/core';
 import { Vector2 } from '../types.ts';
 import { InputControllerType } from '../transformers';
 
-export function Touch(input: InputControllerType) {
-  let prevTouchTimeout: NodeJS.Timeout | null = null;
-  let endMultitouchTimeout: NodeJS.Timeout | null = null;
+export function Touch(input: InputControllerType, paper: dia.Paper) {
   const touchDelay: number = 200;
   const tapDistance: number = 10; // for dbl tap second one has to be near first tap
+  const dblTapStrength = 0.1;
+
+  let prevTouchTimeout: NodeJS.Timeout | null = null;
+  let endMultitouchTimeout: NodeJS.Timeout | null = null;
   let touch0: { id: number; point: Vector2; fixed: Vector2 } | null = null;
   let touch1: { id: number; point: Vector2; fixed: Vector2 } | null = null;
   let prevScale: number | null = null;
   let firstTouch: Vector2 | null = null;
-  let taps: number = 0; // for dbl click
-  let active: boolean = false;
+  let taps = 0; // for dbl click
+  let active = false;
 
   return {
-    start: (touches: TouchList) => {
-      for (let i = 0; i < touches.length; i++) {
-        const { clientX, clientY, identifier } = touches[i];
+    start: (e: TouchEvent) => {
+      const view = paper.findView(e.target);
+      if (view) {
+        // todo if not multitouch
+        input.stopInertia();
+        return;
+      }
+
+      for (let i = 0; i < e.touches.length; i++) {
+        const { clientX, clientY, identifier } = e.touches[i];
         if (!touch0) {
-          // addMotion(clientX, clientY, true);
           // add first touch
-          const fixed = input.invert(clientX, clientY);
-          touch0 = { point: [clientX, clientY], id: identifier, fixed };
+          touch0 = { point: [clientX, clientY], id: identifier, fixed: input.invert(clientX, clientY) };
           taps = 1 + (prevTouchTimeout !== null ? 1 : 0);
           if (taps < 2) {
             firstTouch = [clientX, clientY];
             prevTouchTimeout = setTimeout(() => (prevTouchTimeout = null), touchDelay);
           }
-          input.dragStart(touch0.point[0], touch0.point[1]);
+          // input.dragStart(touch0.point[0], touch0.point[1]);
         } else if (!touch1 && identifier !== touch0.id) {
           // add second touch
           const fixed = input.invert(clientX, clientY);
@@ -35,15 +43,21 @@ export function Touch(input: InputControllerType) {
           taps = 0;
         }
       }
+
       active = true;
     },
 
-    move: (changedTouches: TouchList) => {
+    move: (e: TouchEvent) => {
+      if (!active) return;
+
+      e.preventDefault();
+      e.stopPropagation();
+
       let updated0: Vector2 | undefined;
       let updated1: Vector2 | undefined;
 
-      for (let i = 0; i < changedTouches.length; i++) {
-        const { clientX, clientY, identifier } = changedTouches[i];
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        const { clientX, clientY, identifier } = e.changedTouches[i];
         if (touch0?.id === identifier) updated0 = [clientX, clientY];
         else if (touch1?.id === identifier) updated1 = [clientX, clientY];
       }
@@ -74,53 +88,40 @@ export function Touch(input: InputControllerType) {
         const y = currentMidPointY - fixedMidPointY * dScale;
         const prevX = prevMidPointX - fixedMidPointX * prevScale;
         const prevY = prevMidPointY - fixedMidPointY * prevScale;
-        const constraintDscale = dScale - prevScale; //ZoomConstraint(dScale - prevScale, transform, zoom.min, zoom.max);
-        // todo animated pinch zoom (inertia zoom) stops when new touch applied
+        const constraintDscale = dScale - prevScale;
 
+        // todo animated pinch zoom (inertia zoom) stops when new touch applied
         if (constraintDscale) {
-          input.drag(x, y);
-          // transform[0] += x - prevX;
-          // transform[1] += y - prevY;
-          // transform[2] += constraintDscale;
+          input.pinchDrag(x - prevX, y - prevY, constraintDscale);
         }
 
         touch0.point = updated0;
         touch1.point = updated1;
         prevScale = dScale;
-        return;
-      }
-
-      if (touch0) {
+      } else if (touch0) {
         // translate only
         if (!updated0) return; // if no movement then skip
         const diff = [updated0[0] - touch0.point[0], updated0[1] - touch0.point[1]];
         touch0.point = updated0;
-        // const { dx, dy } = ExtentConstraint(diff[0], diff[1], state);
-        input.drag(diff[0], diff[1]);
-        // transform[0] += diff[0];
-        // transform[1] += diff[1];
+        input.pinchDrag(diff[0], diff[1]);
       }
     },
 
-    next: () => {
-      if (active) {
-        const t0 = touch0?.point;
-        // if (t0) addMotion(t0[0], t0[1]);
-      }
-    },
+    up: (e: TouchEvent) => {
+      if (!active) return;
 
-    up: (changedTouches: TouchList) => {
       let dblTap: Vector2 | null = null;
+      const touches = e.changedTouches;
 
-      const isTimeoutRunning = !!endMultitouchTimeout;
+      const isMultiTouchTimeoutRunning = !!endMultitouchTimeout;
 
       if (touch0 && touch1) {
         if (endMultitouchTimeout) clearTimeout(endMultitouchTimeout);
         endMultitouchTimeout = setTimeout(() => (endMultitouchTimeout = null), touchDelay);
       }
 
-      for (let i = 0; i < changedTouches.length; i++) {
-        const { identifier } = changedTouches[i];
+      for (let i = 0; i < touches.length; i++) {
+        const { identifier } = touches[i];
         if (touch0?.id === identifier) {
           touch0 = null;
         } else if (touch1?.id === identifier) {
@@ -132,14 +133,14 @@ export function Touch(input: InputControllerType) {
       if (touch1 && !touch0) {
         touch0 = touch1;
         touch1 = null;
-        // addMotion(touch0.point[0], touch0.point[1], true);
+        // input.dragStart(touch0.point[0], touch0.point[1]);
       }
 
       // updates ref point
       if (touch0) {
         touch0.fixed = input.invert(touch0.point[0], touch0.point[1]);
       } else if (taps === 2) {
-        const { clientX, clientY } = changedTouches[changedTouches.length - 1];
+        const { clientX, clientY } = touches[touches.length - 1];
         const dst = Math.hypot(firstTouch![0] - clientX, firstTouch![1] - clientY);
         if (dst < tapDistance) dblTap = [clientX, clientY];
       }
@@ -152,9 +153,14 @@ export function Touch(input: InputControllerType) {
         }
       }
 
-      return { dblTap, multiReleased: isTimeoutRunning && !active };
+      const multiReleased = isMultiTouchTimeoutRunning && !active;
+      if (dblTap) {
+        input.stopInertia();
+        input.zoom(input.invert(dblTap[0], dblTap[1]), dblTapStrength);
+      } else if (!multiReleased) {
+        // input.startInertia();
+        // console.log('inertia');
+      }
     },
-
-    isActive: () => active,
   };
 }
