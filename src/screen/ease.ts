@@ -2,7 +2,7 @@
  * Based on:
  *  Copyright © 2008 George McGinley Smith
  *  All rights reserved.
- *  https://raw.github.com/danro/jquery-easing/master/LICENSE
+ *  https://raw.github.com/danro/jquery-easing
  * ======================================================== */
 
 // t: current time, c: 100% of value, d: duration

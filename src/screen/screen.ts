@@ -114,6 +114,13 @@ export function Screen(paper: dia.Paper, container: HTMLElement) {
     transformers.forEach(fn => fn());
   };
 
+  // setInterval(() => {
+  //   const currentTime = Date.now();
+  //   frameStart.deltaTime = currentTime - frameStart.time;
+  //   frameStart.time = currentTime;
+  //   transformers.forEach(fn => fn());
+  // }, 8);
+
   screenTransformer.updateViewport(container.getBoundingClientRect());
   screenTransformer.updateExtentArea(paper.getComputedSize());
   loopId = requestAnimationFrame(loop);

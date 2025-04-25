@@ -1,7 +1,6 @@
 import { g } from '@joint/core';
 import { State, Vector2 } from '../types.ts';
 import { ExtentConstraint, ZoomConstraint } from '../constraint.ts';
-import { Ease } from '../ease.ts';
 
 export type InputControllerType = ReturnType<typeof InputTransformer>;
 
@@ -16,12 +15,18 @@ export function InputTransformer({
   viewportPadding,
   extent,
 }: State) {
-  const cacheMotionForInertia = (x: number, y: number, reset?: boolean): void => {
+  //
+
+  const cacheMotion = (x: number, y: number, timestamp: number, reset?: boolean): void => {
     const { cache } = inertia;
+    const fixedDelta = 16.6667; // store position every 60fps frame
     if (reset) {
-      cache.splice(0, cache.length, [x, y]);
-    } else cache.push([x, y]);
-    if (cache.length > 2) cache.shift();
+      cache.splice(0, cache.length, [x, y, timestamp]);
+    } else cache.push([x, y, timestamp]);
+    for (let i = cache.length - 3; i >= 0; i--) {
+      // leave 2 latest caches in case refresh rate is < 60fps
+      if (timestamp - cache[i][2] > fixedDelta) cache.splice(i, 1);
+    }
   };
 
   const invert = (x: number, y: number): Vector2 => {
@@ -51,7 +56,7 @@ export function InputTransformer({
       prevCurrent[0] = x;
       prevCurrent[1] = y;
       drag.active = true;
-      cacheMotionForInertia(x, y, true);
+      cacheMotion(x, y, frameStart.time, true);
     },
 
     drag: (x: number, y: number) => {
@@ -71,7 +76,6 @@ export function InputTransformer({
 
     startInertia: () => {
       const { velocity, stopVelocity, cache } = inertia;
-      const delta = frameStart.deltaTime;
 
       // f(x) = velocity * friction^x
       const integral = (v: number, friction: number, limit: number) =>
@@ -83,31 +87,27 @@ export function InputTransformer({
 
       const vx = cache[cache.length - 1][0] - cache[0][0];
       const vy = cache[cache.length - 1][1] - cache[0][1];
-      const vSum = Math.abs(vx) + Math.abs(vy);
+      const delta = cache[cache.length - 1][2] - cache[0][2];
 
-      if (vSum <= stopVelocity) return;
+      if (!delta || Math.abs(vx) + Math.abs(vy) <= stopVelocity) return;
 
       let speed = Math.max(Math.abs(vx) / delta, Math.abs(vy) / delta);
       const maxSpeed = 15;
       speed = Math.max(0, Math.min(maxSpeed, speed));
       const logValue = Math.log(speed + 1);
-      const fr = 0.75 + (logValue / Math.log(maxSpeed + 1)) * 0.2;
+      const friction = 0.8 + (logValue / Math.log(maxSpeed + 1)) * 0.17;
       speed = (logValue / Math.log(maxSpeed + 1)) * 2;
-
-      const friction = fr; //1 - Math.max(0.01, Math.min(1, threshold.friction));
 
       const xLimit = getLimit(vx, friction);
       const yLimit = getLimit(vy, friction);
 
       const duration = Math.max(xLimit * delta, yLimit * delta);
-      // todo its not about averaging entire sum of distance,
-      //  but rather adjusting duration so the first steps returned by easeFn are equal to vSum
 
       inertia.durationMs = duration / speed;
 
       velocity[0] = Math.sign(vx) * integral(vx, friction, xLimit);
       velocity[1] = Math.sign(vy) * integral(vy, friction, yLimit);
-      console.log(fr, duration, speed);
+      console.log(vx, inertia.durationMs);
 
       inertia.timeStart = frameStart.time;
       inertia.active = true;
@@ -149,7 +149,7 @@ export function InputTransformer({
     nextFrame: () => {
       if (drag.active) {
         // todo animation fn, swappable easing animations
-        cacheMotionForInertia(current[0], current[1]);
+        cacheMotion(current[0], current[1], frameStart.time);
         const diffX = current[0] - prevCurrent[0];
         const diffY = current[1] - prevCurrent[1];
         const force = ExtentConstraint(diffX, diffY, transform, viewport, viewportPadding, extent);

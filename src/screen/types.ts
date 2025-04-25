@@ -48,7 +48,7 @@ export type State = {
   inertia: {
     active: boolean;
     timeStart: number;
-    cache: Vector2[]; // todo cache last 20ms instead of every frame
+    cache: Vector3[];
     velocity: Vector2; // dx, dy
     stopVelocity: number; // if lower then stops inertia
     durationMs: number; // dynamic
