@@ -1,4 +1,4 @@
-import { Rect, TransformType } from './types.ts';
+import { Rect, TransformType } from '../../types.ts';
 
 // when moving beyond extent + padding, only allow to move in the opposite direction
 // returns constraint force

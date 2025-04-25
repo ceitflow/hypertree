@@ -1,11 +1,8 @@
-import { Ease } from './ease.ts';
 import { dia } from '@joint/core';
 import { State } from './types.ts';
 import { Mouse, Touch } from './inputs';
 import { paperPatch } from '../patches';
-import { InputTransformer, PhysicsTransformer, ScreenTransformer } from './transformers';
-
-export type ScreenType = ReturnType<typeof Screen>;
+import { Ease, InputTransformer, PhysicsTransformer, ScreenTransformer } from './transformers';
 
 export const addContainerListeners = (container: HTMLElement, map: { [type: string]: (e: any) => void }) => {
   Object.entries(map).forEach(([type, callback]) => {
@@ -25,7 +22,7 @@ export function Screen(paper: dia.Paper, container: HTMLElement) {
   const state: State = {
     transform: [0, 0, 1],
     physicsTransform: [0, 0, 0, 0],
-    currentTransform: [0, 0, 1, 1], // for comparing dirty state
+    frameStartTransform: [0, 0, 1, 1],
     viewport: [0, 0, 1700, 800],
     extent: [-500, -500, 3000, 2000],
     viewportPadding: 0.5,
@@ -94,7 +91,6 @@ export function Screen(paper: dia.Paper, container: HTMLElement) {
   });
 
   paper.on({
-    // all: (...args) => console.log(args),
     resize: (width, height) => {
       screenTransformer.updateExtentArea({ width, height });
     },
@@ -114,6 +110,7 @@ export function Screen(paper: dia.Paper, container: HTMLElement) {
     transformers.forEach(fn => fn());
   };
 
+  // for screen refresh rate testing
   // setInterval(() => {
   //   const currentTime = Date.now();
   //   frameStart.deltaTime = currentTime - frameStart.time;

@@ -8,7 +8,7 @@ export type EaseFunction = (t: number, c: number, d: number) => number;
 export type State = {
   transform: TransformType;
   physicsTransform: Vector4;
-  currentTransform: Vector4; // transform + physicsTransform
+  frameStartTransform: Vector4; // transform + physicsTransform
   viewport: Rect;
   viewportPadding: number; // 0 - 1.0 percentage of current viewport to use as padding
   extent: Rect;

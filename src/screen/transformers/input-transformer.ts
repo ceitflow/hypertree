@@ -1,37 +1,11 @@
 import { g } from '@joint/core';
 import { State, Vector2 } from '../types.ts';
-import { ExtentConstraint, ZoomConstraint } from '../constraint.ts';
+import { cacheInertiaMotion, Ease, ExtentConstraint, getIntegralLimit, integral, ZoomConstraint } from './input';
 
 export type InputControllerType = ReturnType<typeof InputTransformer>;
 
-export function InputTransformer({
-  frameStart,
-  inertia,
-  drag,
-  zoom,
-  constraint,
-  transform,
-  viewport,
-  viewportPadding,
-  extent,
-}: State) {
-  //
-
-  const cacheMotion = (x: number, y: number, timestamp: number, reset?: boolean): void => {
-    const { cache } = inertia;
-    const fixedDelta = 16.6667; // store position every 60fps frame
-    if (reset) {
-      cache.splice(0, cache.length, [x, y, timestamp]);
-    } else cache.push([x, y, timestamp]);
-    for (let i = cache.length - 3; i >= 0; i--) {
-      // leave 2 latest caches in case refresh rate is < 60fps
-      if (timestamp - cache[i][2] > fixedDelta) cache.splice(i, 1);
-    }
-  };
-
-  const invert = (x: number, y: number): Vector2 => {
-    return [(x - transform[0]) / transform[2], (y - transform[1]) / transform[2]];
-  };
+export function InputTransformer(state: State) {
+  const { frameStart, inertia, drag, zoom, constraint, transform, viewport, viewportPadding, extent } = state;
 
   const invertScaleToZoomStep = (scale: number) => {
     zoom.inputStep = ZoomConstraint(
@@ -41,31 +15,31 @@ export function InputTransformer({
     );
   };
 
-  const { first, current, prevCurrent } = drag;
-
   // translate current zoom to zoom step
   invertScaleToZoomStep(transform[2]);
 
   return {
-    invert,
+    invert: (x: number, y: number): Vector2 => {
+      return [(x - transform[0]) / transform[2], (y - transform[1]) / transform[2]];
+    },
     dragStart: (x: number, y: number) => {
-      first[0] = x;
-      first[1] = y;
-      current[0] = x;
-      current[1] = y;
-      prevCurrent[0] = x;
-      prevCurrent[1] = y;
+      drag.first[0] = x;
+      drag.first[1] = y;
+      drag.current[0] = x;
+      drag.current[1] = y;
+      drag.prevCurrent[0] = x;
+      drag.prevCurrent[1] = y;
       drag.active = true;
-      cacheMotion(x, y, frameStart.time, true);
+      cacheInertiaMotion(x, y, frameStart.time, inertia.cache, true);
     },
 
     drag: (x: number, y: number) => {
-      current[0] = x;
-      current[1] = y;
+      drag.current[0] = x;
+      drag.current[1] = y;
     },
 
     pinchDrag: (dx: number, dy: number, scale?: number) => {
-      transform[0] += dx; // todo use drag() to make it work with inertia
+      transform[0] += dx; // todo use drag() to make it work with constraints
       transform[1] += dy;
       transform[2] += scale || 0;
     },
@@ -77,14 +51,6 @@ export function InputTransformer({
     startInertia: () => {
       const { velocity, stopVelocity, cache } = inertia;
 
-      // f(x) = velocity * friction^x
-      const integral = (v: number, friction: number, limit: number) =>
-        (Math.abs(v) * Math.pow(friction, limit)) / Math.log(friction) - Math.abs(v) / Math.log(friction);
-
-      // f(x) = 0.1 => (ln(minVelocity) - ln(velocity)) / ln(friction)
-      const getLimit = (v: number, friction: number) =>
-        Math.abs(v) <= stopVelocity ? 0 : (Math.log(stopVelocity) - Math.log(Math.abs(v))) / Math.log(friction);
-
       const vx = cache[cache.length - 1][0] - cache[0][0];
       const vy = cache[cache.length - 1][1] - cache[0][1];
       const delta = cache[cache.length - 1][2] - cache[0][2];
@@ -95,11 +61,12 @@ export function InputTransformer({
       const maxSpeed = 15;
       speed = Math.max(0, Math.min(maxSpeed, speed));
       const logValue = Math.log(speed + 1);
-      const friction = 0.8 + (logValue / Math.log(maxSpeed + 1)) * 0.17;
+      const friction = 0.8 + Ease.outCubic(speed, 1, 15) * 0.17;
+      // console.log(logValue / Math.log(maxSpeed + 1), Ease.outCubic(speed, 1, 15));
       speed = (logValue / Math.log(maxSpeed + 1)) * 2;
 
-      const xLimit = getLimit(vx, friction);
-      const yLimit = getLimit(vy, friction);
+      const xLimit = getIntegralLimit(vx, friction, stopVelocity);
+      const yLimit = getIntegralLimit(vy, friction, stopVelocity);
 
       const duration = Math.max(xLimit * delta, yLimit * delta);
 
@@ -107,7 +74,6 @@ export function InputTransformer({
 
       velocity[0] = Math.sign(vx) * integral(vx, friction, xLimit);
       velocity[1] = Math.sign(vy) * integral(vy, friction, yLimit);
-      console.log(vx, inertia.durationMs);
 
       inertia.timeStart = frameStart.time;
       inertia.active = true;
@@ -149,9 +115,9 @@ export function InputTransformer({
     nextFrame: () => {
       if (drag.active) {
         // todo animation fn, swappable easing animations
-        cacheMotion(current[0], current[1], frameStart.time);
-        const diffX = current[0] - prevCurrent[0];
-        const diffY = current[1] - prevCurrent[1];
+        cacheInertiaMotion(drag.current[0], drag.current[1], frameStart.time, inertia.cache);
+        const diffX = drag.current[0] - drag.prevCurrent[0];
+        const diffY = drag.current[1] - drag.prevCurrent[1];
         const force = ExtentConstraint(diffX, diffY, transform, viewport, viewportPadding, extent);
 
         /*if (force.isConstrainedX) {
@@ -163,8 +129,8 @@ export function InputTransformer({
           constraint.lastValidX = null;
         }*/
 
-        prevCurrent[0] = current[0];
-        prevCurrent[1] = current[1];
+        drag.prevCurrent[0] = drag.current[0];
+        drag.prevCurrent[1] = drag.current[1];
         constraint.dx = force.xForce;
         constraint.dy = force.yForce;
 
@@ -200,7 +166,6 @@ export function InputTransformer({
 
         const dx = easeFn(time, velocity[0], durationMs) - easeFn(prevTime, velocity[0], durationMs);
         const dy = easeFn(time, velocity[1], durationMs) - easeFn(prevTime, velocity[1], durationMs);
-        // console.log(dx);
 
         const force = ExtentConstraint(dx, dy, transform, viewport, viewportPadding, extent);
 
