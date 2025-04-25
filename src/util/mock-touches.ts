@@ -57,20 +57,12 @@ export function testTwoTouches(element: HTMLElement) {
     target: element,
     clientX: 200,
     clientY: 200,
-    radiusX: 2.5,
-    radiusY: 2.5,
-    rotationAngle: 0,
-    force: 1,
   });
   const touch2 = new Touch({
     identifier: 1,
     target: element,
     clientX: 500,
     clientY: 500,
-    radiusX: 2.5,
-    radiusY: 2.5,
-    rotationAngle: 0,
-    force: 1,
   });
 
   const start1 = new TouchEvent('touchstart', {
@@ -103,10 +95,62 @@ export function testTwoTouches(element: HTMLElement) {
     changedTouches: [touch2],
   });
 
+  const move1 = new TouchEvent('touchmove', {
+    bubbles: true,
+    cancelable: true,
+    changedTouches: [
+      new Touch({
+        identifier: 0,
+        target: element,
+        clientX: touch1.clientX + 100,
+        clientY: touch1.clientY + 0,
+      }),
+      new Touch({
+        identifier: 1,
+        target: element,
+        clientX: touch2.clientX + 0,
+        clientY: touch2.clientY + 0,
+      }),
+    ],
+  });
+  const move2 = new TouchEvent('touchmove', {
+    bubbles: true,
+    cancelable: true,
+    changedTouches: [
+      new Touch({
+        identifier: 0,
+        target: element,
+        clientX: touch1.clientX + 100,
+        clientY: touch1.clientY + 0,
+      }),
+      new Touch({
+        identifier: 1,
+        target: element,
+        clientX: touch2.clientX - 100,
+        clientY: touch2.clientY + 0,
+      }),
+    ],
+  });
+  const move3 = new TouchEvent('touchmove', {
+    bubbles: true,
+    cancelable: true,
+    changedTouches: [
+      new Touch({
+        identifier: 1,
+        target: element,
+        clientX: touch2.clientX - 100,
+        clientY: touch2.clientY + 0,
+      }),
+    ],
+  });
+
   // Dispatch the events
   element.dispatchEvent(start1);
   element.dispatchEvent(start2);
+  element.dispatchEvent(move1);
+  element.dispatchEvent(move2);
   element.dispatchEvent(end1);
+  element.dispatchEvent(move3);
   element.dispatchEvent(end2);
 }
 

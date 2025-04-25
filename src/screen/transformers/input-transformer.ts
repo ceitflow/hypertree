@@ -1,6 +1,7 @@
 import { g } from '@joint/core';
-import { InertiaThreshold, State, Vector2 } from '../types.ts';
+import { State, Vector2 } from '../types.ts';
 import { ExtentConstraint, ZoomConstraint } from '../constraint.ts';
+import { Ease } from '../ease.ts';
 
 export type InputControllerType = ReturnType<typeof InputTransformer>;
 
@@ -59,17 +60,18 @@ export function InputTransformer({
     },
 
     pinchDrag: (dx: number, dy: number, scale?: number) => {
-      transform[0] += dx;
+      transform[0] += dx; // todo use drag() to make it work with inertia
       transform[1] += dy;
       transform[2] += scale || 0;
     },
 
-    dragStop: (x: number, y: number) => {
+    dragStop: () => {
       drag.active = false;
     },
 
     startInertia: () => {
-      const { velocity, stopVelocity, cache, thresholds } = inertia;
+      const { velocity, stopVelocity, cache } = inertia;
+      const delta = frameStart.deltaTime;
 
       // f(x) = velocity * friction^x
       const integral = (v: number, friction: number, limit: number) =>
@@ -85,21 +87,27 @@ export function InputTransformer({
 
       if (vSum <= stopVelocity) return;
 
-      let threshold!: InertiaThreshold;
-      thresholds.forEach(m => {
-        if (m.atVelocityThreshold <= vSum) threshold = m;
-      });
-      const friction = 1 - Math.max(0.01, Math.min(1, threshold.friction));
+      let speed = Math.max(Math.abs(vx) / delta, Math.abs(vy) / delta);
+      const maxSpeed = 15;
+      speed = Math.max(0, Math.min(maxSpeed, speed));
+      const logValue = Math.log(speed + 1);
+      const fr = 0.75 + (logValue / Math.log(maxSpeed + 1)) * 0.2;
+      speed = (logValue / Math.log(maxSpeed + 1)) * 2;
+
+      const friction = fr; //1 - Math.max(0.01, Math.min(1, threshold.friction));
 
       const xLimit = getLimit(vx, friction);
       const yLimit = getLimit(vy, friction);
 
-      const duration = Math.max(xLimit * frameStart.deltaTime, yLimit * frameStart.deltaTime);
-      inertia.durationMs = duration / threshold.speed;
-      inertia.easeFn = threshold.easeFn;
+      const duration = Math.max(xLimit * delta, yLimit * delta);
+      // todo its not about averaging entire sum of distance,
+      //  but rather adjusting duration so the first steps returned by easeFn are equal to vSum
+
+      inertia.durationMs = duration / speed;
 
       velocity[0] = Math.sign(vx) * integral(vx, friction, xLimit);
       velocity[1] = Math.sign(vy) * integral(vy, friction, yLimit);
+      console.log(fr, duration, speed);
 
       inertia.timeStart = frameStart.time;
       inertia.active = true;
@@ -192,6 +200,7 @@ export function InputTransformer({
 
         const dx = easeFn(time, velocity[0], durationMs) - easeFn(prevTime, velocity[0], durationMs);
         const dy = easeFn(time, velocity[1], durationMs) - easeFn(prevTime, velocity[1], durationMs);
+        // console.log(dx);
 
         const force = ExtentConstraint(dx, dy, transform, viewport, viewportPadding, extent);
 

@@ -69,26 +69,6 @@ export function Screen(paper: dia.Paper, container: HTMLElement) {
       stopVelocity: 0.1, // if lower then stop inertia
       durationMs: 0,
       easeFn: Ease.outQuint,
-      thresholds: [
-        {
-          atVelocityThreshold: 0,
-          friction: 0.14,
-          speed: 1,
-          easeFn: Ease.outExpo,
-        },
-        {
-          atVelocityThreshold: 40,
-          friction: 0.09,
-          speed: 1.5,
-          easeFn: Ease.outQuint,
-        },
-        {
-          atVelocityThreshold: 130,
-          friction: 0.08,
-          speed: 2,
-          easeFn: Ease.outExpo,
-        },
-      ],
     },
   };
   let loopId = 0;

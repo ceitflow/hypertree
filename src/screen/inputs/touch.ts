@@ -5,7 +5,7 @@ import { InputControllerType } from '../transformers';
 export function Touch(input: InputControllerType, paper: dia.Paper) {
   const touchDelay: number = 200;
   const tapDistance: number = 10; // for dbl tap second one has to be near first tap
-  const dblTapStrength = 0.1;
+  const dblTapStrength = 0.2;
 
   let prevTouchTimeout: NodeJS.Timeout | null = null;
   let endMultitouchTimeout: NodeJS.Timeout | null = null;
@@ -35,12 +35,14 @@ export function Touch(input: InputControllerType, paper: dia.Paper) {
             firstTouch = [clientX, clientY];
             prevTouchTimeout = setTimeout(() => (prevTouchTimeout = null), touchDelay);
           }
-          // input.dragStart(touch0.point[0], touch0.point[1]);
+          input.stopInertia();
+          input.dragStart(touch0.point[0], touch0.point[1]);
         } else if (!touch1 && identifier !== touch0.id) {
           // add second touch
           const fixed = input.invert(clientX, clientY);
           touch1 = { point: [clientX, clientY], id: identifier, fixed };
           taps = 0;
+          input.dragStop();
         }
       }
 
@@ -92,7 +94,8 @@ export function Touch(input: InputControllerType, paper: dia.Paper) {
 
         // todo animated pinch zoom (inertia zoom) stops when new touch applied
         if (constraintDscale) {
-          input.pinchDrag(x - prevX, y - prevY, constraintDscale);
+          input.pinchDrag(x - prevX, y - prevY, constraintDscale); // todo x, y, dScale
+          // input.drag, input.zoomAbsolute
         }
 
         touch0.point = updated0;
@@ -101,9 +104,8 @@ export function Touch(input: InputControllerType, paper: dia.Paper) {
       } else if (touch0) {
         // translate only
         if (!updated0) return; // if no movement then skip
-        const diff = [updated0[0] - touch0.point[0], updated0[1] - touch0.point[1]];
         touch0.point = updated0;
-        input.pinchDrag(diff[0], diff[1]);
+        input.drag(updated0[0], updated0[1]);
       }
     },
 
@@ -133,7 +135,7 @@ export function Touch(input: InputControllerType, paper: dia.Paper) {
       if (touch1 && !touch0) {
         touch0 = touch1;
         touch1 = null;
-        // input.dragStart(touch0.point[0], touch0.point[1]);
+        input.dragStart(touch0.point[0], touch0.point[1]);
       }
 
       // updates ref point
@@ -158,8 +160,7 @@ export function Touch(input: InputControllerType, paper: dia.Paper) {
         input.stopInertia();
         input.zoom(input.invert(dblTap[0], dblTap[1]), dblTapStrength);
       } else if (!multiReleased) {
-        // input.startInertia();
-        // console.log('inertia');
+        input.startInertia();
       }
     },
   };

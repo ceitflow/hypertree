@@ -25,7 +25,7 @@ export function Mouse(input: InputControllerType, paper: dia.Paper, container: H
     up: (e: MouseEvent) => {
       container.releasePointerCapture(pointerCaptureId);
       if (isDragging) {
-        input.dragStop(e.clientX, e.clientY);
+        input.dragStop();
         input.startInertia();
       }
       isDragging = false;
