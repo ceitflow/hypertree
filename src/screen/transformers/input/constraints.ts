@@ -54,6 +54,6 @@ export function ExtentConstraint(dx: number, dy: number, t: TransformType, view:
   };
 }
 
-export function ZoomConstraint(value: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, value));
+export function Clamp(value: number, min: number, max: number) {
+  return Math.min(Math.max(value, min), max);
 }

@@ -16,6 +16,12 @@ export class Ease {
     return c * (t / d);
   }
 
+  static inLog(t: number, c: number, d: number) {
+    const result = Math.exp(-Math.E + (t / d) * Math.E); // range [min, 1]
+    const min = Math.exp(-Math.E);
+    return (c * (result - min)) / (1 - min); // into [0, 1]
+  }
+
   static inQuad(t: number, c: number, d: number) {
     return c * (t /= d) * t;
   }

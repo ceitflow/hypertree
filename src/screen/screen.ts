@@ -18,13 +18,14 @@ export const addContainerListeners = (container: HTMLElement, map: { [type: stri
   });
 };
 
+// pass in theme: new Theme('automatic' | ...)
 export function Screen(paper: dia.Paper, container: HTMLElement) {
   const state: State = {
     transform: [0, 0, 1],
     physicsTransform: [0, 0, 0, 0],
     frameStartTransform: [0, 0, 1, 1],
-    viewport: [0, 0, 1700, 800],
-    extent: [-500, -500, 3000, 2000],
+    viewport: [0, 0, 0, 0],
+    extent: [0, 0, 0, 0],
     viewportPadding: 0.5,
 
     frameStart: {
@@ -33,39 +34,40 @@ export function Screen(paper: dia.Paper, container: HTMLElement) {
     },
 
     drag: {
-      active: false,
-      first: [0, 0],
-      current: [0, 0],
-
-      prevCurrent: [0, 0],
+      input: [0, 0],
+      inputEaseFn: Ease.linear,
+      output: [0, 0],
+      animation: {
+        active: false,
+        timeStart: 0,
+        durationMs: 200,
+        easeFn: Ease.outExpo,
+      },
     },
     zoom: {
-      active: false,
-      timeStart: 0,
+      input: [0, 0, 0],
       min: 0.1,
       max: 3,
-      durationMs: 300,
-      inputStep: 1,
-      velocity: [0, 0, 0],
-      easeFn: Ease.outQuint,
-    },
-
-    // input extras
-    constraint: {
-      dx: 0,
-      dy: 0,
-      lastValidX: null,
-      lastValidY: null,
-      forces: [0, 0], // negative - left, top, positive - right, bottom
+      inputEaseFn: Ease.inLog,
+      output: [0, 0, 0],
+      animation: {
+        active: false,
+        timeStart: 0,
+        durationMs: 800,
+        easeFn: Ease.outQuint,
+      },
     },
     inertia: {
-      active: false,
-      timeStart: 0,
-      cache: [],
-      velocity: [0, 0],
-      stopVelocity: 0.1, // if lower then stop inertia
-      durationMs: 0,
-      easeFn: Ease.outQuint,
+      input: [],
+      maxInputSpeed: 15,
+      inputEaseFn: Ease.linear,
+      output: [0, 0],
+      animation: {
+        active: false,
+        timeStart: 0,
+        durationMs: 0,
+        easeFn: Ease.outQuint,
+      },
     },
   };
   let loopId = 0;
@@ -111,12 +113,14 @@ export function Screen(paper: dia.Paper, container: HTMLElement) {
   };
 
   // for screen refresh rate testing
-  // setInterval(() => {
-  //   const currentTime = Date.now();
-  //   frameStart.deltaTime = currentTime - frameStart.time;
-  //   frameStart.time = currentTime;
-  //   transformers.forEach(fn => fn());
-  // }, 8);
+  // requestAnimationFrame(() =>
+  //   setInterval(() => {
+  //     const currentTime = Date.now();
+  //     frameStart.deltaTime = currentTime - frameStart.time;
+  //     frameStart.time = currentTime;
+  //     transformers.forEach(fn => fn());
+  //   }, 8)
+  // );
 
   screenTransformer.updateViewport(container.getBoundingClientRect());
   screenTransformer.updateExtentArea(paper.getComputedSize());

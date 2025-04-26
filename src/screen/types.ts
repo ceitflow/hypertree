@@ -1,9 +1,9 @@
-export type TransformType = Vector3; // x, y, scale
 export type Vector2 = [number, number];
 export type Vector3 = [number, number, number];
 export type Vector4 = [number, number, number, number];
-export type Rect = [number, number, number, number]; // origin.x origin.y corner.x corner.y
-export type EaseFunction = (t: number, c: number, d: number) => number;
+export type TransformType = Vector3; // x, y, scale
+export type Rect = Vector4; // origin.x origin.y corner.x corner.y
+export type EaseFunction = (dt: number, value: number, duration: number) => number;
 
 export type State = {
   transform: TransformType;
@@ -13,45 +13,42 @@ export type State = {
   viewportPadding: number; // 0 - 1.0 percentage of current viewport to use as padding
   extent: Rect;
 
-  frameStart: {
-    time: number;
-    deltaTime: number; // duration between last frame and current
-  };
+  frameStart: FrameStart;
 
   // inputs
   drag: {
-    active: boolean;
-    first: Vector2;
-    current: Vector2;
-
-    prevCurrent: Vector2;
+    input: Vector2;
+    inputEaseFn: EaseFunction; // default linear? or allow null, then input -> output
+    output: Vector2; // dx, dy
+    animation: AnimationState;
   };
   zoom: {
-    active: boolean;
-    timeStart: number;
+    input: Vector3; // ox, oy, scale
     min: number;
     max: number;
-    durationMs: number;
-    inputStep: number;
-    velocity: Vector3; // dx, dy, ds
-    easeFn: EaseFunction;
-  };
-
-  // input extras
-  constraint: {
-    dx: number;
-    dy: number;
-    lastValidX: number | null;
-    lastValidY: number | null;
-    forces: Vector2; // negative - left, top, positive - right, bottom
+    inputEaseFn: EaseFunction;
+    output: Vector3; // dx, dy, ds // can bypass input by setting directly to output - then run the animation
+    // todo looks like input easing mechanism (present in zoom, inertia, drag)
+    //  1. input easing, 2. animation easing
+    animation: AnimationState;
   };
   inertia: {
-    active: boolean;
-    timeStart: number;
-    cache: Vector3[];
-    velocity: Vector2; // dx, dy
-    stopVelocity: number; // if lower then stops inertia
-    durationMs: number; // dynamic
-    easeFn: EaseFunction; // dynamic
+    input: Vector3[]; // x, y, timestamp
+    maxInputSpeed: number;
+    inputEaseFn: EaseFunction;
+    output: Vector2; // dx, dy
+    animation: AnimationState;
   };
+};
+
+export type FrameStart = {
+  time: number;
+  deltaTime: number; // duration between last frame and current
+};
+
+export type AnimationState = {
+  active: boolean;
+  timeStart: number;
+  durationMs: number; // todo if durationMs == 0 then immediate
+  easeFn: EaseFunction;
 };
