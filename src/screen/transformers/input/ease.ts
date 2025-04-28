@@ -131,7 +131,7 @@ export class Ease {
 
   static outElastic(t: number, c: number, d: number) {
     if (c === 0) return 0;
-    let s = 1.70158;
+    let s = 1.70158; // todo elastic force configurable
     let p = 0;
     let a = c;
     if (t == 0) return 0;

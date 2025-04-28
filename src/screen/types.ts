@@ -17,7 +17,8 @@ export type State = {
 
   // inputs
   drag: {
-    input: Vector2; // x, y
+    current: Vector2; // x, y
+    input: Vector3; // x, y, timestamp
     animation: AnimationState<Vector2>; // dx, dy
     limiter: LimitType;
   };

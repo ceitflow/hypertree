@@ -34,12 +34,13 @@ export function Screen(paper: dia.Paper, container: HTMLElement) {
     },
 
     drag: {
-      input: [0, 0],
+      current: [0, 0],
+      input: [0, 0, 0],
       animation: {
         active: false,
         timeStart: 0,
         output: [0, 0],
-        durationMs: 300,
+        durationMs: 1000,
         easeFn: Ease.outBack,
         cachedDeltas: [0, 0],
       },

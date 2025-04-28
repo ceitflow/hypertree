@@ -34,23 +34,30 @@ export function InputTransformer(state: State) {
     invert: (x: number, y: number): Vector2 => [(x - transform[0]) / transform[2], (y - transform[1]) / transform[2]],
 
     dragStart: (x: number, y: number) => {
-      drag.input[0] = x;
-      drag.input[1] = y;
+      drag.current[0] = x;
+      drag.current[1] = y;
+      drag.input[0] = 0;
+      drag.input[1] = 0;
+      drag.input[2] = frameStart.time;
       drag.animation.output[0] = 0;
       drag.animation.output[1] = 0;
       cacheInertiaMotion(x, y, true);
     },
 
     drag: (x: number, y: number) => {
-      const { input, animation } = drag;
+      const { input, current, animation } = drag;
 
-      const dx = x - input[0];
-      const dy = y - input[1];
-      input[0] = x;
-      input[1] = y;
+      const dx = x - current[0];
+      const dy = y - current[1];
+      current[0] = x;
+      current[1] = y;
 
-      animation.output[0] += dx;
-      animation.output[1] += dy;
+      input[0] += dx;
+      input[1] += dy;
+      input[2] = frameStart.time;
+
+      animation.output[0] = input[0];
+      animation.output[1] = input[1];
       animation.timeStart = frameStart.time;
       animation.active = true;
     },
@@ -68,6 +75,7 @@ export function InputTransformer(state: State) {
     startInertia: () => {
       const { input, animation } = inertia;
 
+      // todo inertia use drag.output values
       const stopVelocity = 1;
       // actual distance made by the motion
       const vx = input[input.length - 1][0] - input[0][0];
@@ -144,10 +152,10 @@ export function InputTransformer(state: State) {
 
     nextFrame: () => {
       if (drag.animation.active) {
-        cacheInertiaMotion(drag.input[0], drag.input[1]);
+        cacheInertiaMotion(drag.current[0], drag.current[1]);
         AnimateNextFrame(drag.animation, drag.limiter, state);
-        drag.animation.output[0] -= drag.animation.cachedDeltas[0];
-        drag.animation.output[1] -= drag.animation.cachedDeltas[1];
+        drag.input[0] -= drag.animation.cachedDeltas[0];
+        drag.input[1] -= drag.animation.cachedDeltas[1];
       }
 
       if (zoom.animation.active) {
