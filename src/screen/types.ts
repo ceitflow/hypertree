@@ -17,8 +17,8 @@ export type State = {
 
   // inputs
   drag: {
+    current: Vector2; // x, y
     input: Vector3; // x, y, timestamp
-    cachedInput: Vector3;
     animation: AnimationState<Vector2>; // dx, dy
   };
   zoom: {
@@ -45,10 +45,7 @@ export type FrameStart = {
 export type AnimationState<Output extends number[] = number[]> = {
   active: boolean;
   timeStart: number;
-  // todo input? split to instant and ease in nextFrame
-  instantOutput: Output; // applied in the next frame // todo remove, use durationMs 0
-  easeOutput: Output; // applied over duration
-  durationMs: number; // todo if durationMs == 0 or <= deltaTime, then immediate
+  output: Output; // applied over duration
+  durationMs: number; // if duration <= deltaTime then instant
   easeFn: EaseFunction;
-  easeOutputRatio: number; // [0,1]
 };

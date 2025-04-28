@@ -34,16 +34,14 @@ export function Screen(paper: dia.Paper, container: HTMLElement) {
     },
 
     drag: {
+      current: [0, 0],
       input: [0, 0, 0],
-      cachedInput: [0, 0, 0],
       animation: {
         active: false,
         timeStart: 0,
-        instantOutput: [0, 0],
-        easeOutput: [0, 0],
+        output: [0, 0],
         durationMs: 300,
-        easeFn: Ease.linear,
-        easeOutputRatio: 1,
+        easeFn: Ease.outBack,
       },
     },
     zoom: {
@@ -54,24 +52,20 @@ export function Screen(paper: dia.Paper, container: HTMLElement) {
       animation: {
         active: false,
         timeStart: 0,
-        instantOutput: [0, 0, 0],
-        easeOutput: [0, 0, 0],
-        durationMs: 600,
+        output: [0, 0, 0],
+        durationMs: 500,
         easeFn: Ease.outQuint,
-        easeOutputRatio: 1,
       },
     },
     inertia: {
       input: [],
-      maxInputSpeed: 30,
+      maxInputSpeed: 15,
       animation: {
         active: false,
         timeStart: 0,
         durationMs: 0,
-        instantOutput: [0, 0],
-        easeOutput: [0, 0],
+        output: [0, 0],
         easeFn: Ease.outQuint,
-        easeOutputRatio: 1,
       },
     },
   };

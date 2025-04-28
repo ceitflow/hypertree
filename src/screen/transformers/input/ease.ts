@@ -115,6 +115,7 @@ export class Ease {
   }
 
   static inElastic(t: number, c: number, d: number) {
+    if (c === 0) return 0;
     let s = 1.70158;
     let p = 0;
     let a = c;
@@ -129,6 +130,7 @@ export class Ease {
   }
 
   static outElastic(t: number, c: number, d: number) {
+    if (c === 0) return 0;
     let s = 1.70158;
     let p = 0;
     let a = c;
@@ -143,6 +145,7 @@ export class Ease {
   }
 
   static inOutElastic(t: number, c: number, d: number) {
+    if (c === 0) return 0;
     let s = 1.70158;
     let p = 0;
     let a = c;
