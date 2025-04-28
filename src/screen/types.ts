@@ -17,23 +17,24 @@ export type State = {
 
   // inputs
   drag: {
-    current: Vector2; // x, y
-    input: Vector3; // x, y, timestamp
+    input: Vector2; // x, y
     animation: AnimationState<Vector2>; // dx, dy
+    limiter: LimitType;
   };
   zoom: {
     input: Vector3; // ox, oy, scale
     inputEaseFn: EaseFunction;
     min: number;
     max: number;
-    // todo looks like input easing mechanism (present in zoom, inertia, drag)
-    //  1. input easing, 2. animation easing
+    // todo looks like input easing mechanism (present in zoom, inertia, drag)  1. input easing, 2. animation easing
     animation: AnimationState<Vector3>; // dx, dy, ds
+    limiter: LimitType;
   };
   inertia: {
     input: Vector3[]; // x, y, timestamp
     maxInputSpeed: number;
     animation: AnimationState<Vector2>; // dx, dy
+    limiter: LimitType;
   };
 };
 
@@ -48,4 +49,9 @@ export type AnimationState<Output extends number[] = number[]> = {
   output: Output; // applied over duration
   durationMs: number; // if duration <= deltaTime then instant
   easeFn: EaseFunction;
+  cachedDeltas: Output;
+};
+
+export type LimitType = {
+  toViewport: boolean;
 };

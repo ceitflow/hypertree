@@ -1,43 +1,57 @@
 import { g } from '@joint/core';
 import { State, Vector2 } from '../types.ts';
-import { cacheInertiaMotion, Clamp, Ease, ExtentConstraint, getIntegralLimit, integral, Round } from './input';
+import { AnimateNextFrame, Clamp, Ease, Round } from './input';
 
 export type InputControllerType = ReturnType<typeof InputTransformer>;
 
 export function InputTransformer(state: State) {
-  const { frameStart, inertia, drag, zoom, transform, viewport, viewportPadding, extent } = state;
+  const { frameStart, inertia, drag, zoom, transform, viewport, extent } = state;
+
+  /**
+   * Inertia
+   */
+  const cacheInertiaMotion = (x: number, y: number, reset?: boolean): void => {
+    const fixedDelta = 16.6667; // store position every 60fps frame
+    const cache = inertia.input;
+    const timestamp = frameStart.time;
+    if (reset) {
+      cache.splice(0, cache.length, [x, y, timestamp]);
+    } else cache.push([x, y, timestamp]);
+    for (let i = cache.length - 3; i >= 0; i--) {
+      // leave 2 latest caches in case refresh rate is < 60fps
+      if (timestamp - cache[i][2] > fixedDelta) cache.splice(i, 1);
+    }
+  };
+  // f(x) = velocity * friction^x
+  const integral = (v: number, friction: number, limit: number) =>
+    (Math.abs(v) * Math.pow(friction, limit)) / Math.log(friction) - Math.abs(v) / Math.log(friction);
+
+  // f(x) = stopVelocity => (ln(stopVelocity) - ln(velocity)) / ln(friction)
+  const getIntegralLimit = (v: number, friction: number, stopVelocity: number) =>
+    Math.abs(v) <= stopVelocity ? 0 : (Math.log(stopVelocity) - Math.log(Math.abs(v))) / Math.log(friction);
 
   return {
     invert: (x: number, y: number): Vector2 => [(x - transform[0]) / transform[2], (y - transform[1]) / transform[2]],
 
     dragStart: (x: number, y: number) => {
-      drag.current[0] = x;
-      drag.current[1] = y;
-      drag.input[0] = 0;
-      drag.input[1] = 0;
-      drag.input[2] = frameStart.time;
-      cacheInertiaMotion(x, y, frameStart.time, inertia.input, true);
+      drag.input[0] = x;
+      drag.input[1] = y;
+      drag.animation.output[0] = 0;
+      drag.animation.output[1] = 0;
+      cacheInertiaMotion(x, y, true);
     },
 
     drag: (x: number, y: number) => {
-      const { input, current, animation } = drag;
-      const { output } = animation;
+      const { input, animation } = drag;
 
-      const dx = x - current[0];
-      const dy = y - current[1];
+      const dx = x - input[0];
+      const dy = y - input[1];
+      input[0] = x;
+      input[1] = y;
 
-      current[0] = x;
-      current[1] = y;
-
-      input[0] += dx;
-      input[1] += dy;
-      input[2] = frameStart.time;
-
-      output[0] = input[0];
-      output[1] = input[1];
-
+      animation.output[0] += dx;
+      animation.output[1] += dy;
       animation.timeStart = frameStart.time;
-
       animation.active = true;
     },
 
@@ -122,7 +136,7 @@ export function InputTransformer(state: State) {
         zoom.min,
         zoom.max
       );
-      // todo zoom instantOutput
+
       transform[0] = -(extentRect.width * extentToViewportScale - viewRect.width) / 2;
       transform[1] = -(extentRect.height * extentToViewportScale - viewRect.height) / 2;
       transform[2] = extentToViewportScale;
@@ -130,85 +144,20 @@ export function InputTransformer(state: State) {
 
     nextFrame: () => {
       if (drag.animation.active) {
-        const { input, current, animation } = drag;
-        const { durationMs, easeFn, output } = animation;
-        cacheInertiaMotion(current[0], current[1], frameStart.time, inertia.input);
-
-        if (!output[0] && !output[1]) {
-          animation.active = false;
-          return;
-        }
-
-        let dx: number;
-        let dy: number;
-
-        if (durationMs <= frameStart.deltaTime) {
-          dx = output[0];
-          dy = output[1];
-        } else {
-          let time = frameStart.time - animation.timeStart;
-          if (time >= durationMs) {
-            time = durationMs;
-            drag.animation.active = false;
-          }
-          const prevTime = Math.max(0, time - frameStart.deltaTime);
-          dx = easeFn(time, output[0], durationMs) - easeFn(prevTime, output[0], durationMs); // todo store prev values
-          dy = easeFn(time, output[1], durationMs) - easeFn(prevTime, output[1], durationMs);
-        }
-
-        input[0] -= dx;
-        input[1] -= dy;
-
-        const { xForce, yForce } = ExtentConstraint(dx, dy, transform, viewport, viewportPadding, extent);
-        transform[0] += dx + xForce;
-        transform[1] += dy + yForce;
+        cacheInertiaMotion(drag.input[0], drag.input[1]);
+        AnimateNextFrame(drag.animation, drag.limiter, state);
+        drag.animation.output[0] -= drag.animation.cachedDeltas[0];
+        drag.animation.output[1] -= drag.animation.cachedDeltas[1];
       }
 
       if (zoom.animation.active) {
-        const { animation } = zoom;
-        const { timeStart, durationMs, easeFn, output } = animation;
-
-        if (!output[0] && !output[1] && !output[2]) {
-          animation.active = false;
-          return;
-        }
-
-        let time = frameStart.time - timeStart;
-        if (time >= durationMs) {
-          time = durationMs;
-          zoom.animation.active = false;
-        }
-        const prevTime = Math.max(0, time - frameStart.deltaTime);
-
-        transform[0] += easeFn(time, output[0], durationMs) - easeFn(prevTime, output[0], durationMs);
-        transform[1] += easeFn(time, output[1], durationMs) - easeFn(prevTime, output[1], durationMs);
-        transform[2] += easeFn(time, output[2], durationMs) - easeFn(prevTime, output[2], durationMs);
+        AnimateNextFrame(zoom.animation, zoom.limiter, state);
       }
 
       if (inertia.animation.active) {
         // todo apply friction to inertia if touching the viewport border
         // todo remember pointer pos while inertia runs to animate braking and then going back to pointer pos
-        const { animation } = inertia;
-        const { timeStart, durationMs, easeFn, output } = animation;
-
-        if (!output[0] && !output[1]) {
-          animation.active = false;
-          return;
-        }
-
-        let time = frameStart.time - timeStart;
-        if (time >= durationMs) {
-          time = durationMs;
-          animation.active = false;
-        }
-        const prevTime = Math.max(0, time - frameStart.deltaTime);
-
-        const dx = easeFn(time, output[0], durationMs) - easeFn(prevTime, output[0], durationMs);
-        const dy = easeFn(time, output[1], durationMs) - easeFn(prevTime, output[1], durationMs);
-        const { xForce, yForce } = ExtentConstraint(dx, dy, transform, viewport, viewportPadding, extent);
-
-        transform[0] += dx + xForce;
-        transform[1] += dy + yForce;
+        AnimateNextFrame(inertia.animation, inertia.limiter, state);
       }
     },
   };

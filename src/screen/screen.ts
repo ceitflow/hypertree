@@ -34,14 +34,17 @@ export function Screen(paper: dia.Paper, container: HTMLElement) {
     },
 
     drag: {
-      current: [0, 0],
-      input: [0, 0, 0],
+      input: [0, 0],
       animation: {
         active: false,
         timeStart: 0,
         output: [0, 0],
         durationMs: 300,
         easeFn: Ease.outBack,
+        cachedDeltas: [0, 0],
+      },
+      limiter: {
+        toViewport: true,
       },
     },
     zoom: {
@@ -55,6 +58,10 @@ export function Screen(paper: dia.Paper, container: HTMLElement) {
         output: [0, 0, 0],
         durationMs: 500,
         easeFn: Ease.outQuint,
+        cachedDeltas: [0, 0, 0],
+      },
+      limiter: {
+        toViewport: false,
       },
     },
     inertia: {
@@ -66,6 +73,10 @@ export function Screen(paper: dia.Paper, container: HTMLElement) {
         durationMs: 0,
         output: [0, 0],
         easeFn: Ease.outQuint,
+        cachedDeltas: [0, 0],
+      },
+      limiter: {
+        toViewport: true,
       },
     },
   };
@@ -129,6 +140,7 @@ export function Screen(paper: dia.Paper, container: HTMLElement) {
 
   return {
     inputTransformer,
+    state,
     onDestroy: (): void => {
       cancelAnimationFrame(loopId);
     },

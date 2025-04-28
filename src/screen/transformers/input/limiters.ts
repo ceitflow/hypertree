@@ -2,7 +2,7 @@ import { Rect, TransformType } from '../../types.ts';
 
 // when moving beyond extent + padding, only allow to move in the opposite direction
 // returns constraint force
-export function ExtentConstraint(dx: number, dy: number, t: TransformType, view: Rect, viewportPadding: number, extent: Rect) {
+export function ExtentLimiter(dx: number, dy: number, t: TransformType, view: Rect, viewportPadding: number, extent: Rect) {
   const x = t[0] + dx;
   const y = t[1] + dy;
   const scale = t[2];
