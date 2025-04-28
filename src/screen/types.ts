@@ -17,27 +17,23 @@ export type State = {
 
   // inputs
   drag: {
-    input: Vector2;
-    inputEaseFn: EaseFunction; // default linear? or allow null, then input -> output
-    output: Vector2; // dx, dy
-    animation: AnimationState;
+    input: Vector3; // x, y, timestamp
+    cachedInput: Vector3;
+    animation: AnimationState<Vector2>; // dx, dy
   };
   zoom: {
     input: Vector3; // ox, oy, scale
+    inputEaseFn: EaseFunction;
     min: number;
     max: number;
-    inputEaseFn: EaseFunction;
-    output: Vector3; // dx, dy, ds // can bypass input by setting directly to output - then run the animation
     // todo looks like input easing mechanism (present in zoom, inertia, drag)
     //  1. input easing, 2. animation easing
-    animation: AnimationState;
+    animation: AnimationState<Vector3>; // dx, dy, ds
   };
   inertia: {
     input: Vector3[]; // x, y, timestamp
     maxInputSpeed: number;
-    inputEaseFn: EaseFunction;
-    output: Vector2; // dx, dy
-    animation: AnimationState;
+    animation: AnimationState<Vector2>; // dx, dy
   };
 };
 
@@ -46,9 +42,13 @@ export type FrameStart = {
   deltaTime: number; // duration between last frame and current
 };
 
-export type AnimationState = {
+export type AnimationState<Output extends number[] = number[]> = {
   active: boolean;
   timeStart: number;
-  durationMs: number; // todo if durationMs == 0 then immediate
+  // todo input? split to instant and ease in nextFrame
+  instantOutput: Output; // applied in the next frame // todo remove, use durationMs 0
+  easeOutput: Output; // applied over duration
+  durationMs: number; // todo if durationMs == 0 or <= deltaTime, then immediate
   easeFn: EaseFunction;
+  easeOutputRatio: number; // [0,1]
 };

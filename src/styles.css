@@ -65,20 +65,14 @@ body {
     transform-style: preserve-3d;
 
     .joint-paper {
-      /*background-color:lightsteelblue;*/
       perspective: 110px;
       transform-style: preserve-3d;
       transform-origin: 0 0;
-      overflow: visible;
+      overflow: hidden;
+      border-radius: 32px;
 
       .joint-paper-background {
         background-color: #f8f8f8;
-        /*box-shadow: 0 3px 3px -2px rgba(0, 0, 0, 0.2), 0 3px 4px 0 rgba(0, 0, 0, 0.14), 0 1px 8px 0 rgba(0, 0, 0, 0.12);*/
-        /*transform: rotateY(1deg) translateZ(-1px);*/
-      }
-
-      > svg {
-        /*transform: translateZ(51px);*/
       }
     }
   }
