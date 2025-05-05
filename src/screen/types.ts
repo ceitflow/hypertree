@@ -18,9 +18,9 @@ export type State = {
   // inputs
   drag: {
     current: Vector2; // x, y
-    input: Vector3; // x, y, timestamp
-    animation: AnimationState<Vector2>; // dx, dy
+    input: Vector3; // x, y, startTimestamp
     limiter: LimitType;
+    animation: AnimationState<Vector2>; // dx, dy
   };
   zoom: {
     input: Vector3; // ox, oy, scale
@@ -33,9 +33,13 @@ export type State = {
   };
   inertia: {
     input: Vector3[]; // x, y, timestamp
+    deltaX: number;
+    deltaY: number;
+    deltaT: number;
+    friction: number;
     maxInputSpeed: number;
-    animation: AnimationState<Vector2>; // dx, dy
     limiter: LimitType;
+    animation: AnimationState<Vector2>; // dx, dy
   };
 };
 

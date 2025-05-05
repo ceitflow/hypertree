@@ -40,7 +40,7 @@ export function Screen(paper: dia.Paper, container: HTMLElement) {
         active: false,
         timeStart: 0,
         output: [0, 0],
-        durationMs: 1000,
+        durationMs: 200,
         easeFn: Ease.outBack,
         cachedDeltas: [0, 0],
       },
@@ -67,7 +67,11 @@ export function Screen(paper: dia.Paper, container: HTMLElement) {
     },
     inertia: {
       input: [],
-      maxInputSpeed: 15,
+      friction: 0,
+      deltaX: 0,
+      deltaY: 0,
+      deltaT: 0,
+      maxInputSpeed: 5,
       animation: {
         active: false,
         timeStart: 0,

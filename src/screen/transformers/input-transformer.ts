@@ -1,17 +1,15 @@
 import { g } from '@joint/core';
 import { State, Vector2 } from '../types.ts';
-import { AnimateNextFrame, Clamp, Ease, Round } from './input';
+import { AnimateNextFrame, Clamp, Ease, ExtentLimiter, Round } from './input';
 
 export type InputControllerType = ReturnType<typeof InputTransformer>;
 
 export function InputTransformer(state: State) {
-  const { frameStart, inertia, drag, zoom, transform, viewport, extent } = state;
+  const { frameStart, inertia, drag, zoom, transform, viewport, viewportPadding, extent } = state;
 
-  /**
-   * Inertia
-   */
+  /* Inertia */
   const cacheInertiaMotion = (x: number, y: number, reset?: boolean): void => {
-    const fixedDelta = 16.6667; // store position every 60fps frame
+    const fixedDelta = 20; // todo put in config
     const cache = inertia.input;
     const timestamp = frameStart.time;
     if (reset) {
@@ -26,7 +24,7 @@ export function InputTransformer(state: State) {
   const integral = (v: number, friction: number, limit: number) =>
     (Math.abs(v) * Math.pow(friction, limit)) / Math.log(friction) - Math.abs(v) / Math.log(friction);
 
-  // f(x) = stopVelocity => (ln(stopVelocity) - ln(velocity)) / ln(friction)
+  // f(x) = (ln(stopVelocity) - ln(velocity)) / ln(friction)
   const getIntegralLimit = (v: number, friction: number, stopVelocity: number) =>
     Math.abs(v) <= stopVelocity ? 0 : (Math.log(stopVelocity) - Math.log(Math.abs(v))) / Math.log(friction);
 
@@ -60,6 +58,7 @@ export function InputTransformer(state: State) {
       animation.output[1] = input[1];
       animation.timeStart = frameStart.time;
       animation.active = true;
+      cacheInertiaMotion(x, y);
     },
 
     pinchDrag: (dx: number, dy: number, scale?: number) => {
@@ -75,32 +74,75 @@ export function InputTransformer(state: State) {
     startInertia: () => {
       const { input, animation } = inertia;
 
-      // todo inertia use drag.output values
+      // todo apply friction to inertia if touching the viewport border
+      // todo remember pointer pos while inertia runs to animate braking and then going back to pointer pos
+
+      function brakeRatio(vel: number, baseline: number, strength: number) {
+        if (vel <= baseline) return 1;
+        const excess = vel - baseline;
+        const smoothed = Math.log1p(excess) * strength;
+        return (baseline + smoothed) / vel;
+      }
+
+      const currentZoom = transform[2];
+      const zoomRatio = 0.5 + Clamp((Math.log(currentZoom) - Math.log(zoom.min)) / (Math.log(zoom.max) - Math.log(zoom.min)), 0, 1) * 0.5;
       const stopVelocity = 1;
+      const baselineVelocity = 50;
+
       // actual distance made by the motion
-      const vx = input[input.length - 1][0] - input[0][0];
-      const vy = input[input.length - 1][1] - input[0][1];
-      const delta = input[input.length - 1][2] - input[0][2];
+      inertia.deltaX = (input[input.length - 1][0] - input[0][0]) * zoomRatio;
+      inertia.deltaY = (input[input.length - 1][1] - input[0][1]) * zoomRatio;
+      inertia.deltaT = input[input.length - 1][2] - input[0][2];
+      console.log(inertia.deltaX);
 
-      if (!delta || Math.abs(vx) + Math.abs(vy) <= stopVelocity) return;
+      const velocity = Math.max(Math.abs(inertia.deltaX) / inertia.deltaT, Math.abs(inertia.deltaY) / inertia.deltaT);
+      const brake = Math.min(
+        brakeRatio(Math.abs(inertia.deltaX), baselineVelocity, velocity * 1.5),
+        brakeRatio(Math.abs(inertia.deltaY), baselineVelocity, velocity * 1.5)
+      );
 
-      // calculate strength based on friction
-      let speed = Clamp(Math.max(Math.abs(vx) / delta, Math.abs(vy) / delta), 0, inertia.maxInputSpeed);
-      const logValue = Math.log(speed + 1);
-      const friction = 0.8 + Ease.outCubic(speed, 1, 15) * 0.17;
-      // console.log(logValue / Math.log(maxSpeed + 1), Ease.outCubic(speed, 1, 15));
-      speed = (logValue / Math.log(inertia.maxInputSpeed + 1)) * 2;
+      inertia.deltaX *= brake;
+      inertia.deltaY *= brake;
 
-      const xLimit = getIntegralLimit(vx, friction, stopVelocity);
-      const yLimit = getIntegralLimit(vy, friction, stopVelocity);
+      if (!inertia.deltaT || Math.abs(inertia.deltaX) + Math.abs(inertia.deltaY) <= stopVelocity) return;
 
-      const duration = Math.max(xLimit * delta, yLimit * delta);
+      inertia.friction = 0.92; //+ Ease.linear(velocity, 1, 15) * 0.05;
 
-      animation.durationMs = duration / speed;
+      if (drag.animation.durationMs) {
+        const dragInputX = drag.input[0];
+        const dragInputY = drag.input[1];
+        const dragLimit = drag.animation.durationMs / inertia.deltaT;
+        const dragDeltaX = (dragInputX * Math.log(inertia.friction)) / (Math.pow(inertia.friction, dragLimit) - 1);
+        const dragDeltaY = (dragInputY * Math.log(inertia.friction)) / (Math.pow(inertia.friction, dragLimit) - 1);
 
-      animation.output[0] = Math.sign(vx) * integral(vx, friction, xLimit);
-      animation.output[1] = Math.sign(vy) * integral(vy, friction, yLimit);
+        if (Math.abs(dragDeltaX) > Math.abs(inertia.deltaX)) inertia.deltaX = dragDeltaX;
+        if (Math.abs(dragDeltaY) > Math.abs(inertia.deltaY)) inertia.deltaY = dragDeltaY;
+      }
 
+      const xLimit = getIntegralLimit(inertia.deltaX, inertia.friction, stopVelocity);
+      const yLimit = getIntegralLimit(inertia.deltaY, inertia.friction, stopVelocity);
+
+      animation.durationMs = Math.max(xLimit * inertia.deltaT, yLimit * inertia.deltaT); // duration / speed;
+      /*
+        nice to have: dynamic duration calculation for every easeFn
+         and smoothDuration can be toggled on/off
+        provide all inverted Ease functions?
+       */
+
+      console.log(
+        'input: ',
+        inertia.deltaX,
+        'duration ',
+        animation.durationMs,
+        'friction',
+        inertia.friction,
+        'brake',
+        brake,
+        'velocity',
+        velocity,
+        'zoomRatio',
+        zoomRatio
+      );
       animation.timeStart = frameStart.time;
       animation.active = true;
     },
@@ -163,9 +205,26 @@ export function InputTransformer(state: State) {
       }
 
       if (inertia.animation.active) {
-        // todo apply friction to inertia if touching the viewport border
-        // todo remember pointer pos while inertia runs to animate braking and then going back to pointer pos
-        AnimateNextFrame(inertia.animation, inertia.limiter, state);
+        const { deltaX, deltaY, deltaT, limiter, friction, animation } = inertia;
+        // TODO implement integral easeFn. add on top of it another easeFn (optionally- if it adds the subtract, if removes then add to totalDistance)
+        const time = Clamp(frameStart.time - frameStart.deltaTime - animation.timeStart, 0, animation.durationMs);
+        const pow = time / deltaT;
+
+        // f(x) = velocity * friction^x
+        let dx = deltaX * Math.pow(friction, pow);
+        let dy = deltaY * Math.pow(friction, pow);
+        // console.log(dx, 'eased', Ease.outElastic(dx, vx, vx));
+
+        if (limiter.toViewport) {
+          const { xForce, yForce } = ExtentLimiter(dx, dy, transform, viewport, viewportPadding, extent);
+          // todo if force==0 then clear physics force
+          dx += xForce;
+          dy += yForce;
+        }
+
+        transform[0] += dx;
+        transform[1] += dy;
+        if (time >= animation.durationMs) animation.active = false; // todo add leftover
       }
     },
   };

@@ -9,6 +9,7 @@ export function Mouse(input: InputControllerType, paper: dia.Paper, container: H
 
   return {
     start: (e: MouseEvent) => {
+      if (e.buttons !== 1) return;
       container.setPointerCapture(pointerCaptureId);
       if (paper.findView(e.target)) input.stopInertia();
       else {
