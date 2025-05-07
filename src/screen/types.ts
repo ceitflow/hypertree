@@ -33,14 +33,21 @@ export type State = {
   };
   inertia: {
     input: Vector3[]; // x, y, timestamp
-    deltaX: number;
-    deltaY: number;
     deltaT: number;
+    deltaX: number;
+    distanceX: number;
+
+    deltaY: number;
+    distanceY: number;
+
     friction: number;
     maxInputSpeed: number;
+    // customEaseFn: EaseFunction
+
     limiter: LimitType;
     animation: AnimationState<Vector2>; // dx, dy
   };
+  // animation: {} animated transitions, walkthrough etc 
 };
 
 export type FrameStart = {

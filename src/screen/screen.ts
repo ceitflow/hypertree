@@ -69,7 +69,9 @@ export function Screen(paper: dia.Paper, container: HTMLElement) {
       input: [],
       friction: 0,
       deltaX: 0,
+      distanceX: 0,
       deltaY: 0,
+      distanceY: 0,
       deltaT: 0,
       maxInputSpeed: 5,
       animation: {

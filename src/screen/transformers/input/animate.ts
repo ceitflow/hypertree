@@ -43,7 +43,7 @@ export const AnimateNextFrame = (
       if (isVector3) output[2] = 0;
     }
   }
-  // if (incrementValues)
+
   cachedDeltas[0] = dx;
   cachedDeltas[1] = dy;
   cachedDeltas[2] = ds;
