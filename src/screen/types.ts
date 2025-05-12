@@ -21,6 +21,7 @@ export type State = {
     input: Vector3; // x, y, startTimestamp
     limiter: LimitType;
     animation: AnimationState<Vector2>; // dx, dy
+    isDragging: NodeJS.Timeout | null;
   };
   zoom: {
     input: Vector3; // ox, oy, scale
@@ -33,19 +34,18 @@ export type State = {
   };
   inertia: {
     input: Vector3[]; // x, y, timestamp
-    deltaT: number;
-    deltaX: number;
-    distanceX: number;
-
-    deltaY: number;
-    distanceY: number;
-
+    inputCacheDurationMs: number;
+    output: Vector3; // totalX, totalY, totalT
     friction: number;
-    maxInputSpeed: number;
-    // customEaseFn: EaseFunction
-
+    turboVelocityThreshold: number;
+    minVelocity: number;
+    defaultEaseFn: EaseFunction;
     limiter: LimitType;
-    animation: AnimationState<Vector2>; // dx, dy
+    animation: {
+      active: boolean;
+      timeStart: number;
+      easeFn?: EaseFunction;
+    }
   };
   // animation: {} animated transitions, walkthrough etc 
 };

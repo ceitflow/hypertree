@@ -12,6 +12,10 @@ export class Ease {
   // - space like (low gravity)
   // todo matrix demo with falling shapes
 
+  static noop(t: number, c: number, d: number) {
+    return 0;
+  }
+
   static linear(t: number, c: number, d: number) {
     return c * (t / d);
   }

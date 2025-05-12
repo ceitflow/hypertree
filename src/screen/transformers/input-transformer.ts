@@ -7,25 +7,25 @@ export type InputControllerType = ReturnType<typeof InputTransformer>;
 export function InputTransformer(state: State) {
   const { frameStart, inertia, drag, zoom, transform, viewport, viewportPadding, extent } = state;
 
-  /* Inertia */
   const cacheInertiaMotion = (x: number, y: number, reset?: boolean): void => {
-    const fixedDelta = 20; // todo put in config
     const cache = inertia.input;
-    const timestamp = frameStart.time;
+    const cacheDurationMs = inertia.inputCacheDurationMs;
+    const timestamp = Date.now();
     if (reset) {
       cache.splice(0, cache.length, [x, y, timestamp]);
     } else cache.push([x, y, timestamp]);
+
     for (let i = cache.length - 3; i >= 0; i--) {
       // leave 2 latest caches in case refresh rate is < 60fps
-      if (timestamp - cache[i][2] > fixedDelta) cache.splice(i, 1);
+      if (timestamp - cache[i][2] > cacheDurationMs) cache.splice(i, 1);
     }
   };
   // f(x) = velocity * friction^x
-  const integral = (v: number, friction: number, limit: number) =>
+  const inertiaIntegral = (v: number, friction: number, limit: number) =>
     (v * Math.pow(friction, limit)) / Math.log(friction) - v / Math.log(friction);
 
   // f(x) = (ln(stopVelocity) - ln(velocity)) / ln(friction)
-  const getIntegralLimit = (v: number, friction: number, stopVelocity: number) =>
+  const inertiaIntegralLimit = (v: number, friction: number, stopVelocity: number) =>
     Math.abs(v) <= stopVelocity ? 0 : (Math.log(stopVelocity) - Math.log(Math.abs(v))) / Math.log(friction);
 
   return {
@@ -58,7 +58,6 @@ export function InputTransformer(state: State) {
       animation.output[1] = input[1];
       animation.timeStart = frameStart.time;
       animation.active = true;
-      cacheInertiaMotion(x, y);
     },
 
     pinchDrag: (dx: number, dy: number, scale?: number) => {
@@ -72,60 +71,50 @@ export function InputTransformer(state: State) {
     },
 
     startInertia: () => {
-      const { input, animation } = inertia;
-
+      const { input, output, friction, animation, turboVelocityThreshold, minVelocity } = inertia;
       // todo apply friction to inertia if touching the viewport border
-      // todo remember pointer pos while inertia runs to animate braking and then going back to pointer pos
-
-      function brakeRatio(vel: number, baseline: number, strength: number) {
-        if (vel <= baseline) return 1;
-        const excess = vel - baseline;
-        const smoothed = Math.log1p(excess) * strength;
-        return (baseline + smoothed) / vel;
-      }
-
-      const currentZoom = transform[2];
-      const zoomRatio =
-        0.5 + Clamp((Math.log(currentZoom) - Math.log(zoom.min)) / (Math.log(zoom.max) - Math.log(zoom.min)), 0, 1) * 0.5;
-      const stopVelocity = 1;
-      const baselineVelocity = 50;
+      // remember pointer pos while inertia runs to animate braking and then going back to pointer pos
 
       // actual distance made by the motion
-      inertia.deltaX = (input[input.length - 1][0] - input[0][0]) * zoomRatio;
-      inertia.deltaY = (input[input.length - 1][1] - input[0][1]) * zoomRatio;
-      inertia.deltaT = input[input.length - 1][2] - input[0][2];
-      console.log(inertia.deltaX);
+      let dx = input[input.length - 1][0] - input[0][0];
+      let dy = input[input.length - 1][1] - input[0][1];
+      const dt = input[input.length - 1][2] - input[0][2];
 
-      const velocity = Math.max(Math.abs(inertia.deltaX) / inertia.deltaT, Math.abs(inertia.deltaY) / inertia.deltaT);
-      const brake = Math.min(
-        brakeRatio(Math.abs(inertia.deltaX), baselineVelocity, velocity * 1.75),
-        brakeRatio(Math.abs(inertia.deltaY), baselineVelocity, velocity * 1.75)
-      );
+      const velocity = Math.max(Math.abs(dx) / dt, Math.abs(dy) / dt);
+      const turbo = Math.max(0, velocity - turboVelocityThreshold) / turboVelocityThreshold;
+      if (turbo) {
+        dx *= 1 + turbo;
+        dy *= 1 + turbo;
+      }
 
-      inertia.deltaX *= brake;
-      inertia.deltaY *= brake;
+      if (!dt || Math.abs(dx) + Math.abs(dy) <= minVelocity) {
+        return;
+      }
 
-      if (!inertia.deltaT || Math.abs(inertia.deltaX) + Math.abs(inertia.deltaY) <= stopVelocity) return;
-
-      inertia.friction = 0.92; //+ Ease.linear(velocity, 1, 15) * 0.05;
-
+      // if drag animation has more drag then use its value
       if (drag.animation.durationMs) {
         const dragInputX = drag.input[0];
         const dragInputY = drag.input[1];
-        const dragLimit = drag.animation.durationMs / inertia.deltaT;
-        const dragDeltaX = (dragInputX * Math.log(inertia.friction)) / (Math.pow(inertia.friction, dragLimit) - 1);
-        const dragDeltaY = (dragInputY * Math.log(inertia.friction)) / (Math.pow(inertia.friction, dragLimit) - 1);
+        const dragLimit = drag.animation.durationMs / dt;
+        const dragDeltaX = (dragInputX * Math.log(friction)) / (Math.pow(friction, dragLimit) - 1);
+        const dragDeltaY = (dragInputY * Math.log(friction)) / (Math.pow(friction, dragLimit) - 1);
 
-        if (Math.abs(dragDeltaX) > Math.abs(inertia.deltaX)) inertia.deltaX = dragDeltaX;
-        if (Math.abs(dragDeltaY) > Math.abs(inertia.deltaY)) inertia.deltaY = dragDeltaY;
+        if (Math.abs(dragDeltaX) > Math.abs(dx)) dx = dragDeltaX;
+        if (Math.abs(dragDeltaY) > Math.abs(dy)) dy = dragDeltaY;
       }
 
-      const xLimit = getIntegralLimit(inertia.deltaX, inertia.friction, stopVelocity);
-      const yLimit = getIntegralLimit(inertia.deltaY, inertia.friction, stopVelocity);
-      inertia.distanceX = integral(inertia.deltaX, inertia.friction, xLimit);
-      inertia.distanceY = integral(inertia.deltaY, inertia.friction, yLimit);
+      const xLimit = inertiaIntegralLimit(dx, friction, minVelocity);
+      const yLimit = inertiaIntegralLimit(dy, friction, minVelocity);
 
-      animation.durationMs = Math.max(xLimit * inertia.deltaT, yLimit * inertia.deltaT); // duration / speed;
+      output[0] = inertiaIntegral(dx, friction, xLimit);
+      output[1] = inertiaIntegral(dy, friction, yLimit);
+      output[2] = Math.max(xLimit * dt, yLimit * dt);
+
+      inertia.defaultEaseFn = (t, c, d) => {
+        const isX = c === output[0];
+        return inertiaIntegral(isX ? dx : dy, friction, (t / d) * (isX ? xLimit : yLimit));
+      }
+
       /*
         nice to have: dynamic duration calculation for every easeFn
          and smoothDuration can be toggled on/off
@@ -133,20 +122,20 @@ export function InputTransformer(state: State) {
        */
 
       console.log(
+        input,
+        dt,
         'input: ',
-        inertia.deltaX,
+        dx,
         'duration ',
-        animation.durationMs,
+        output[2],
         'friction',
-        inertia.friction,
+        friction,
         'xLimit',
         xLimit,
-        'brake',
-        brake,
         'velocity',
         velocity,
-        'zoomRatio',
-        zoomRatio
+        'turbo',
+        turbo
       );
       animation.timeStart = frameStart.time;
       animation.active = true;
@@ -210,46 +199,33 @@ export function InputTransformer(state: State) {
       }
 
       if (inertia.animation.active) {
-        const { deltaX, deltaY, deltaT, limiter, friction, animation } = inertia;
-        // TODO implement integral easeFn. add on top of it another easeFn (optionally- if it adds the subtract, if removes then add to totalDistance)
-        const time = Clamp(frameStart.time - animation.timeStart, 0, animation.durationMs);
+        const { output, defaultEaseFn, limiter, animation } = inertia;
+        const time = Clamp(frameStart.time - animation.timeStart, 0, output[2]);
         const prevTime = Math.max(time - frameStart.deltaTime, 0);
 
-        let dx = integral(deltaX, friction, time / deltaT) - integral(deltaX, friction, prevTime / deltaT);
-        let dy = integral(deltaY, friction, time / deltaT) - integral(deltaY, friction, prevTime / deltaT);
+        const easeFn = animation.easeFn ?? defaultEaseFn;
+        let dx = easeFn(time, output[0], output[2]) - easeFn(prevTime, output[0], output[2]);
+        let dy = easeFn(time, output[1], output[2]) - easeFn(prevTime, output[1], output[2]);
 
-        const easeFn = Ease.outQuint;
-        // dx = easeFn(time, inertia.distanceX, animation.durationMs) - easeFn(prevTime, inertia.distanceX, animation.durationMs);
-        // dy = easeFn(time, inertia.distanceY, animation.durationMs) - easeFn(prevTime, inertia.distanceY, animation.durationMs);
-
-        // if (Math.abs(dx) >= Math.abs(inertia.distanceX)) dx = inertia.distanceX;
-        // if (Math.abs(dy) >= Math.abs(inertia.distanceY)) dy = inertia.distanceY;
-
-        if (time >= animation.durationMs) {
+        if (time >= output[2]) {
           animation.active = false;
         }
 
-        // inertia.distanceX -= Math.abs(dx);
-        // inertia.distanceY -= Math.abs(dy);
-
-        console.log(
-          'dx',
-          dx,
-          'distanceX',
-          inertia.distanceX,
-          'durationMs',
-          animation.durationMs,
-          'dt',
-          time / animation.durationMs,
-          'time',
-          time,
-          'ratio',
-          dx / deltaX
-        );
+        // console.log(
+        //   'dx',
+        //   dx,
+        //   'durationMs',
+        //   animation.durationMs,
+        //   'dt',
+        //   time / animation.durationMs,
+        //   'time',
+        //   time,
+        //   'ratio',
+        //   dx / output[0]
+        // );
 
         if (limiter.toViewport) {
           const { xForce, yForce } = ExtentLimiter(dx, dy, transform, viewport, viewportPadding, extent);
-          // todo if force==0 then clear physics force
           dx += xForce;
           dy += yForce;
         }
