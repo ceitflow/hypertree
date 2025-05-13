@@ -2,15 +2,15 @@ import { State } from '../types.ts';
 import { dia } from '@joint/core';
 
 export function ScreenTransformer(
-  { transform: t, physicsTransform: pt, frameStartTransform: ft, extent, viewport }: State,
+  { transform: t, frameStartTransform: ft, extent, viewport }: State,
   paperStyle: CSSStyleDeclaration
 ) {
   return {
     nextFrame: () => {
-      const t0 = t[0] + pt[1];
-      const t1 = t[1] + pt[3];
-      const t2 = t[2] + pt[0];
-      const t3 = t[2] + pt[3];
+      const t0 = t[0];
+      const t1 = t[1];
+      const t2 = t[2];
+      const t3 = t[2];
       if (ft[0] !== t0 || ft[1] !== t1 || ft[2] !== t2 || ft[3] !== t3) {
         paperStyle.transform = `matrix(${t2}, 0, 0, ${t3}, ${t0}, ${t1})`;
         ft[0] = t0;

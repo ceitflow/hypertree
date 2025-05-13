@@ -7,36 +7,52 @@ export type EaseFunction = (dt: number, value: number, duration: number) => numb
 
 export type State = {
   transform: TransformType;
-  physicsTransform: Vector4;
-  frameStartTransform: Vector4; // transform + physicsTransform
+  frameStartTransform: Vector4; // transform + physicsTransform, for change detection
   viewport: Rect;
   viewportPadding: number; // 0 - 1.0 percentage of current viewport to use as padding
   extent: Rect;
 
   frameStart: FrameStart;
 
+  physics: {
+    active: boolean;
+    input: Vector2; // dx, dy <- squeeze forces
+    // apply directly to transform // dx, dy, scaleX, scaleY? <- need physics input and output
+  };
+
   // inputs
   drag: {
     current: Vector2; // x, y
     input: Vector3; // x, y, startTimestamp
     limiter: LimitType;
-    animation: AnimationState<Vector2>; // dx, dy
-    isDragging: NodeJS.Timeout | null;
+    animation: {
+      active: boolean;
+      timeStart: number;
+      output: Vector2; // dx, dy
+      durationMs: number;
+      easeFn: EaseFunction;
+    };
   };
   zoom: {
     input: Vector3; // ox, oy, scale
     inputEaseFn: EaseFunction;
     min: number;
     max: number;
-    // todo looks like input easing mechanism (present in zoom, inertia, drag)  1. input easing, 2. animation easing
-    animation: AnimationState<Vector3>; // dx, dy, ds
+    animation: {
+      active: boolean;
+      timeStart: number;
+      output: Vector3; // dx, dy, ds
+      durationMs: number;
+      easeFn: EaseFunction;
+    };
     limiter: LimitType;
   };
   inertia: {
     input: Vector3[]; // x, y, timestamp
     inputCacheDurationMs: number;
-    output: Vector3; // totalX, totalY, totalT
+    output: Vector2; // totalX, totalY
     friction: number;
+    durationMultiplier: number;
     turboVelocityThreshold: number;
     minVelocity: number;
     defaultEaseFn: EaseFunction;
@@ -44,6 +60,7 @@ export type State = {
     animation: {
       active: boolean;
       timeStart: number;
+      durationMs: number;
       easeFn?: EaseFunction;
     }
   };
@@ -55,15 +72,7 @@ export type FrameStart = {
   deltaTime: number; // duration between last frame and current
 };
 
-export type AnimationState<Output extends number[] = number[]> = {
-  active: boolean;
-  timeStart: number;
-  output: Output; // applied over duration
-  durationMs: number; // if duration <= deltaTime then instant
-  easeFn: EaseFunction;
-  cachedDeltas: Output;
-};
-
 export type LimitType = {
-  toViewport: boolean;
+  forces: Vector2;
+  toViewport?: boolean;
 };
