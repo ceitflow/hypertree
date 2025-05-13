@@ -7,6 +7,7 @@ export type EaseFunction = (dt: number, value: number, duration: number) => numb
 
 export type State = {
   transform: TransformType;
+  physicsTransform: Vector4;
   frameStartTransform: Vector4; // transform + physicsTransform, for change detection
   viewport: Rect;
   viewportPadding: number; // 0 - 1.0 percentage of current viewport to use as padding
@@ -17,7 +18,7 @@ export type State = {
   physics: {
     active: boolean;
     input: Vector2; // dx, dy <- squeeze forces
-    // apply directly to transform // dx, dy, scaleX, scaleY? <- need physics input and output
+    scale: number
   };
 
   // inputs
@@ -73,6 +74,6 @@ export type FrameStart = {
 };
 
 export type LimitType = {
-  forces: Vector2;
+  forces: Vector4; // totalX, totalY, dx, dy
   toViewport?: boolean;
 };

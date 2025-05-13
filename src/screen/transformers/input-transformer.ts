@@ -1,12 +1,13 @@
 import { g } from '@joint/core';
-import { State, Vector2 } from '../types.ts';
+import { State, Vector2, Vector4 } from '../types.ts';
 import { Clamp, Ease, ExtentLimiter, Round } from './input';
 
 export type InputControllerType = ReturnType<typeof InputTransformer>;
 
 export function InputTransformer(state: State) {
-  const { frameStart, inertia, drag, zoom, transform, viewport, viewportPadding, extent } = state;
+  const { frameStart, inertia, drag, zoom, transform, viewport, physics, viewportPadding, extent } = state;
 
+  // inertia
   const cacheInertiaMotion = (x: number, y: number, reset?: boolean): void => {
     const cache = inertia.input;
     const cacheDurationMs = inertia.inputCacheDurationMs;
@@ -27,11 +28,33 @@ export function InputTransformer(state: State) {
   const inertiaIntegralLimit = (v: number, friction: number, stopVelocity: number) =>
     Math.abs(v) <= stopVelocity ? 0 : (Math.log(stopVelocity) - Math.log(Math.abs(v))) / Math.log(friction); // f(x) = (ln(stopVelocity) - ln(velocity)) / ln(friction)
 
+  // zoom
   const invertScaleToZoomStep = (targetZoom: number) => {
-    const { min, max, inputEaseFn } = zoom;
     // (input[2] - min) / (max - min) = Inverse(fn, extentToViewportScale - min, max - min, 1)
     // input[2]  = Inverse() * (max - min) + min
+    const { min, max, inputEaseFn } = zoom;
     return Ease.Inverse(inputEaseFn, targetZoom - min, max - min, 1) * (max - min) + min;
+  };
+
+  // physics
+  const limitToExtent = (forces: Vector4, dx: number, dy: number): void => {
+    const { xForce, yForce } = ExtentLimiter(dx, dy, transform, viewport, viewportPadding, extent);
+    forces[0] += xForce;
+    forces[1] += yForce;
+    forces[2] = xForce;
+    forces[3] = yForce;
+    if (!xForce && !yForce) {
+      clearLimiterForces(forces);
+    } else {
+      physics.input[0] += xForce;
+      physics.input[1] += yForce;
+    }
+  };
+  const clearLimiterForces = (forces: Vector4) => {
+    physics.input[0] -= forces[0]; // clear applied force
+    physics.input[1] -= forces[1];
+    forces[0] = 0;
+    forces[1] = 0;
   }
 
   return {
@@ -74,6 +97,7 @@ export function InputTransformer(state: State) {
 
     dragStop: () => {
       drag.animation.active = false;
+      clearLimiterForces(drag.limiter.forces);
     },
 
     startInertia: () => {
@@ -148,6 +172,7 @@ export function InputTransformer(state: State) {
 
     stopInertia: () => {
       inertia.animation.active = false;
+      clearLimiterForces(inertia.limiter.forces);
     },
 
     // todo adaptive zoom step (like inertia) if zooming while is active then speed up
@@ -189,10 +214,11 @@ export function InputTransformer(state: State) {
 
     nextFrame: () => {
       if (drag.animation.active) {
-        const { current, animation, limiter } = drag;
-        cacheInertiaMotion(current[0], current[1]);
+        const { current, animation, limiter, input } = drag;
         const { durationMs, easeFn, output, timeStart } = animation;
+        const { toViewport, forces } = limiter;
 
+        cacheInertiaMotion(current[0], current[1]);
         let dx: number;
         let dy: number;
 
@@ -207,39 +233,31 @@ export function InputTransformer(state: State) {
           const prevTime = Math.max(0, time - frameStart.deltaTime);
           dx = easeFn(time, output[0], durationMs) - easeFn(prevTime, output[0], durationMs);
           dy = easeFn(time, output[1], durationMs) - easeFn(prevTime, output[1], durationMs);
-          // if animation has finished
           if (time === durationMs) {
             animation.active = false;
           }
         }
 
-        if (limiter.toViewport) {
-          const { xForce, yForce } = ExtentLimiter(dx, dy, transform, viewport, viewportPadding, extent);
-          // todo if force==0 then clear physics force
-          dx += xForce;
-          dy += yForce;
+        if (toViewport) {
+          limitToExtent(forces, dx, dy);
         }
-        transform[0] += dx;
-        transform[1] += dy;
-        drag.input[0] -= dx;
-        drag.input[1] -= dy;
+        transform[0] += dx + forces[2];
+        transform[1] += dy + forces[3];
+        input[0] -= dx; // todo can add config to replace with (-= dx + forces[0]) so if mouse goes outside viewport, the last position is remembered
+        input[1] -= dy;
       }
 
       if (zoom.animation.active) {
         const { animation, limiter } = zoom;
         const { durationMs, easeFn, output } = animation;
+        const { toViewport, forces } = limiter;
 
-        // if empty
-        if (!(output[0] || output[1] || output[2])) {
-          animation.active = false;
-          return;
-        }
         let dx: number;
         let dy: number;
         let ds: number;
 
-        // if instant
-        if (durationMs <= frameStart.deltaTime) {
+        // if instant or empty
+        if (durationMs <= frameStart.deltaTime || !(output[0] || output[1] || output[2])) {
           dx = output[0];
           dy = output[1];
           ds = output[2];
@@ -251,33 +269,41 @@ export function InputTransformer(state: State) {
           dx = easeFn(time, output[0], durationMs) - easeFn(prevTime, output[0], durationMs);
           dy = easeFn(time, output[1], durationMs) - easeFn(prevTime, output[1], durationMs);
           ds = easeFn(time, output[2], durationMs) - easeFn(prevTime, output[2], durationMs);
-          // if animation has finished
           if (time === durationMs) {
             animation.active = false;
           }
         }
-        if (limiter.toViewport) {
-          const { xForce, yForce } = ExtentLimiter(dx, dy, transform, viewport, viewportPadding, extent);
-          dx += xForce;
-          dy += yForce;
+        if (toViewport) {
+          limitToExtent(forces, dx, dy);
         }
-        transform[0] += dx;
-        transform[1] += dy;
+        transform[0] += dx + forces[2];
+        transform[1] += dy + forces[3];
         transform[2] += ds;
       }
 
       if (inertia.animation.active) {
         const { output, defaultEaseFn, limiter, animation } = inertia;
+        const { toViewport, forces } = limiter;
         const duration = animation.durationMs;
-        const time = Clamp(frameStart.time - animation.timeStart, 0, duration);
-        const prevTime = Math.max(time - frameStart.deltaTime, 0);
 
-        const easeFn = animation.easeFn ?? defaultEaseFn;
-        let dx = easeFn(time, output[0], duration) - easeFn(prevTime, output[0], duration);
-        let dy = easeFn(time, output[1], duration) - easeFn(prevTime, output[1], duration);
+        let dx: number;
+        let dy: number;
 
-        if (time >= duration) {
+        // if instant or empty
+        if (duration <= frameStart.deltaTime || !(output[0] || output[1])) {
+          dx = output[0];
+          dy = output[1];
           animation.active = false;
+        } else {
+          // animate next frame
+          const time = Clamp(frameStart.time - animation.timeStart, 0, duration);
+          const prevTime = Math.max(time - frameStart.deltaTime, 0);
+          const easeFn = animation.easeFn ?? defaultEaseFn;
+          dx = easeFn(time, output[0], duration) - easeFn(prevTime, output[0], duration);
+          dy = easeFn(time, output[1], duration) - easeFn(prevTime, output[1], duration);
+          if (time === duration) {
+            animation.active = false;
+          }
         }
         // console.log(
         //   'dx',
@@ -291,13 +317,12 @@ export function InputTransformer(state: State) {
         //   'ratio',
         //   dx / output[0]
         // );
-        if (limiter.toViewport) {
-          const { xForce, yForce } = ExtentLimiter(dx, dy, transform, viewport, viewportPadding, extent);
-          dx += xForce;
-          dy += yForce;
+        if (toViewport) {
+          limitToExtent(forces, dx, dy);
         }
-        transform[0] += dx;
-        transform[1] += dy;
+        transform[0] += dx + forces[2];
+        transform[1] += dy + forces[3];
+        if (!animation.active) clearLimiterForces(forces);
       }
     },
   };

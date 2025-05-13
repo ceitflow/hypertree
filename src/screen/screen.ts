@@ -22,6 +22,7 @@ export const addContainerListeners = (container: HTMLElement, map: { [type: stri
 export function Screen(paper: dia.Paper, container: HTMLElement) {
   const state: State = {
     transform: [0, 0, 1],
+    physicsTransform: [0,0,0,0],
     frameStartTransform: [0, 0, 1, 1],
     viewport: [0, 0, 0, 0],
     extent: [0, 0, 0, 0],
@@ -35,6 +36,7 @@ export function Screen(paper: dia.Paper, container: HTMLElement) {
     physics: {
       active: false,
       input: [0, 0],
+      scale: 600
     },
 
     drag: {
@@ -44,11 +46,11 @@ export function Screen(paper: dia.Paper, container: HTMLElement) {
         active: false,
         timeStart: 0,
         output: [0, 0],
-        durationMs: 200,
+        durationMs: 0,
         easeFn: Ease.outBack,
       },
       limiter: {
-        forces: [0, 0],
+        forces: [0, 0, 0, 0],
         toViewport: true,
       },
     },
@@ -65,7 +67,7 @@ export function Screen(paper: dia.Paper, container: HTMLElement) {
         easeFn: Ease.outQuint,
       },
       limiter: {
-        forces: [0, 0],
+        forces: [0, 0, 0, 0],
       },
     },
     inertia: {
@@ -84,7 +86,7 @@ export function Screen(paper: dia.Paper, container: HTMLElement) {
         easeFn: undefined,
       },
       limiter: {
-        forces: [0, 0],
+        forces: [0, 0, 0, 0],
         toViewport: true,
       },
     },
