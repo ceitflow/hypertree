@@ -3,14 +3,16 @@ import { Round } from './input';
 
 export type PhysicsTransformerType = ReturnType<typeof PhysicsTransformer>;
 
-export function PhysicsTransformer({ physics, frameStart, transform: t, physicsTransform: pt, extent }: State) {
+export function PhysicsTransformer({ physics, frameStart, zoom, transform: t, physicsTransform: pt, extent }: State) {
   return {
     addForce: (dx: number, dy: number) => {
       const { input, currentInput, animation, stiffness, maxCompressPercent, inputEaseFn } = physics;
       const { output } = animation;
 
-      const maxWidth = (extent[2] - extent[0]) * t[2] * maxCompressPercent;
-      const maxHeight = (extent[3] - extent[1]) * t[2] * maxCompressPercent;
+      const max = maxCompressPercent * (1 - Round((t[2] - zoom.min) / (zoom.max - zoom.min))); // range adapted to zoom, zoomin - no squeeze
+
+      const maxWidth = (extent[2] - extent[0]) * t[2] * max;
+      const maxHeight = (extent[3] - extent[1]) * t[2] * max;
       const isDxOpposite = dx === 0 || (dx > 0 ? currentInput[0] < 0 : currentInput[0] >= 0);
       const isDyOpposite = dy === 0 || (dy > 0 ? currentInput[1] < 0 : currentInput[1] >= 0);
       const xStiffness = isDxOpposite ? 1 : 1 + inputEaseFn(Math.abs(currentInput[0]) / maxWidth, stiffness, 1);
@@ -94,7 +96,7 @@ export function PhysicsTransformer({ physics, frameStart, transform: t, physicsT
         pt[1] = 0;
         pt[3] = 0;
       }
-
+      // console.log(pt);
       physics.active = true;
     },
   };

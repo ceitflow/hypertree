@@ -97,7 +97,7 @@ export function InputTransformer(state: State, physics: PhysicsTransformerType) 
     },
 
     startInertia: () => {
-      const { input, output, friction, animation, turboVelocityThreshold, minVelocity, durationMultiplier } = inertia;
+      const { input, output, friction, animation, turboVelocityThreshold, minVelocity, durationMultiplier, limiter } = inertia;
       // todo apply friction to inertia if touching the viewport border
       // remember pointer pos while inertia runs to animate braking and then going back to pointer pos
 
@@ -113,11 +113,18 @@ export function InputTransformer(state: State, physics: PhysicsTransformerType) 
         dy *= 1 + turbo;
       }
 
+      // if no room then stop
+      if (limiter.toViewport) {
+        limitToExtent(limiter.forces, dx, dy);
+        if (dx === -limiter.forces[0]) dx = 0;
+        if (dy === -limiter.forces[1]) dy = 0;
+      }
+
       if (!dt || Math.abs(dx) + Math.abs(dy) <= minVelocity) {
         return;
       }
 
-      // if drag animation has more drag then use its value
+      // if drag animation has more momentum then use it instead
       if (drag.animation.durationMs) {
         const dragInputX = drag.input[0];
         const dragInputY = drag.input[1];
@@ -136,13 +143,8 @@ export function InputTransformer(state: State, physics: PhysicsTransformerType) 
       output[1] = inertiaIntegral(dy, friction, yLimit);
       animation.durationMs = Math.max(xLimit * dt, yLimit * dt) * durationMultiplier;
 
-      inertia.defaultEaseFn = (t, c, d) => {
-        const isX = c === output[0];
-        return inertiaIntegral(isX ? dx : dy, friction, (t / d) * (isX ? xLimit : yLimit));
-      };
-
       /*
-        nice to have: dynamic duration calculation for every easeFn
+        todo nice to have: dynamic duration calculation for every easeFn
          and smoothDuration can be toggled on/off
         provide all inverted Ease functions?
        */
@@ -278,7 +280,7 @@ export function InputTransformer(state: State, physics: PhysicsTransformerType) 
       }
 
       if (inertia.animation.active) {
-        const { output, defaultEaseFn, limiter, animation } = inertia;
+        const { output, limiter, animation } = inertia;
         const { toViewport, forces } = limiter;
         const duration = animation.durationMs;
 
@@ -294,7 +296,7 @@ export function InputTransformer(state: State, physics: PhysicsTransformerType) 
           // animate next frame
           const time = Clamp(frameStart.time - animation.timeStart, 0, duration);
           const prevTime = Math.max(time - frameStart.deltaTime, 0);
-          const easeFn = animation.easeFn ?? defaultEaseFn;
+          const easeFn = animation.easeFn;
           dx = easeFn(time, output[0], duration) - easeFn(prevTime, output[0], duration);
           dy = easeFn(time, output[1], duration) - easeFn(prevTime, output[1], duration);
           if (time === duration) {
@@ -315,9 +317,12 @@ export function InputTransformer(state: State, physics: PhysicsTransformerType) 
         // );
         if (toViewport) {
           limitToExtent(forces, dx, dy);
+          if (forces[0]) output[0] = output[0] >= 0 ? Math.max(output[0] + forces[0], 0) : Math.min(output[0] + forces[0], 0);
+          if (forces[1]) output[1] = output[1] >= 0 ? Math.max(output[1] + forces[1], 0) : Math.min(output[1] + forces[1], 0);
         }
         transform[0] += dx + forces[2];
         transform[1] += dy + forces[3];
+
         if (!animation.active) clearLimiterForces(forces);
       }
     },

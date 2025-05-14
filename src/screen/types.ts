@@ -66,13 +66,12 @@ export type State = {
     durationMultiplier: number;
     turboVelocityThreshold: number;
     minVelocity: number;
-    defaultEaseFn: EaseFunction;
     limiter: LimitType;
     animation: {
       active: boolean;
       timeStart: number;
       durationMs: number;
-      easeFn?: EaseFunction;
+      easeFn: EaseFunction;
     }
   };
   // animation: {} animated transitions, walkthrough etc 
