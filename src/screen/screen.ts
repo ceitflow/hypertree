@@ -22,7 +22,7 @@ export const addContainerListeners = (container: HTMLElement, map: { [type: stri
 export function Screen(paper: dia.Paper, container: HTMLElement) {
   const state: State = {
     transform: [0, 0, 1],
-    physicsTransform: [0,0,0,0],
+    physicsTransform: [0, 0, 0, 0],
     frameStartTransform: [0, 0, 1, 1],
     viewport: [0, 0, 0, 0],
     extent: [0, 0, 0, 0],
@@ -36,7 +36,16 @@ export function Screen(paper: dia.Paper, container: HTMLElement) {
     physics: {
       active: false,
       input: [0, 0],
-      scale: 600
+      currentInput: [0,0],
+      maxCompressPercent: 0.25,
+      stiffness: 1,
+      animation: {
+        active: false,
+        durationMs: 300,
+        easeFn: Ease.outQuint,
+        timeStart: 0,
+        output: [0, 0],
+      },
     },
 
     drag: {
@@ -93,10 +102,10 @@ export function Screen(paper: dia.Paper, container: HTMLElement) {
   };
   let loopId = 0;
 
-  const input = InputTransformer(state);
   const physics = PhysicsTransformer(state);
   const screen = ScreenTransformer(state, paper.el.style);
-  const transformers = [input.nextFrame, /*programmaticInput.nextFrame*/ physics.nextFrame, screen.nextFrame];
+  const input = InputTransformer(state, physics);
+  const transformers = [physics.nextFrame, input.nextFrame, /*programmaticInput.nextFrame*/ screen.nextFrame];
 
   const mouse = Mouse(input, paper, container);
   const touch = Touch(input, paper);

@@ -1,11 +1,12 @@
 import { g } from '@joint/core';
 import { State, Vector2, Vector4 } from '../types.ts';
 import { Clamp, Ease, ExtentLimiter, Round } from './input';
+import { PhysicsTransformerType } from './physics-transformer.ts';
 
-export type InputControllerType = ReturnType<typeof InputTransformer>;
+export type InputTransformerType = ReturnType<typeof InputTransformer>;
 
-export function InputTransformer(state: State) {
-  const { frameStart, inertia, drag, zoom, transform, viewport, physics, viewportPadding, extent } = state;
+export function InputTransformer(state: State, physics: PhysicsTransformerType) {
+  const { frameStart, inertia, drag, zoom, transform, viewport, viewportPadding, extent } = state;
 
   // inertia
   const cacheInertiaMotion = (x: number, y: number, reset?: boolean): void => {
@@ -43,19 +44,14 @@ export function InputTransformer(state: State) {
     forces[1] += yForce;
     forces[2] = xForce;
     forces[3] = yForce;
-    if (!xForce && !yForce) {
-      clearLimiterForces(forces);
-    } else {
-      physics.input[0] += xForce;
-      physics.input[1] += yForce;
-    }
+    if (!xForce && !yForce) clearLimiterForces(forces);
+    else physics.addForce(xForce, yForce);
   };
   const clearLimiterForces = (forces: Vector4) => {
-    physics.input[0] -= forces[0]; // clear applied force
-    physics.input[1] -= forces[1];
+    physics.addForce(-forces[0], -forces[1]); // clear applied force
     forces[0] = 0;
     forces[1] = 0;
-  }
+  };
 
   return {
     invert: (x: number, y: number): Vector2 => [(x - transform[0]) / transform[2], (y - transform[1]) / transform[2]],
@@ -150,7 +146,7 @@ export function InputTransformer(state: State) {
          and smoothDuration can be toggled on/off
         provide all inverted Ease functions?
        */
-      console.log(
+      /*console.log(
         input,
         dt,
         'input: ',
@@ -165,7 +161,7 @@ export function InputTransformer(state: State) {
         velocity,
         'turbo',
         turbo
-      );
+      );*/
       animation.timeStart = frameStart.time;
       animation.active = true;
     },
@@ -187,7 +183,7 @@ export function InputTransformer(state: State) {
       const mapping = (input[2] - min) / (max - min); // mapping [min,max] to [0,1] (0,max)
       const diffToTargetZoom = Clamp(min + inputEaseFn(mapping, max - min, 1), min, max) - currentZoom;
 
-      if (Round(diffToTargetZoom, 4) === 0) return; // todo detect if min,max set min max
+      if (!Round(diffToTargetZoom, 4)) return; // todo detect if min,max set min max
 
       output[0] = -input[0] * diffToTargetZoom;
       output[1] = -input[1] * diffToTargetZoom;

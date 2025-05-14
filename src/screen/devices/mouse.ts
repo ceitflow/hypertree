@@ -1,7 +1,7 @@
 import { dia } from '@joint/core';
-import { InputControllerType } from '../transformers';
+import { InputTransformerType } from '../transformers';
 
-export function Mouse(input: InputControllerType, paper: dia.Paper, container: HTMLElement) {
+export function Mouse(input: InputTransformerType, paper: dia.Paper, container: HTMLElement) {
   let isDragging = false;
   const pointerCaptureId = 1;
   const wheelStrength = 0.2;

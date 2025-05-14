@@ -1,8 +1,8 @@
 import { dia } from '@joint/core';
 import { Vector2 } from '../types.ts';
-import { InputControllerType } from '../transformers';
+import { InputTransformerType } from '../transformers';
 
-export function Touch(input: InputControllerType, paper: dia.Paper) {
+export function Touch(input: InputTransformerType, paper: dia.Paper) {
   const touchDelay: number = 200;
   const tapDistance: number = 10; // for dbl tap second one has to be near first tap
   const dblTapStrength = 0.2;

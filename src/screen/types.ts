@@ -8,7 +8,7 @@ export type EaseFunction = (dt: number, value: number, duration: number) => numb
 export type State = {
   transform: TransformType;
   physicsTransform: Vector4;
-  frameStartTransform: Vector4; // transform + physicsTransform, for change detection
+  frameStartTransform: Vector4; // change detection
   viewport: Rect;
   viewportPadding: number; // 0 - 1.0 percentage of current viewport to use as padding
   extent: Rect;
@@ -18,7 +18,16 @@ export type State = {
   physics: {
     active: boolean;
     input: Vector2; // dx, dy <- squeeze forces
-    scale: number
+    currentInput: Vector2;
+    maxCompressPercent: number;
+    stiffness: number;
+    animation: {
+      active: boolean;
+      timeStart: number;
+      output: Vector2;
+      durationMs: number;
+      easeFn: EaseFunction;
+    }
   };
 
   // inputs
