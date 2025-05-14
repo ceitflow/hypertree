@@ -21,6 +21,7 @@ export type State = {
     currentInput: Vector2;
     maxCompressPercent: number;
     stiffness: number;
+    inputEaseFn: EaseFunction;
     animation: {
       active: boolean;
       timeStart: number;

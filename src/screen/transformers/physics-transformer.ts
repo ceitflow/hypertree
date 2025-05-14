@@ -6,22 +6,23 @@ export type PhysicsTransformerType = ReturnType<typeof PhysicsTransformer>;
 export function PhysicsTransformer({ physics, frameStart, transform: t, physicsTransform: pt, extent }: State) {
   return {
     addForce: (dx: number, dy: number) => {
-      const { input, currentInput, animation, stiffness, maxCompressPercent } = physics;
+      const { input, currentInput, animation, stiffness, maxCompressPercent, inputEaseFn } = physics;
       const { output } = animation;
 
-      const width = (extent[2] - extent[0]) * t[2];
-      const height = (extent[3] - extent[1]) * t[2];
-      const xStiffness = 1 - currentInput[0] / (width * maxCompressPercent);
-      const yStiffness = 1 - currentInput[1] / (height * maxCompressPercent);
+      const maxWidth = (extent[2] - extent[0]) * t[2] * maxCompressPercent;
+      const maxHeight = (extent[3] - extent[1]) * t[2] * maxCompressPercent;
+      const isDxOpposite = dx === 0 || (dx > 0 ? currentInput[0] < 0 : currentInput[0] >= 0);
+      const isDyOpposite = dy === 0 || (dy > 0 ? currentInput[1] < 0 : currentInput[1] >= 0);
+      const xStiffness = isDxOpposite ? 1 : 1 + inputEaseFn(Math.abs(currentInput[0]) / maxWidth, stiffness, 1);
+      const yStiffness = isDyOpposite ? 1 : 1 + inputEaseFn(Math.abs(currentInput[1]) / maxHeight, stiffness, 1);
 
       input[0] += dx;
       input[1] += dy;
-
-      output[0] = input[0] - currentInput[0];
-      output[1] = input[1] - currentInput[1];
+      output[0] = input[0] / xStiffness - currentInput[0];
+      output[1] = input[1] / yStiffness - currentInput[1];
       // output + currInput - max; if <0 then in range, if >0 then its above limit and need a cap
-      output[0] -= Math.sign(currentInput[0]) * Math.max(Math.abs(output[0] + currentInput[0]) - width * maxCompressPercent, 0);
-      output[1] -= Math.sign(currentInput[1]) * Math.max(Math.abs(output[1] + currentInput[1]) - height * maxCompressPercent, 0);
+      output[0] -= (currentInput[0] >= 0 ? 1 : -1) * Math.max(Math.abs(output[0] + currentInput[0]) - maxWidth, 0);
+      output[1] -= (currentInput[1] >= 0 ? 1 : -1) * Math.max(Math.abs(output[1] + currentInput[1]) - maxHeight, 0);
 
       animation.active = true;
       animation.timeStart = frameStart.time;

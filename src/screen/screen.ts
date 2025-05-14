@@ -38,7 +38,8 @@ export function Screen(paper: dia.Paper, container: HTMLElement) {
       input: [0, 0],
       currentInput: [0,0],
       maxCompressPercent: 0.25,
-      stiffness: 1,
+      stiffness: 100,
+      inputEaseFn: Ease.inExpo,
       animation: {
         active: false,
         durationMs: 300,

@@ -1,6 +1,6 @@
 import { Rect, TransformType } from '../../types.ts';
 
-// when moving beyond extent + padding, only allow to move in the opposite direction
+// when moving beyond extent + padding, only allow to move in opposite direction
 // returns constraint force
 export function ExtentLimiter(dx: number, dy: number, t: TransformType, view: Rect, viewportPadding: number, extent: Rect) {
   const x = t[0] + dx;
@@ -22,7 +22,7 @@ export function ExtentLimiter(dx: number, dy: number, t: TransformType, view: Re
   const widthFitInViewport = extent[2] * scale <= view[2];
 
   if (widthFitInViewport) {
-    // override padding to prevent diagram going beyond viewport edge
+    // when all of viewport is visible, override padding to prevent diagram going beyond viewport edge
     leftPadding = Math.max(leftPadding, dstToLeft + dstToRight);
     rightPadding = Math.max(rightPadding, dstToLeft + dstToRight);
   }
