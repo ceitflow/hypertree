@@ -1,6 +1,6 @@
 import { dia } from '@joint/core';
 import { Vector2 } from '../types.ts';
-import { InputTransformerType } from '../transformers';
+import { InputControllerType } from '../inputs';
 import { DeviceType } from './types.ts';
 
 export type TouchConfig = {};
@@ -21,7 +21,7 @@ export function Touch(): DeviceType<TouchConfig> {
 
   return {
     type: 'touch',
-    init: (input: InputTransformerType, paper: dia.Paper) => ({
+    init: (input: InputControllerType, paper: dia.Paper) => ({
       touchstart: (e: TouchEvent) => {
         const view = paper.findView(e.target);
         if (view) {

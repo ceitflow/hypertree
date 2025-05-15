@@ -1,4 +1,4 @@
-import { State } from '../../types.ts';
+import { State } from '../types.ts';
 import { PhysicsInputType } from './physics-input.ts';
 
 export function DragInput({ drag, inertia, frameStart, transform }: State, physics: PhysicsInputType) {

@@ -1,8 +1,9 @@
 import { dia } from '@joint/core';
+import { Ease } from './ease.ts';
 import { State } from './types.ts';
 import { paperPatch } from '../patches';
+import { InputController } from './inputs';
 import { DeviceController } from './devices';
-import { Ease, InputTransformer, ScreenTransformer } from './transformers';
 
 // pass in theme: new Theme('automatic' | ...)
 export function Screen(paper: dia.Paper, container: HTMLElement) {
@@ -90,7 +91,7 @@ export function Screen(paper: dia.Paper, container: HTMLElement) {
 
   const devices = DeviceController();
   const screen = ScreenTransformer(state, paper.el.style);
-  const input = InputTransformer(state);
+  const input = InputController(state);
   const transformers = [
     input.physics.nextFrame,
     input.drag.nextFrame,
@@ -141,6 +142,43 @@ export function Screen(paper: dia.Paper, container: HTMLElement) {
     state,
     onDestroy: (): void => {
       cancelAnimationFrame(loopId);
+    },
+  };
+}
+
+function ScreenTransformer(
+  { transform: t, physicsTransform: pt, frameStartTransform: ft, extent, viewport }: State,
+  paperStyle: CSSStyleDeclaration
+) {
+  return {
+    nextFrame: () => {
+      const t0 = t[0] + pt[0];
+      const t1 = t[1] + pt[1];
+      const t2 = t[2] + pt[2]; // scale + scaleX
+      const t3 = t[2] + pt[3]; // scale + scaleY;
+
+      if (ft[0] !== t0 || ft[1] !== t1 || ft[2] !== t2 || ft[3] !== t3) {
+        // matrix(scaleX, skewY, skewX, scaleY, translateX, translateY);
+        paperStyle.transform = `matrix(${t2}, 0, 0, ${t3}, ${t0}, ${t1})`;
+        ft[0] = t0;
+        ft[1] = t1;
+        ft[2] = t2;
+        ft[3] = t3;
+      }
+    },
+
+    updateViewport: (data: dia.Size): void => {
+      viewport[0] = 0;
+      viewport[1] = 0;
+      viewport[2] = data.width;
+      viewport[3] = data.height;
+    },
+
+    updateExtentArea: (data: dia.Size): void => {
+      extent[0] = 0;
+      extent[1] = 0;
+      extent[2] = data.width;
+      extent[3] = data.height;
     },
   };
 }

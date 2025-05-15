@@ -1,7 +1,7 @@
 import { g } from '@joint/core';
-import { Ease } from './ease.ts';
-import { Clamp, Round } from './limiter.ts';
-import { State, Vector2 } from '../../types.ts';
+import { Ease } from '../ease';
+import { Clamp, Round } from '../limiter.ts';
+import { State, Vector2 } from '../types.ts';
 import { PhysicsInputType } from './physics-input.ts';
 
 export function ZoomInput({ transform, zoom, frameStart, viewport, extent }: State, physics: PhysicsInputType) {

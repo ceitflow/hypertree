@@ -2,13 +2,13 @@ import { dia } from '@joint/core';
 import { Mouse } from './mouse.ts';
 import { Touch } from './touch.ts';
 import { DeviceType } from './types.ts';
-import { InputTransformerType } from '../transformers';
+import { InputControllerType } from '../inputs';
 
 export function DeviceController() {
   const devices: DeviceType[] = [Mouse(), Touch()];
 
   return {
-    init: (input: InputTransformerType, paper: dia.Paper, container: HTMLElement) => {
+    init: (input: InputControllerType, paper: dia.Paper, container: HTMLElement) => {
       devices.forEach(device => {
         const listenerMap = device.init(input, paper);
         Object.entries(listenerMap).forEach(([type, callback]) => {

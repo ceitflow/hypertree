@@ -1,6 +1,6 @@
 import { dia } from '@joint/core';
 import { DeviceType } from './types.ts';
-import { InputTransformerType } from '../transformers';
+import { InputControllerType } from '../inputs';
 
 export type MouseConfig = {};
 
@@ -12,7 +12,7 @@ export function Mouse(): DeviceType<MouseConfig> {
 
   return {
     type: 'mouse',
-    init: (input: InputTransformerType, paper: dia.Paper) => ({
+    init: (input: InputControllerType, paper: dia.Paper) => ({
       mousedown: (e: MouseEvent) => {
         if (e.buttons !== 1) return;
         paper.el.setPointerCapture(pointerCaptureId);

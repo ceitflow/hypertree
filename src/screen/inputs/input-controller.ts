@@ -1,9 +1,12 @@
 import { State, Vector2 } from '../types.ts';
-import { DragInput, InertiaInput, PhysicsInput, ZoomInput } from './input';
+import { DragInput } from './drag-input.ts';
+import { ZoomInput } from './zoom-input.ts';
+import { InertiaInput } from './inertia-input.ts';
+import { PhysicsInput } from './physics-input.ts';
 
-export type InputTransformerType = ReturnType<typeof InputTransformer>;
+export type InputControllerType = ReturnType<typeof InputController>;
 
-export function InputTransformer(state: State) {
+export function InputController(state: State) {
   const { transform } = state;
   const physics = PhysicsInput(state);
 

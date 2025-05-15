@@ -1,9 +1,9 @@
 import { dia } from '@joint/core';
-import { InputTransformerType } from '../transformers';
+import { InputControllerType } from '../inputs';
 
 export type DeviceType<C extends object = any> = {
   type: string;
-  init: (input: InputTransformerType, paper: dia.Paper) => ListenerMap;
+  init: (input: InputControllerType, paper: dia.Paper) => ListenerMap;
   toggle: (on: boolean) => void;
   setConfig: (config: Partial<C>) => void;
 };

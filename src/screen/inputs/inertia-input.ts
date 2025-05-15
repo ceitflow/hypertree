@@ -1,5 +1,5 @@
-import { Clamp } from './limiter.ts';
-import { State } from '../../types.ts';
+import { Clamp } from '../limiter';
+import { State } from '../types.ts';
 import { PhysicsInputType } from './physics-input.ts';
 
 export function InertiaInput({ transform, frameStart, drag, inertia }: State, physics: PhysicsInputType) {

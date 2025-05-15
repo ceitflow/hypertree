@@ -1,5 +1,5 @@
-import { State, Vector4 } from '../../types';
-import { ExtentLimiter, Round } from './limiter.ts';
+import { State, Vector4 } from '../types';
+import { ExtentLimiter, Round } from '../limiter.ts';
 
 export type PhysicsInputType = ReturnType<typeof PhysicsInput>;
 
