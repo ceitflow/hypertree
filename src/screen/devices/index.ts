@@ -1,2 +1,1 @@
-export * from './mouse';
-export * from './touch';
+export * from './device-controller';

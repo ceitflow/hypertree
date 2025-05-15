@@ -1,22 +1,8 @@
 import { dia } from '@joint/core';
 import { State } from './types.ts';
-import { Mouse, Touch } from './devices';
 import { paperPatch } from '../patches';
-import { Ease, InputTransformer, PhysicsTransformer, ScreenTransformer } from './transformers';
-
-export const addContainerListeners = (container: HTMLElement, map: { [type: string]: (e: any) => void }) => {
-  Object.entries(map).forEach(([type, callback]) => {
-    document.addEventListener(
-      type,
-      e => {
-        if (container.contains(e.target as Element)) {
-          callback(e);
-        }
-      },
-      { passive: false }
-    );
-  });
-};
+import { DeviceController } from './devices';
+import { Ease, InputTransformer, ScreenTransformer } from './transformers';
 
 // pass in theme: new Theme('automatic' | ...)
 export function Screen(paper: dia.Paper, container: HTMLElement) {
@@ -43,7 +29,7 @@ export function Screen(paper: dia.Paper, container: HTMLElement) {
       animation: {
         active: false,
         durationMs: 500,
-        easeFn: Ease.outQuint,
+        easeFn: Ease.outBack,
         timeStart: 0,
         output: [0, 0],
       },
@@ -102,24 +88,18 @@ export function Screen(paper: dia.Paper, container: HTMLElement) {
   };
   let loopId = 0;
 
-  const physics = PhysicsTransformer(state);
+  const devices = DeviceController();
   const screen = ScreenTransformer(state, paper.el.style);
-  const input = InputTransformer(state, physics);
-  const transformers = [physics.nextFrame, input.nextFrame, /*programmaticInput.nextFrame*/ screen.nextFrame];
-
-  const mouse = Mouse(input, paper, container);
-  const touch = Touch(input, paper);
-  addContainerListeners(container, {
-    mousedown: mouse.start,
-    mousemove: mouse.move,
-    mouseup: mouse.up,
-    dblclick: mouse.dblClick,
-    wheel: mouse.zoom,
-
-    touchstart: touch.start,
-    touchmove: touch.move,
-    touchend: touch.up,
-  });
+  const input = InputTransformer(state);
+  const transformers = [
+    input.physics.nextFrame,
+    input.drag.nextFrame,
+    input.zoom.nextFrame,
+    input.inertia.nextFrame,
+    /*input.programmatic.nextFrame*/ // todo or actually a device?
+    screen.nextFrame
+  ];
+  devices.init(input, paper, container);
 
   paper.on({
     resize: (width, height) => {
@@ -157,7 +137,7 @@ export function Screen(paper: dia.Paper, container: HTMLElement) {
   paperPatch(paper, state.transform);
 
   return {
-    inputTransformer: input,
+    input,
     state,
     onDestroy: (): void => {
       cancelAnimationFrame(loopId);

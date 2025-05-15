@@ -25,5 +25,5 @@ import { loadPixelsFromImage } from './util/load-pixels-image';
   console.log(screen);
   CreateNodeShape().addTo(graph);
   await loadPixelsFromImage(graph, paper);
-  screen.inputTransformer.zoomToFit([100, 100]);
+  screen.input.zoom.zoomToFit([100, 100]);
 })();
