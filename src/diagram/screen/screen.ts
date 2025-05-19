@@ -1,7 +1,7 @@
 import { dia } from '@joint/core';
 import { Ease } from './ease.ts';
 import { State } from './types.ts';
-import { paperPatch } from '../patches';
+import { paperPatch } from './paper-patch';
 import { InputController } from './inputs';
 import { DeviceController } from './devices';
 
@@ -43,8 +43,8 @@ export function Screen(paper: dia.Paper, container: HTMLElement) {
         active: false,
         timeStart: 0,
         output: [0, 0],
-        durationMs: 0,
-        easeFn: Ease.outBack,
+        durationMs: 200,
+        easeFn: Ease.outQuint,
       },
       limiter: {
         forces: [0, 0, 0, 0],
@@ -53,14 +53,14 @@ export function Screen(paper: dia.Paper, container: HTMLElement) {
     },
     zoom: {
       input: [0, 0, 0],
-      inputEaseFn: Ease.inLog,
+      inputEaseFn: Ease.linear,
       min: 0.1,
       max: 5,
       animation: {
         active: false,
         timeStart: 0,
         output: [0, 0, 0],
-        durationMs: 500,
+        durationMs: 200,
         easeFn: Ease.outQuint,
       },
       limiter: {

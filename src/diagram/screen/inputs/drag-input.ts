@@ -14,7 +14,7 @@ export function DragInput({ drag, inertia, frameStart, transform }: State, physi
       // leave 2 latest caches in case refresh rate is < 60fps
       if (timestamp - cache[i][2] > cacheDurationMs) cache.splice(i, 1);
     }
-  }
+  };
 
   return {
     start: (x: number, y: number) => {
@@ -28,8 +28,13 @@ export function DragInput({ drag, inertia, frameStart, transform }: State, physi
       cacheInertiaMotion(x, y, true);
     },
 
-    move: (x: number, y: number) => {
+    move: (x: number, y: number, opt: { relative?: boolean } = {}) => {
       const { input, current, animation } = drag;
+
+      if (opt.relative) {
+        x += current[0];
+        y += current[1];
+      }
 
       const dx = x - current[0];
       const dy = y - current[1];
@@ -44,12 +49,6 @@ export function DragInput({ drag, inertia, frameStart, transform }: State, physi
       animation.output[1] = input[1];
       animation.timeStart = frameStart.time;
       animation.active = true;
-    },
-
-    pinch: (dx: number, dy: number, scale?: number) => {
-      transform[0] += dx; // todo use drag() to make it work with constraints
-      transform[1] += dy;
-      transform[2] += scale || 0;
     },
 
     stop: () => {
@@ -86,6 +85,7 @@ export function DragInput({ drag, inertia, frameStart, transform }: State, physi
 
       if (toViewport) {
         physics.limitToExtent(forces, dx, dy);
+        console.log(forces);
       }
       transform[0] += dx + forces[2];
       transform[1] += dy + forces[3];

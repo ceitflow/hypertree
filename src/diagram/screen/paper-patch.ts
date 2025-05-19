@@ -1,5 +1,5 @@
 import { dia } from '@joint/core';
-import { TransformType } from '../screen/types.ts';
+import { TransformType } from './types.ts';
 
 export function paperPatch(paper: dia.Paper, t: TransformType) {
   // patch for webkit (safari), getScreenCTM returns invalid matrix with scale fixed to 1

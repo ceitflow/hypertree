@@ -13,6 +13,7 @@ export function InertiaInput({ transform, frameStart, drag, inertia }: State, ph
   return {
     start: () => {
       const { input, output, friction, animation, turboVelocityThreshold, minVelocity, durationMultiplier, limiter } = inertia;
+      if (!input.length) return;
       // todo apply friction to inertia if touching the viewport border
       // remember pointer pos while inertia runs to animate braking and then going back to pointer pos
 
@@ -65,6 +66,10 @@ export function InertiaInput({ transform, frameStart, drag, inertia }: State, ph
        */
       animation.timeStart = frameStart.time;
       animation.active = true;
+    },
+
+    clearCache: () => {
+      inertia.input.splice(0, inertia.input.length);
     },
 
     stop: () => {

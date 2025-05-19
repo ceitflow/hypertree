@@ -14,7 +14,11 @@ export function ZoomInput({ transform, zoom, frameStart, viewport, extent }: Sta
   };
 
   return {
+    clamp: (dScale: number) => {
+      return Clamp(dScale, zoom.min, zoom.max);
+    },
     // todo adaptive zoom step (like inertia) if zooming while is active then speed up
+    // todo auto scale min max? depends on viewport size and extent?
     zoomStep: (origin: Vector2, step: number) => {
       const { input, min, max, inputEaseFn, animation } = zoom;
       const { output } = animation;

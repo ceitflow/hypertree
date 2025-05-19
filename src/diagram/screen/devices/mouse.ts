@@ -16,7 +16,7 @@ export function Mouse(): DeviceType<MouseConfig> {
       mousedown: (e: MouseEvent) => {
         if (e.buttons !== 1) return;
         paper.el.setPointerCapture(pointerCaptureId);
-        if (paper.findView(e.target)) {
+        if (paper.findView(e.target)) {  // todo Graph.findAtPoint() // todo move devices up?
           input.inertia.stop();
         }
         else {
@@ -24,9 +24,20 @@ export function Mouse(): DeviceType<MouseConfig> {
           input.inertia.stop();
           input.drag.start(e.clientX, e.clientY);
         }
+
+        // todo input abstraction class
+        //  1. startDrag (detects if element or blank)
+        //  2. scroll
+        //  3. stopDrag
+        //  4. zoom
       },
       mousemove: (e: MouseEvent) => {
         if (isDragging) input.drag.move(e.clientX, e.clientY);
+        // todo if isCellDragging: autoscroll
+        /*
+          if cell dragging near Viewport border (screen.isViewportBorder(point))
+          screen.scroll()
+         */
       },
       mouseup: (e: MouseEvent) => {
         paper.el.releasePointerCapture(pointerCaptureId);

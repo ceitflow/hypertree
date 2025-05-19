@@ -1,6 +1,6 @@
 import './styles.css';
 import { dia } from '@joint/core';
-import { Screen } from './screen';
+import { Screen } from './diagram/screen';
 import { createTestUI } from './toolbar-test-ui';
 import { CreateNodeShape } from './util/shapes.ts';
 import { loadPixelsFromImage } from './util/load-pixels-image';

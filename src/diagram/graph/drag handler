@@ -1,0 +1,5 @@
+state
+ - dragged item state, read paper restrictTranslation, calculate force for animations
+ - highlighted
+ - spatial queries map? for finding nearby cells
+ -

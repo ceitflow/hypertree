@@ -1,4 +1,4 @@
-import { Vector2 } from '../screen/types.ts';
+type Vector2 = [number, number];
 
 export function touchDrag(element: HTMLElement, touch: { x: number; y: number; x1: number; y1: number }) {
   // Create TouchList from the provided touch points

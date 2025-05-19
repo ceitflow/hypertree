@@ -27,7 +27,9 @@ export function DeviceController() {
     add: (device: DeviceType) => {
       // validate
     },
-    remove: (type: string) => {},
+    remove: (type: string) => {
+      // todo remove from document.EventListener
+    },
     get: (type: string): DeviceType | undefined => devices.find(d => d.type === type),
   };
 }

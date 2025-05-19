@@ -6,7 +6,8 @@ import { DeviceType } from './types.ts';
 export type TouchConfig = {};
 
 export function Touch(): DeviceType<TouchConfig> {
-  const touchDelay: number = 200;
+  const dblTapDelay: number = 200;
+  const mutliDelay: number = 1000;
   const tapDistance: number = 10; // for dbl tap second one has to be near first tap
   const dblTapStrength = 0.2;
 
@@ -38,7 +39,7 @@ export function Touch(): DeviceType<TouchConfig> {
             taps = 1 + (prevTouchTimeout !== null ? 1 : 0);
             if (taps < 2) {
               firstTouch = [clientX, clientY];
-              prevTouchTimeout = setTimeout(() => (prevTouchTimeout = null), touchDelay);
+              prevTouchTimeout = setTimeout(() => (prevTouchTimeout = null), dblTapDelay);
             }
             input.inertia.stop();
             input.drag.start(touch0.point[0], touch0.point[1]);
@@ -47,7 +48,7 @@ export function Touch(): DeviceType<TouchConfig> {
             const fixed = input.invert(clientX, clientY);
             touch1 = { point: [clientX, clientY], id: identifier, fixed };
             taps = 0;
-            input.drag.stop();
+            // input.drag.stop();
           }
         }
 
@@ -80,7 +81,7 @@ export function Touch(): DeviceType<TouchConfig> {
           const dl =
             (touch1.fixed[0] - touch0.fixed[0]) * (touch1.fixed[0] - touch0.fixed[0]) +
             (touch1.fixed[1] - touch0.fixed[1]) * (touch1.fixed[1] - touch0.fixed[1]);
-          const dScale = Math.sqrt(dp / dl); // this is ratio of current dst / prev dst
+          const dScale = input.zoom.clamp(Math.sqrt(dp / dl)); // this is ratio of current dst / prev dst
 
           if (prevScale === null) prevScale = dScale;
 
@@ -98,15 +99,13 @@ export function Touch(): DeviceType<TouchConfig> {
           const constraintDscale = dScale - prevScale;
 
           // todo animated pinch zoom (inertia zoom) stops when new touch applied
-          if (constraintDscale) {
-            input.drag.pinch(x - prevX, y - prevY, constraintDscale); // todo x, y, dScale
-            // input.drag, input.zoomAbsolute
-          }
+          input.drag.move(x - prevX, y - prevY, { relative: true });
+          input.zoom.zoomStep([0, 0], constraintDscale);
 
           touch0.point = updated0;
           touch1.point = updated1;
           prevScale = dScale;
-        } else if (touch0) {
+        } else if (touch0 && !endMultitouchTimeout) {
           // translate only
           if (!updated0) return; // if no movement then skip
           touch0.point = updated0;
@@ -124,7 +123,8 @@ export function Touch(): DeviceType<TouchConfig> {
 
         if (touch0 && touch1) {
           if (endMultitouchTimeout) clearTimeout(endMultitouchTimeout);
-          endMultitouchTimeout = setTimeout(() => (endMultitouchTimeout = null), touchDelay);
+          endMultitouchTimeout = setTimeout(() => (endMultitouchTimeout = null), mutliDelay);
+          input.inertia.clearCache();
         }
 
         for (let i = 0; i < touches.length; i++) {
@@ -140,7 +140,6 @@ export function Touch(): DeviceType<TouchConfig> {
         if (touch1 && !touch0) {
           touch0 = touch1;
           touch1 = null;
-          input.drag.start(touch0.point[0], touch0.point[1]);
         }
 
         // updates ref point
@@ -154,6 +153,7 @@ export function Touch(): DeviceType<TouchConfig> {
         if (!touch0 || !touch1) prevScale = null;
         if (!touch0 && !touch1) {
           active = false;
+          input.drag.stop();
           if (endMultitouchTimeout) {
             clearTimeout(endMultitouchTimeout);
             endMultitouchTimeout = null;
