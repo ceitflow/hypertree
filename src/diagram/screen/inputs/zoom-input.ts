@@ -4,24 +4,24 @@ import { Clamp, Round } from '../limiter.ts';
 import { State, Vector2 } from '../types.ts';
 import { PhysicsInputType } from './physics-input.ts';
 
-export function ZoomInput({ transform, zoom, frameStart, viewport, extent }: State, physics: PhysicsInputType) {
+export function ZoomInput({ config, transform, zoom, frameStart, viewport, extent }: State, physics: PhysicsInputType) {
   //
   const invertScaleToZoomStep = (targetZoom: number) => {
     // (input[2] - min) / (max - min) = Inverse(fn, extentToViewportScale - min, max - min, 1)
     // input[2]  = Inverse() * (max - min) + min
-    const { min, max, inputEaseFn } = zoom;
+    const { min, max, inputEaseFn } = config.zoom;
     return Ease.Inverse(inputEaseFn, targetZoom - min, max - min, 1) * (max - min) + min;
   };
 
   return {
     clamp: (dScale: number) => {
-      return Clamp(dScale, zoom.min, zoom.max);
+      return Clamp(dScale, config.zoom.min, config.zoom.max);
     },
     // todo adaptive zoom step (like inertia) if zooming while is active then speed up
     // todo auto scale min max? depends on viewport size and extent?
     zoomStep: (origin: Vector2, step: number) => {
-      const { input, min, max, inputEaseFn, animation } = zoom;
-      const { output } = animation;
+      const { input, output } = zoom;
+      const { min, max, inputEaseFn } = config.zoom;
       const currentZoom = transform[2];
       input[0] = origin[0];
       input[1] = origin[1];
@@ -36,8 +36,8 @@ export function ZoomInput({ transform, zoom, frameStart, viewport, extent }: Sta
       output[1] = -input[1] * diffToTargetZoom;
       output[2] = diffToTargetZoom;
 
-      animation.timeStart = frameStart.time;
-      animation.active = true;
+      zoom.timeStart = frameStart.time;
+      zoom.active = true;
     },
 
     zoomToFit: (padding: Vector2 = [0, 0], animated = false, ignoreZoomConstraint = true) => {
@@ -56,38 +56,37 @@ export function ZoomInput({ transform, zoom, frameStart, viewport, extent }: Sta
     },
 
     nextFrame: () => {
-      if (!zoom.animation.active) return;
+      if (!zoom.active) return;
 
-      const { animation, limiter } = zoom;
-      const { durationMs, easeFn, output } = animation;
-      const { toViewport, forces } = limiter;
+      const { limiterForces, output, timeStart } = zoom;
+      const { animDurationMs, animEaseFn, limitToViewport } = config.zoom;
 
       let dx: number;
       let dy: number;
       let ds: number;
 
       // if instant or empty
-      if (durationMs <= frameStart.deltaTime || !(output[0] || output[1] || output[2])) {
+      if (animDurationMs <= frameStart.deltaTime || !(output[0] || output[1] || output[2])) {
         dx = output[0];
         dy = output[1];
         ds = output[2];
-        animation.active = false;
+        zoom.active = false;
       } else {
         // animate next frame
-        const time = Math.min(frameStart.time - animation.timeStart, durationMs);
+        const time = Math.min(frameStart.time - timeStart, animDurationMs);
         const prevTime = Math.max(0, time - frameStart.deltaTime);
-        dx = easeFn(time, output[0], durationMs) - easeFn(prevTime, output[0], durationMs);
-        dy = easeFn(time, output[1], durationMs) - easeFn(prevTime, output[1], durationMs);
-        ds = easeFn(time, output[2], durationMs) - easeFn(prevTime, output[2], durationMs);
-        if (time === durationMs) {
-          animation.active = false;
+        dx = animEaseFn(time, output[0], animDurationMs) - animEaseFn(prevTime, output[0], animDurationMs);
+        dy = animEaseFn(time, output[1], animDurationMs) - animEaseFn(prevTime, output[1], animDurationMs);
+        ds = animEaseFn(time, output[2], animDurationMs) - animEaseFn(prevTime, output[2], animDurationMs);
+        if (time === animDurationMs) {
+          zoom.active = false;
         }
       }
-      if (toViewport) {
-        physics.limitToExtent(forces, dx, dy);
+      if (limitToViewport) {
+        physics.addForceWithLimitToExtent(limiterForces, dx, dy);
       }
-      transform[0] += dx + forces[2];
-      transform[1] += dy + forces[3];
+      transform[0] += dx + limiterForces[2];
+      transform[1] += dy + limiterForces[3];
       transform[2] += ds;
     },
   };

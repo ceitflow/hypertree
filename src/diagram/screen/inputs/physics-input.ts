@@ -3,14 +3,12 @@ import { ExtentLimiter, Round } from '../limiter.ts';
 
 export type PhysicsInputType = ReturnType<typeof PhysicsInput>;
 
-export function PhysicsInput(state: State) {
-  const { physics, frameStart, zoom, transform: t, physicsTransform: pt, extent, viewport, viewportPadding } = state;
-
+export function PhysicsInput({ config, physics, frameStart, transform: t, physicsTransform: pt, extent, viewport }: State) {
   const addForce = (dx: number, dy: number) => {
-    const { input, currentInput, animation, stiffness, maxCompressPercent, inputEaseFn } = physics;
-    const { output } = animation;
+    const { input, currentInput, output } = physics;
+    const { stiffness, maxCompressPercent, inputEaseFn } = config.physics;
 
-    const max = maxCompressPercent * (1 - Round((t[2] - zoom.min) / (zoom.max - zoom.min))); // range adapted to zoom, zoomin - no squeeze
+    const max = maxCompressPercent * (1 - Round((t[2] - config.zoom.min) / (config.zoom.max - config.zoom.min))); // range adapted to zoom, zoomin - no squeeze
 
     const maxWidth = (extent[2] - extent[0]) * t[2] * max;
     const maxHeight = (extent[3] - extent[1]) * t[2] * max;
@@ -27,8 +25,8 @@ export function PhysicsInput(state: State) {
     output[0] -= (currentInput[0] >= 0 ? 1 : -1) * Math.max(Math.abs(output[0] + currentInput[0]) - maxWidth, 0);
     output[1] -= (currentInput[1] >= 0 ? 1 : -1) * Math.max(Math.abs(output[1] + currentInput[1]) - maxHeight, 0);
 
-    animation.active = true;
-    animation.timeStart = frameStart.time;
+    physics.active = true;
+    physics.timeStart = frameStart.time;
   };
 
   const clearLimiterForces = (forces: Vector4) => {
@@ -38,8 +36,8 @@ export function PhysicsInput(state: State) {
   };
 
   return {
-    limitToExtent: (forces: Vector4, dx: number, dy: number): void => {
-      const { xForce, yForce } = ExtentLimiter(dx, dy, t, viewport, viewportPadding, extent);
+    addForceWithLimitToExtent: (forces: Vector4, dx: number, dy: number): void => {
+      const { xForce, yForce } = ExtentLimiter(dx, dy, t, viewport, config.viewportPadding, extent);
       forces[0] += xForce;
       forces[1] += yForce;
       forces[2] = xForce;
@@ -51,27 +49,27 @@ export function PhysicsInput(state: State) {
     clearLimiterForces,
 
     nextFrame: () => {
-      const { animation, currentInput } = physics;
-      const { easeFn, output, durationMs } = animation;
+      const { currentInput, timeStart, output } = physics;
+      const { animEaseFn, animDurationMs } = config.physics;
 
-      if (!animation.active) return;
+      if (!physics.active) return;
 
       let dx: number;
       let dy: number;
 
       // if instant or empty
-      if (durationMs <= frameStart.deltaTime) {
+      if (animDurationMs <= frameStart.deltaTime) {
         dx = output[0];
         dy = output[1];
-        animation.active = false;
+        physics.active = false;
       } else {
         // animate next frame
-        const time = Math.min(frameStart.time - animation.timeStart, durationMs);
+        const time = Math.min(frameStart.time - timeStart, animDurationMs);
         const prevTime = Math.max(0, time - frameStart.deltaTime);
-        dx = easeFn(time, output[0], durationMs) - easeFn(prevTime, output[0], durationMs);
-        dy = easeFn(time, output[1], durationMs) - easeFn(prevTime, output[1], durationMs);
-        if (time === durationMs) {
-          animation.active = false;
+        dx = animEaseFn(time, output[0], animDurationMs) - animEaseFn(prevTime, output[0], animDurationMs);
+        dy = animEaseFn(time, output[1], animDurationMs) - animEaseFn(prevTime, output[1], animDurationMs);
+        if (time === animDurationMs) {
+          physics.active = false;
         }
       }
 
@@ -116,7 +114,6 @@ export function PhysicsInput(state: State) {
         pt[1] = 0;
         pt[3] = 0;
       }
-      // console.log(pt);
       physics.active = true;
     },
   };

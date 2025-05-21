@@ -4,7 +4,7 @@ import { ZoomInput } from './zoom-input.ts';
 import { InertiaInput } from './inertia-input.ts';
 import { PhysicsInput } from './physics-input.ts';
 
-export type InputControllerType = ReturnType<typeof InputController>;
+export type ScreenController = ReturnType<typeof InputController>;
 
 export function InputController(state: State) {
   const { transform } = state;

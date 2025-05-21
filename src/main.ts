@@ -1,6 +1,6 @@
 import './styles.css';
 import { dia } from '@joint/core';
-import { Screen } from './diagram/screen';
+import { Diagram } from './diagram';
 import { createTestUI } from './toolbar-test-ui';
 import { CreateNodeShape } from './util/shapes.ts';
 import { loadPixelsFromImage } from './util/load-pixels-image';
@@ -8,7 +8,7 @@ import { loadPixelsFromImage } from './util/load-pixels-image';
 (async function init() {
   const container = document.getElementById('viewport')!;
   const paperContainer = document.getElementById('paper')!;
-  const graph = new dia.Graph();
+  const graph = new dia.Graph({  });
   const paper = new dia.Paper({
     el: paperContainer,
     model: graph,
@@ -16,14 +16,15 @@ import { loadPixelsFromImage } from './util/load-pixels-image';
     width: 2500,
     height: 1700,
     async: true,
+    restrictTranslate: true,
     defaultRouter: {
       name: 'manhattan',
     },
   });
   createTestUI(container);
-  const screen = Screen(paper, container);
-  console.log(screen);
+  const diagram = Diagram(new dia.Graph(), paper, container);
   CreateNodeShape().addTo(graph);
   await loadPixelsFromImage(graph, paper);
-  screen.input.zoom.zoomToFit([100, 100]);
+  diagram.screen.controller.zoom.zoomToFit([100, 100]);
+  console.log(diagram);
 })();

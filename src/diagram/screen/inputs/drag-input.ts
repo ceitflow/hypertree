@@ -1,10 +1,11 @@
 import { State } from '../types.ts';
 import { PhysicsInputType } from './physics-input.ts';
 
-export function DragInput({ drag, inertia, frameStart, transform }: State, physics: PhysicsInputType) {
+// todo remove physics argument
+export function DragInput({ config, drag, inertia, frameStart, transform }: State, physics: PhysicsInputType) {
   const cacheInertiaMotion = (x: number, y: number, reset?: boolean): void => {
     const cache = inertia.input;
-    const cacheDurationMs = inertia.inputCacheDurationMs;
+    const cacheDurationMs = config.inertia.inputCacheDurationMs;
     const timestamp = Date.now();
     if (reset) {
       cache.splice(0, cache.length, [x, y, timestamp]);
@@ -23,13 +24,13 @@ export function DragInput({ drag, inertia, frameStart, transform }: State, physi
       drag.input[0] = 0;
       drag.input[1] = 0;
       drag.input[2] = frameStart.time;
-      drag.animation.output[0] = 0;
-      drag.animation.output[1] = 0;
+      drag.output[0] = 0;
+      drag.output[1] = 0;
       cacheInertiaMotion(x, y, true);
     },
 
     move: (x: number, y: number, opt: { relative?: boolean } = {}) => {
-      const { input, current, animation } = drag;
+      const { input, current, output } = drag;
 
       if (opt.relative) {
         x += current[0];
@@ -45,50 +46,48 @@ export function DragInput({ drag, inertia, frameStart, transform }: State, physi
       input[1] += dy;
       input[2] = frameStart.time;
 
-      animation.output[0] = input[0];
-      animation.output[1] = input[1];
-      animation.timeStart = frameStart.time;
-      animation.active = true;
+      output[0] = input[0];
+      output[1] = input[1];
+      drag.timeStart = frameStart.time;
+      drag.active = true;
     },
 
     stop: () => {
-      drag.animation.active = false;
-      physics.clearLimiterForces(drag.limiter.forces);
+      drag.active = false;
+      physics.clearLimiterForces(drag.limiterForces);
     },
 
     nextFrame: () => {
-      if (!drag.animation.active) return;
+      if (!drag.active) return;
 
-      const { current, animation, limiter, input } = drag;
-      const { durationMs, easeFn, output, timeStart } = animation;
-      const { toViewport, forces } = limiter;
+      const { current, limiterForces, input, output, timeStart } = drag;
+      const { animDurationMs, limitToViewport, animEaseFn } = config.drag;
 
       cacheInertiaMotion(current[0], current[1]);
       let dx: number;
       let dy: number;
 
       // if instant or empty
-      if (durationMs <= frameStart.deltaTime || !(output[0] || output[1])) {
+      if (animDurationMs <= frameStart.deltaTime || !(output[0] || output[1])) {
         dx = output[0];
         dy = output[1];
-        animation.active = false;
+        drag.active = false;
       } else {
         // animate next frame
-        const time = Math.min(frameStart.time - timeStart, durationMs);
+        const time = Math.min(frameStart.time - timeStart, animDurationMs);
         const prevTime = Math.max(0, time - frameStart.deltaTime);
-        dx = easeFn(time, output[0], durationMs) - easeFn(prevTime, output[0], durationMs);
-        dy = easeFn(time, output[1], durationMs) - easeFn(prevTime, output[1], durationMs);
-        if (time === durationMs) {
-          animation.active = false;
+        dx = animEaseFn(time, output[0], animDurationMs) - animEaseFn(prevTime, output[0], animDurationMs);
+        dy = animEaseFn(time, output[1], animDurationMs) - animEaseFn(prevTime, output[1], animDurationMs);
+        if (time === animDurationMs) {
+          drag.active = false;
         }
       }
 
-      if (toViewport) {
-        physics.limitToExtent(forces, dx, dy);
-        console.log(forces);
+      if (limitToViewport) {
+        physics.addForceWithLimitToExtent(limiterForces, dx, dy);
       }
-      transform[0] += dx + forces[2];
-      transform[1] += dy + forces[3];
+      transform[0] += dx + limiterForces[2];
+      transform[1] += dy + limiterForces[3];
       input[0] -= dx; // todo can add config to replace with (-= dx + forces[0]) so if mouse goes outside viewport, the last position is remembered
       input[1] -= dy;
     },

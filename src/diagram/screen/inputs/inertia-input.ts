@@ -2,7 +2,7 @@ import { Clamp } from '../limiter';
 import { State } from '../types.ts';
 import { PhysicsInputType } from './physics-input.ts';
 
-export function InertiaInput({ transform, frameStart, drag, inertia }: State, physics: PhysicsInputType) {
+export function InertiaInput({ config, transform, frameStart, drag, inertia }: State, physics: PhysicsInputType) {
   //
   const inertiaIntegral = (v: number, friction: number, limit: number) =>
     (v * Math.pow(friction, limit)) / Math.log(friction) - v / Math.log(friction); // f(x) = velocity * friction^x
@@ -12,7 +12,8 @@ export function InertiaInput({ transform, frameStart, drag, inertia }: State, ph
 
   return {
     start: () => {
-      const { input, output, friction, animation, turboVelocityThreshold, minVelocity, durationMultiplier, limiter } = inertia;
+      const { input, output, limiterForces } = inertia;
+      const { friction, turboVelocityThreshold, minVelocity, durationMultiplier, limitToViewport } = config.inertia;
       if (!input.length) return;
       // todo apply friction to inertia if touching the viewport border
       // remember pointer pos while inertia runs to animate braking and then going back to pointer pos
@@ -30,10 +31,10 @@ export function InertiaInput({ transform, frameStart, drag, inertia }: State, ph
       }
 
       // if no room then stop
-      if (limiter.toViewport) {
-        physics.limitToExtent(limiter.forces, dx, dy);
-        if (dx === -limiter.forces[0]) dx = 0;
-        if (dy === -limiter.forces[1]) dy = 0;
+      if (limitToViewport) {
+        physics.addForceWithLimitToExtent(limiterForces, dx, dy);
+        if (dx === -limiterForces[0]) dx = 0;
+        if (dy === -limiterForces[1]) dy = 0;
       }
 
       if (!dt || Math.abs(dx) + Math.abs(dy) <= minVelocity) {
@@ -41,10 +42,10 @@ export function InertiaInput({ transform, frameStart, drag, inertia }: State, ph
       }
 
       // if drag animation has more momentum then use it instead
-      if (drag.animation.durationMs) {
+      if (config.drag.animDurationMs) {
         const dragInputX = drag.input[0];
         const dragInputY = drag.input[1];
-        const dragLimit = drag.animation.durationMs / dt;
+        const dragLimit = config.drag.animDurationMs / dt;
         const dragDeltaX = (dragInputX * Math.log(friction)) / (Math.pow(friction, dragLimit) - 1);
         const dragDeltaY = (dragInputY * Math.log(friction)) / (Math.pow(friction, dragLimit) - 1);
 
@@ -57,15 +58,15 @@ export function InertiaInput({ transform, frameStart, drag, inertia }: State, ph
 
       output[0] = inertiaIntegral(dx, friction, xLimit);
       output[1] = inertiaIntegral(dy, friction, yLimit);
-      animation.durationMs = Math.max(xLimit * dt, yLimit * dt) * durationMultiplier;
+      inertia.animDurationMs = Math.max(xLimit * dt, yLimit * dt) * durationMultiplier;
 
       /*
         todo nice to have: dynamic duration calculation for every easeFn
          and smoothDuration can be toggled on/off
         provide all inverted Ease functions?
        */
-      animation.timeStart = frameStart.time;
-      animation.active = true;
+      inertia.timeStart = frameStart.time;
+      inertia.active = true;
     },
 
     clearCache: () => {
@@ -73,52 +74,48 @@ export function InertiaInput({ transform, frameStart, drag, inertia }: State, ph
     },
 
     stop: () => {
-      inertia.animation.active = false;
-      physics.clearLimiterForces(inertia.limiter.forces);
+      inertia.active = false;
+      physics.clearLimiterForces(inertia.limiterForces);
     },
 
     nextFrame: () => {
-      if (!inertia.animation.active) return;
+      if (!inertia.active) return;
 
-      const { output, limiter, animation } = inertia;
-      const { toViewport, forces } = limiter;
-      const duration = animation.durationMs;
+      const { output, limiterForces, animDurationMs, timeStart } = inertia;
+      const { limitToViewport, animEaseFn } = config.inertia;
 
       let dx: number;
       let dy: number;
 
       // if instant or empty
-      if (duration <= frameStart.deltaTime || !(output[0] || output[1])) {
+      if (animDurationMs <= frameStart.deltaTime || !(output[0] || output[1])) {
         dx = output[0];
         dy = output[1];
-        animation.active = false;
+        inertia.active = false;
       } else {
         // animate next frame
-        const time = Clamp(frameStart.time - animation.timeStart, 0, duration);
+        const time = Clamp(frameStart.time - timeStart, 0, animDurationMs);
         const prevTime = Math.max(time - frameStart.deltaTime, 0);
-        const easeFn = animation.easeFn;
-        dx = easeFn(time, output[0], duration) - easeFn(prevTime, output[0], duration);
-        dy = easeFn(time, output[1], duration) - easeFn(prevTime, output[1], duration);
-        if (time === duration) {
-          animation.active = false;
+        dx = animEaseFn(time, output[0], animDurationMs) - animEaseFn(prevTime, output[0], animDurationMs);
+        dy = animEaseFn(time, output[1], animDurationMs) - animEaseFn(prevTime, output[1], animDurationMs);
+        if (time === animDurationMs) {
+          inertia.active = false;
         }
       }
 
-      if (toViewport) {
-        physics.limitToExtent(forces, dx, dy);
-        // todo detect when touching extent
-        if (forces[0] || forces[1]) {
+      if (limitToViewport) {
+        physics.addForceWithLimitToExtent(limiterForces, dx, dy); // todo detect when touching extent
+        if (limiterForces[0] || limiterForces[1]) {
           const ox = output[0];
           const oy = output[1];
-          output[0] = ox === 0 ? 0 : ox >= 0 ? Math.max(ox + forces[0], 0) : Math.min(ox + forces[0], 0);
-          output[1] = oy === 0 ? 0 : oy >= 0 ? Math.max(oy + forces[1], 0) : Math.min(oy + forces[1], 0);
+          output[0] = ox === 0 ? 0 : ox >= 0 ? Math.max(ox + limiterForces[0], 0) : Math.min(ox + limiterForces[0], 0);
+          output[1] = oy === 0 ? 0 : oy >= 0 ? Math.max(oy + limiterForces[1], 0) : Math.min(oy + limiterForces[1], 0);
         }
       }
-      // console.log(forces, dx, dy);
-      transform[0] += dx + forces[2];
-      transform[1] += dy + forces[3];
+      transform[0] += dx + limiterForces[2];
+      transform[1] += dy + limiterForces[3];
 
-      if (!animation.active) physics.clearLimiterForces(forces);
+      if (!inertia.active) physics.clearLimiterForces(limiterForces);
     },
   };
 }
