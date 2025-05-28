@@ -1,8 +1,8 @@
-import { Ease } from './ease.ts';
+import { paperPatch, Ease } from './plugins';
 import { dia, util } from '@joint/core';
-import { paperPatch } from './paper-patch';
 import { InputController } from './inputs';
 import { ScreenConfig, State } from './types.ts';
+import { ScreenTransformer } from './screen-transformer.ts';
 
 export type ScreenType = ReturnType<typeof Screen>;
 
@@ -27,15 +27,15 @@ export function Screen(paper: dia.Paper, container: HTMLElement) {
       },
       drag: {
         limitToViewport: true,
-        animDurationMs: 200,
+        animDurationMs: 500,
         animEaseFn: Ease.outQuint,
       },
       zoom: {
-        inputEaseFn: Ease.linear,
+        inputEaseFn: Ease.inLog,
         min: 0.1,
         max: 5,
         limitToViewport: false,
-        animDurationMs: 200,
+        animDurationMs: 500,
         animEaseFn: Ease.outQuint,
       },
       inertia: {
@@ -146,43 +146,6 @@ export function Screen(paper: dia.Paper, container: HTMLElement) {
     },
     onDestroy: (): void => {
       cancelAnimationFrame(loopId);
-    },
-  };
-}
-
-function ScreenTransformer(
-  { transform: t, physicsTransform: pt, frameStartTransform: ft, extent, viewport }: State,
-  paperStyle: CSSStyleDeclaration
-) {
-  return {
-    nextFrame: () => {
-      const t0 = t[0] + pt[0];
-      const t1 = t[1] + pt[1];
-      const t2 = t[2] + pt[2]; // scale + scaleX
-      const t3 = t[2] + pt[3]; // scale + scaleY;
-
-      if (ft[0] !== t0 || ft[1] !== t1 || ft[2] !== t2 || ft[3] !== t3) {
-        // matrix(scaleX, skewY, skewX, scaleY, translateX, translateY);
-        paperStyle.transform = `matrix(${t2}, 0, 0, ${t3}, ${t0}, ${t1})`;
-        ft[0] = t0;
-        ft[1] = t1;
-        ft[2] = t2;
-        ft[3] = t3;
-      }
-    },
-
-    updateViewport: (data: dia.Size): void => {
-      viewport[0] = 0;
-      viewport[1] = 0;
-      viewport[2] = data.width;
-      viewport[3] = data.height;
-    },
-
-    updateExtentArea: (data: dia.Size): void => {
-      extent[0] = 0;
-      extent[1] = 0;
-      extent[2] = data.width;
-      extent[3] = data.height;
     },
   };
 }

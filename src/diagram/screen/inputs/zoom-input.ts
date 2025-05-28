@@ -1,6 +1,5 @@
 import { g } from '@joint/core';
-import { Ease } from '../ease';
-import { Clamp, Round } from '../limiter.ts';
+import { Ease, Clamp, Round } from '../plugins';
 import { State, Vector2 } from '../types.ts';
 import { PhysicsInputType } from './physics-input.ts';
 

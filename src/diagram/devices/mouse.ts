@@ -40,7 +40,8 @@ export function Mouse({ drag, zoom, inertia, invert }: ScreenController, paper: 
         if (e.buttons !== 1) return;
         paper.el.setPointerCapture(pointerCaptureId);
         if (paper.findView(e.target)) {
-          // todo Graph.findAtPoint() // todo move devices up?
+          // todo Graph.findAtPoint()
+          // selection.select()
           inertia.stop();
         } else {
           isDragging = true;

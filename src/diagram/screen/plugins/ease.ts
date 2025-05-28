@@ -6,7 +6,7 @@
  * ======================================================== */
 
 // t: current time, c: 100% of value, d: duration
-import { EaseFunction } from './types.ts';
+import { EaseFunction } from '../types.ts';
 
 export class Ease {
   // todo various themes (more like for physics)

@@ -1,4 +1,4 @@
-import { Clamp } from '../limiter';
+import { Clamp } from '../plugins';
 import { State } from '../types.ts';
 import { PhysicsInputType } from './physics-input.ts';
 

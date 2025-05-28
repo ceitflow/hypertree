@@ -1,4 +1,9 @@
-import { Rect, TransformType } from './types.ts';
+import { Rect, TransformType } from '../types.ts';
+
+// TODO Limit Input To Extent plugin
+// - input dx dy
+// - output stores forces
+
 
 // when moving beyond extent + padding, only allow to move in opposite direction
 // returns constraint force
@@ -53,13 +58,4 @@ export function ExtentLimiter(dx: number, dy: number, t: TransformType, view: Re
     isConstrainedX: constrainDx !== 0,
     isConstrainedY: constrainDy !== 0,
   };
-}
-
-export function Clamp(value: number, min: number, max: number) {
-  return Math.min(Math.max(value, min), max);
-}
-
-export function Round(value: number, precision = 2) {
-  const multiplier = Math.pow(10, precision);
-  return Math.round(value * multiplier) / multiplier;
 }
