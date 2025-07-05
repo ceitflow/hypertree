@@ -3,6 +3,7 @@ import { dia, util } from '@joint/core';
 import { InputController } from './inputs';
 import { ScreenConfig, State } from './types.ts';
 import { ScreenTransformer } from './screen-transformer.ts';
+import { CanvasController } from './canvas';
 
 export type ScreenType = ReturnType<typeof Screen>;
 
@@ -27,7 +28,7 @@ export function Screen(paper: dia.Paper, container: HTMLElement) {
       },
       drag: {
         limitToViewport: true,
-        animDurationMs: 500,
+        animDurationMs: 0,
         animEaseFn: Ease.outQuint,
       },
       zoom: {
@@ -89,6 +90,8 @@ export function Screen(paper: dia.Paper, container: HTMLElement) {
 
   let loopId = 0;
 
+  const canvas = CanvasController(state, container);
+  canvas.init();
   const screenTransformer = ScreenTransformer(state, paper.el.style);
   const controller = InputController(state);
   const transformers = [

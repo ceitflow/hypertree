@@ -11,6 +11,12 @@ importers:
       '@joint/core':
         specifier: ^4.1.3
         version: 4.1.3
+      '@joint/layout-directed-graph':
+        specifier: ^4.1.4
+        version: 4.1.4
+      elkjs:
+        specifier: ^0.10.0
+        version: 0.10.0
       gsap:
         specifier: ^3.13.0
         version: 3.13.0
@@ -80,6 +86,13 @@ packages:
   '@babel/types@7.26.8':
     resolution: {integrity: sha512-eUuWapzEGWFEpHFxgEaBG8e3n6S8L3MSu0oda755rOfabWPnh0Our1AozNFVUxGFIhbKgd1ksprsoDGMinTOTA==}
     engines: {node: '>=6.9.0'}
+
+  '@dagrejs/dagre@1.0.4':
+    resolution: {integrity: sha512-jrEore+HhW1yg1Rsd9H1PPMcoEOD4bVh0WCXc6GqzyzubnJj4GaWGg8ETOrskTd/3n/g5LOzumGM4CCgpNLJNw==}
+
+  '@dagrejs/graphlib@2.1.13':
+    resolution: {integrity: sha512-calbMa7Gcyo+/t23XBaqQqon8LlgE9regey4UVoikoenKBXvUnCUL3s9RP6USCxttfr0XWVICtYUuKMdehKqMw==}
+    engines: {node: '>17.0.0'}
 
   '@esbuild/aix-ppc64@0.24.2':
     resolution: {integrity: sha512-thpVCb/rhxE/BnMLQ7GReQLLN8q9qbHmI55F4489/ByVg2aQaQ6kbcLb6FHkocZzQhxc4gx0sCk0tJkKBFzDhA==}
@@ -291,6 +304,9 @@ packages:
 
   '@joint/core@4.1.3':
     resolution: {integrity: sha512-X769blCoVxtx6NNm/cbHDXDOa+Gt7eZwrJMLnqJw8c5NkjmcYWCY1kA3ep8RfRRVG76f3QLNd9a8Q/aItI/WWw==}
+
+  '@joint/layout-directed-graph@4.1.4':
+    resolution: {integrity: sha512-m1FGv8Gg9DeCRq+VDOQzBJ8hLQn8vJLmrpU/Dl4b4jEsWiRm+ScU6XXZm5tPlbhMXl28F1//gKK5xJCrsJ7M/w==}
 
   '@jridgewell/sourcemap-codec@1.5.0':
     resolution: {integrity: sha512-gv3ZRaISU3fjPAgNsriBRqGWQL6quFx04YMPW/zD8XMLsU32mhCCbfbO6KZFLjvYpCZ8zyDEgqsgf+PwPaM7GQ==}
@@ -776,6 +792,9 @@ packages:
 
   earcut@2.2.4:
     resolution: {integrity: sha512-/pjZsA1b4RPHbeWZQn66SWS8nZZWLQQ23oE3Eam7aroEFGEvwKAsJfZ9ytiEMycfzXWpca4FA9QIOehf7PocBQ==}
+
+  elkjs@0.10.0:
+    resolution: {integrity: sha512-v/3r+3Bl2NMrWmVoRTMBtHtWvRISTix/s9EfnsfEWApNrsmNjqgqJOispCGg46BPwIFdkag3N/HYSxJczvCm6w==}
 
   entities@4.5.0:
     resolution: {integrity: sha512-V0hjH4dGPh9Ao5p0MoRY6BVqtwCjhz6vI5LT8AJ55H+4g9/4vbHx1I54fS0XuclLhDHArPQCiMjDxjaL8fPxhw==}
@@ -1429,6 +1448,12 @@ snapshots:
       '@babel/helper-string-parser': 7.25.9
       '@babel/helper-validator-identifier': 7.25.9
 
+  '@dagrejs/dagre@1.0.4':
+    dependencies:
+      '@dagrejs/graphlib': 2.1.13
+
+  '@dagrejs/graphlib@2.1.13': {}
+
   '@esbuild/aix-ppc64@0.24.2':
     optional: true
 
@@ -1562,6 +1587,12 @@ snapshots:
   '@humanwhocodes/retry@0.4.2': {}
 
   '@joint/core@4.1.3': {}
+
+  '@joint/layout-directed-graph@4.1.4':
+    dependencies:
+      '@dagrejs/dagre': 1.0.4
+      '@dagrejs/graphlib': 2.1.13
+      '@joint/core': 4.1.3
 
   '@jridgewell/sourcemap-codec@1.5.0': {}
 
@@ -2095,6 +2126,8 @@ snapshots:
   deep-is@0.1.4: {}
 
   earcut@2.2.4: {}
+
+  elkjs@0.10.0: {}
 
   entities@4.5.0: {}
 
