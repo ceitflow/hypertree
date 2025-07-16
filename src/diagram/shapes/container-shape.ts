@@ -21,7 +21,7 @@ export function ContainerShape(addTo?: Container) {
       container.scale.set(sx, sy);
     },
     resize: (size: Size) => {
-      bg.rect(0, 0, size.width, size.height).fill('0x333');
+      bg.roundRect(0, 0, size.width, size.height, 16).fill('0x262626');
     },
   };
 }
