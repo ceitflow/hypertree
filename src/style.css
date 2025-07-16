@@ -24,6 +24,18 @@ body {
   flex-direction: column;
   position: absolute;
 
+  .panel {
+    position: absolute;
+    right: 0;
+    top: 0;
+    z-index: 1;
+    background-color: rgba(255, 255, 255, .85);
+    padding: 16px;
+    border-radius: 16px;
+    margin: 16px;
+    display: flex;
+    flex-direction: column;
+  }
 
   #viewport {
     overflow: hidden;

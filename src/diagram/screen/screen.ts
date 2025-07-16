@@ -25,7 +25,7 @@ export function Screen(updateTransform: UpdateTransform) {
         animEaseFn: Ease.outBack,
       },
       drag: {
-        limitToViewport: false,
+        limitToViewport: true,
         animDurationMs: 0,
         animEaseFn: Ease.outQuint,
       },
@@ -43,7 +43,7 @@ export function Screen(updateTransform: UpdateTransform) {
         durationMultiplier: 1,
         turboVelocityThreshold: 14,
         minVelocity: 1,
-        limitToViewport: false,
+        limitToViewport: true,
         animEaseFn: Ease.outQuint,
       },
     },
@@ -86,25 +86,15 @@ export function Screen(updateTransform: UpdateTransform) {
     },
   };
 
-  const viewportTransformer = ScreenTransformer(state, updateTransform);
+  const transformer = ScreenTransformer(state, updateTransform);
   const controller = InputController(state);
   const transformers = [
     controller.physics.nextFrame,
     controller.drag.nextFrame,
     controller.zoom.nextFrame,
     controller.inertia.nextFrame,
-    viewportTransformer.nextFrame,
+    transformer.nextFrame,
   ];
-
-  // paper.on({
-  //   resize: (width, height) => {
-  //     screenTransformer.updateExtentArea({ width, height });
-  //   },
-  // });
-  // resize browser callback
-  // new ResizeObserver(entries => {
-  //   screenTransformer.updateViewport(entries[0].contentRect);
-  // }).observe(container);
 
   // for screen refresh rate testing
   // requestAnimationFrame(() =>
@@ -120,7 +110,7 @@ export function Screen(updateTransform: UpdateTransform) {
 
   return {
     controller,
-    viewportTransformer,
+    transformer,
     nextFrame: (currentTime: number) => {
       frameStart.deltaTime = currentTime - frameStart.time;
       frameStart.time = currentTime;

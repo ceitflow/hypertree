@@ -1,4 +1,4 @@
-import { InputController } from '../scroller';
+import { InputController } from '../screen';
 
 type Point = [number, number];
 

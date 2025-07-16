@@ -1,6 +1,4 @@
-import "./style.css";
-import { CanvasController } from './canvas-controller.ts';
+import './style.css';
+import { App } from './app.ts';
 
-const container = document.getElementById('viewport')!;
-const canvas = CanvasController(container);
-await canvas.init();
+App(document.getElementById('viewport')!);

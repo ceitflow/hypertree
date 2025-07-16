@@ -18,13 +18,15 @@ export function ScreenTransformer(state: State, updateTransform: UpdateTransform
       }
     },
 
-    updateViewport: (data: BBox): void => {
+    // set what is the actual viewport size
+    updateVisibleViewport: (data: BBox): void => {
       viewport[0] = data.x;
       viewport[1] = data.y;
       viewport[2] = data.width;
       viewport[3] = data.height;
     },
 
+    // set what is the graph size
     updateExtentArea: (data: BBox): void => {
       extent[0] = data.x;
       extent[1] = data.y;

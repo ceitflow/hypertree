@@ -1,5 +1,5 @@
 import { Graphics } from 'pixi.js';
-import { NodeData } from './tree.ts';
+import { NodeData } from './tree-util.ts';
 
 type Point = [number, number];
 

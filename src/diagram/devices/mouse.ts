@@ -1,4 +1,4 @@
-import { InputController } from '../scroller';
+import { InputController } from '../screen';
 
 export function Mouse({ drag, zoom, inertia, invert }: InputController) {
   let isDragging = false;
