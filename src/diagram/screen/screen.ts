@@ -1,6 +1,6 @@
 import { Ease } from './plugins';
-import { State, UpdateTransform } from './types.ts';
 import { InputController } from './inputs';
+import { State, UpdateTransform } from './types.ts';
 import { ScreenTransformer } from './screen-transformer.ts';
 
 export type ScreenType = ReturnType<typeof Screen>;
@@ -107,6 +107,7 @@ export function Screen(updateTransform: UpdateTransform) {
   // );
 
   const { frameStart } = state;
+  console.log(state)
 
   return {
     controller,

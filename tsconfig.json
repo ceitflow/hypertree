@@ -15,7 +15,8 @@
 
     /* Linting */
     "strict": true,
-    "noFallthroughCasesInSwitch": true,
+    "noImplicitAny": false,
+    "noFallthroughCasesInSwitch": true
   },
-  "include": ["src"]
+  "include": ["src", "astgen/src/files/file.type.ts", "astgen/src/files/declaration.type.ts"]
 }
