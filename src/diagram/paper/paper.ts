@@ -49,24 +49,23 @@ export class Paper {
     nodes.forEach(d => {
       const isDir = true;
       /* node */
-      const circle = new Graphics().circle(0, 0, 6).fill(isDir ? '0xfff' : '0xe24c00');
+      const circle = new Graphics().circle(0, 0, 6).fill(isDir ? '0xcfcfcf' : '0xe24c00');
       circle.x = d.layout.layoutX;
       circle.y = d.layout.layoutY;
       nodesContainer.addChild(circle);
 
       /* label */
       const bitmapFontText = new BitmapText({
-        text: d.name,
+        text: `   ${d.name}     `,
         style: {
           fontFamily: 'sans-serif',
           fontSize: isDir ? 12 : 9,
-          stroke: isDir ? 'white' : undefined,
         },
       });
-      bitmapFontText.anchor = d.layout.x! < Math.PI === !isDir ? 0 : { x: 1, y: 0 }; // if d.x less than half circle and no children
+      bitmapFontText.anchor = (d.layout.x < Math.PI) === !isDir ? 0 : { x: 1, y: 0 }; // if d.x less than half circle and no children
       bitmapFontText.x = d.layout.layoutX;
       bitmapFontText.y = d.layout.layoutY + (isDir ? -6 : -6);
-      bitmapFontText.angle = (d.layout.x! * 180) / Math.PI - 90 + (d.layout.x! >= Math.PI ? 180 : 0);
+      bitmapFontText.angle = (d.layout.x * 180) / Math.PI - 90 + (d.layout.x >= Math.PI ? 180 : 0);
 
       textContainer.addChild(bitmapFontText);
     });

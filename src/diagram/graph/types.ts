@@ -22,6 +22,7 @@ export type DirModel = {
   layout: {
     x: number; // angle
     y: number; // radius
+    angleAdjustment: number;
     layoutX: number;
     layoutY: number;
     depth: number;

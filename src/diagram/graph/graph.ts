@@ -48,6 +48,7 @@ export class Graph {
       layout: {
         x: 0,
         y: 0,
+        angleAdjustment: 0,
         layoutX: 0,
         layoutY: 0,
         depth: parent ? parent.layout.depth + 1 : 0,
