@@ -7,7 +7,7 @@ export async function App(host: HTMLElement) {
   // const controller = ; // some react ui controller (filters etc)
 
   diagram.load((output as RawData).dirGraph
-    .children!.find(c => c.name === 'src')!
-    .children!.find(c => c.name === 'app')!
+    .dirs!.find(c => c.name === 'src')!
+    .dirs!.find(c => c.name === 'app')!
   );
 }

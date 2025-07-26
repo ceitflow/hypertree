@@ -7,6 +7,7 @@ export function linkRadial(graphic: Graphics, { source, target }: LinkModel): vo
 
   const pointRadial = (x: number, y: number): Point =>
     [y * Math.cos(x -= Math.PI / 2), y * Math.sin(x)];
+  // [x,y] // linear links
 
   let lastX: number;
   let lastY: number;
@@ -29,10 +30,11 @@ export function linkRadial(graphic: Graphics, { source, target }: LinkModel): vo
     lastY = y;
   }
 
-  // output.lineStart();
   point(source.layout.x, source.layout.y);
   point(target.layout.x, target.layout.y);
-  // output.lineEnd();
+  // linear links
+  // ctx.moveTo(source.layout.x, source.layout.y);
+  // ctx.lineTo(target.layout.x, target.layout.y);
 }
 
 function context(graphic: Graphics) {
@@ -56,5 +58,9 @@ function context(graphic: Graphics) {
     // console.log(`C${x1},${y1},${x2},${y2},${_x1},${_y1}`);
   };
 
-  return { moveTo, bezierCurveTo };
+  const lineTo = (x: number, y: number) => {
+    graphic.lineTo(x, y).stroke({ width: 2, color: 0xFC8A17 });
+  }
+
+  return { moveTo, bezierCurveTo, lineTo };
 }

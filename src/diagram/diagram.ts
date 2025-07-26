@@ -1,6 +1,6 @@
 import { Mouse } from './devices';
 import { Paper } from './paper/paper.ts';
-import { RawNode } from './graph/types.ts';
+import { RawDir } from './graph/types.ts';
 
 export async function Diagram(host: HTMLElement) {
   const paper = await Paper.Create(host);
@@ -11,7 +11,7 @@ export async function Diagram(host: HTMLElement) {
   paper.background.on('wheel', mouse.wheel);
 
   return {
-    load: (json: RawNode) => {
+    load: (json: RawDir) => {
       paper.graph.parseJson(json);
       paper.reloadPaper();
       paper.scroller.controller.zoom.zoomToFit();
