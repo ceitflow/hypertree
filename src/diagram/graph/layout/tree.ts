@@ -41,6 +41,7 @@ export function layout(root: DirModel): void {
       maxx: number;
       minRadius: number;
       radius: number;
+      radiusAdjustment: number;
     };
   } = {};
   eachBefore(root, (v: DirModel) => {
@@ -54,69 +55,58 @@ export function layout(root: DirModel): void {
     // compute radii
     if (!depthRadiusMap[v.layout.depth])
       depthRadiusMap[v.layout.depth] = {
-        nodes: [v],
+        nodes: [],
         minx: v.layout.x,
         maxx: v.layout.x,
         minRadius: 0,
         radius: 0,
+        radiusAdjustment: 0,
       };
-    else {
-      const i = depthRadiusMap[v.layout.depth];
-      i.nodes.push(v);
-      if (v.layout.x < i.minx) i.minx = v.layout.x;
-      if (v.layout.x > i.maxx) i.maxx = v.layout.x;
-      i.radius = i.minRadius = (i.maxx - i.minx) / Math.PI / 2;
-    }
+    const i = depthRadiusMap[v.layout.depth];
+    i.nodes.push(v);
+    if (v.layout.x < i.minx) i.minx = v.layout.x;
+    if (v.layout.x > i.maxx) i.maxx = v.layout.x;
+    i.radius = i.minRadius = (i.maxx - i.minx) / Math.PI / 2;
   });
 
   console.log(depthRadiusMap, structuredClone(root));
 
+  const sep = left === right ? 1 : separation(left, right) / 2; // extra separation to prevent overlaps on same levels (start and end nodes)
+  const fullWidth = right.layout.x - left.layout.x + sep;
+
   // calculateRadiuses
   const levels = Object.keys(depthRadiusMap);
-  const minOffset = 160;
+  const minOffset = 100;
   // const minSeparationBetweenDiffParentDirs = ; // can be larger that this if radius needs to be bigger
 
+  // each next level inherit previous radius
   for (let i = 1; i < levels.length; i++) {
     const depth = parseInt(levels[i]);
-    const prevEntry = depthRadiusMap[depth - 1];
     const entry = depthRadiusMap[depth];
+    const prevEntry = depthRadiusMap[depth - 1];
 
-    // const sorted = entry.nodes.sort((a, b) => a.layout.x - b.layout.x);
-    // let minDistance = Infinity;
-    // for (let i = 0; i < sorted.length - 1; i++) {
-    //   const distance = sorted[i + 1].layout.x - sorted[i].layout.x;
-    //   if (distance < minDistance) minDistance = distance;
-    // }
-
-    // const newRatio = sorted.length === 1 ? 1 : 12 / minDistance;
-    // sorted.forEach(s => {
-    //   s.layout.x = (s.layout.x - center) * newRatio + center;
-    // });
-    // entry.minx = Math.min(sorted[0].layout.x, prevEntry.nodes[0].layout.x);
-    // entry.maxx = Math.max(sorted[sorted.length - 1].layout.x, prevEntry.nodes[prevEntry.nodes.length - 1].layout.x);
-    // entry.radius = (entry.maxx - entry.minx) / Math.PI / 2; //* newRatio;
-
-    if (entry.minRadius < prevEntry.minRadius) entry.minRadius = prevEntry.minRadius;
-    const prevRadius = prevEntry.radius;
-    // // every depth level have the same width initially (max width of initial tree)
-    // // TODO need to adjust distances between nodes proportionally, otherwise the separation will be off
-    // // distribute 2 PI * minOffset in distances between nodes (x axis)
-    if (entry.radius < prevRadius + minOffset) {
-      entry.radius = prevRadius + minOffset;
-      const ratio = entry.radius / entry.minRadius; // >1
-      console.log(`compressing ${depth} by ${1/ratio}`);
+    if (entry.minRadius < prevEntry.minRadius) {
+      entry.minRadius = prevEntry.minRadius;
+    }
+    if (entry.radius < prevEntry.radius + minOffset) {
+      entry.radius = prevEntry.radius + minOffset;
+      const isSingleParent = entry.nodes.every((n, i) => i === 0 || n.parent === entry.nodes[i - 1].parent);
+      if (isSingleParent) {
+        console.log(true, depth);
+        continue; // if node is the only one in this entire level
+      }
+      const ratio = fullWidth / (2 * Math.PI * entry.radius); // < 1
+      console.log(`compressing level:${depth} by ${ratio}`);
       entry.nodes.forEach(s => {
-        const center = s.parent!.layout.x; // todo do from end because parents are modified
-        s.layout.angleAdjustment = ((s.layout.x - center) / ratio + center - s.layout.x) + s.parent!.layout.angleAdjustment;
-        // eachBefore(s.dirs, child => child.layout.angleAdjustment -= s.layout.angleAdjustment );
+        const center = s.parent!.layout.x;
+        s.layout.angleAdjustment = (s.layout.x - center) * ratio + center - s.layout.x + s.parent!.layout.angleAdjustment;
       });
     }
-    // if (i === 1) entry.radius = 300;
   }
 
   const fullCircle = 2 * Math.PI;
-  const tx = -left.layout.x;
-  const kx = fullCircle / (right.layout.x - left.layout.x);
+  const tx = sep - left.layout.x;
+  const kx = fullCircle / fullWidth;
 
   eachBefore(root, (node: DirModel) => {
     // const { minx, maxx } = depthRadiusMap[node.layout.depth];

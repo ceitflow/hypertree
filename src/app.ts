@@ -6,8 +6,6 @@ export async function App(host: HTMLElement) {
   const diagram = await Diagram(host);
   // const controller = ; // some react ui controller (filters etc)
 
-  diagram.load((output as RawData).dirGraph
-    .dirs!.find(c => c.name === 'src')!
-    .dirs!.find(c => c.name === 'app')!
-  );
+  const data = (output as RawData).dirGraph
+  diagram.load(data);
 }

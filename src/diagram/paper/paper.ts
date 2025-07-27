@@ -52,6 +52,7 @@ export class Paper {
       const circle = new Graphics().circle(0, 0, 6).fill(isDir ? '0xcfcfcf' : '0xe24c00');
       circle.x = d.layout.layoutX;
       circle.y = d.layout.layoutY;
+      circle.label = d.name;
       nodesContainer.addChild(circle);
 
       /* label */
