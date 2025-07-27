@@ -1,5 +1,5 @@
 import { Diagram } from './diagram/diagram.ts';
-import output from '../astgen/dist/output.json';
+import output from '../backend/dist/output.json';
 import { RawData } from './diagram/graph/types.ts';
 
 export async function App(host: HTMLElement) {

@@ -1,4 +1,4 @@
-import { DirectoryMapItem, FileMapItem } from '../../../astgen/src/files';
+import { DirectoryMapItem, FileMapItem } from '../../../backend/src/files';
 
 // Augment json type to simplify parsing
 export type RawDir = Omit<DirectoryMapItem, 'dirs'> & {
