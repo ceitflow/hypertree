@@ -20,11 +20,12 @@ export type DirModel = {
   files: FileModel[];
   dirs: DirModel[]; // todo links create by { source: this, target: children[i] }
   layout: {
-    x: number; // angle
+    x: number;
     y: number; // radius
+    angle: number; // x
     angleAdjustment: number;
-    layoutX: number;
-    layoutY: number;
+    radialX: number;
+    radialY: number;
     depth: number;
     A: DirModel | null; // default ancestor
     a: DirModel; // ancestor
@@ -41,6 +42,14 @@ export type FileModel = {
   idPath: string;
   name: string;
   nestLevel: number;
+  layout: {
+    // x: number;
+    // y: number; // radius
+    // angle: number; // x
+    // angleAdjustment: number;
+    radialX: number;
+    radialY: number;
+  }
 }
 
 export type LinkModel = { // GroupLink and Link

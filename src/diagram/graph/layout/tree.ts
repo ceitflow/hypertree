@@ -37,42 +37,37 @@ export function layout(root: DirModel): void {
   const depthRadiusMap: {
     [depth: number]: {
       nodes: DirModel[];
-      minx: number;
-      maxx: number;
-      minRadius: number;
       radius: number;
-      radiusAdjustment: number;
+      minRadius: number;
+      compressionRatio: number;
     };
   } = {};
   eachBefore(root, (v: DirModel) => {
     v.layout.x = v.layout.z + v.parent!.layout.m;
+    v.layout.angle = v.layout.x;
     v.layout.m += v.parent!.layout.m;
 
     // Compute the left-most, right-most, and depth-most nodes for extents.
     if (v.layout.x < left.layout.x) left = v;
-    if (v.layout.x > right.layout.x) right = v;
+    if ((v.layout.x + (v.files.length ? v.files.length * 12 + 12 : 0)) > right.layout.x + (right.files.length ? right.files.length * 12 + 12 : 0)) right = v;
     if (v.layout.depth > bottom.layout.depth) bottom = v;
     // compute radii
     if (!depthRadiusMap[v.layout.depth])
       depthRadiusMap[v.layout.depth] = {
         nodes: [],
-        minx: v.layout.x,
-        maxx: v.layout.x,
-        minRadius: 0,
         radius: 0,
-        radiusAdjustment: 0,
+        minRadius: 0,
+        compressionRatio: 0,
       };
     const i = depthRadiusMap[v.layout.depth];
     i.nodes.push(v);
-    if (v.layout.x < i.minx) i.minx = v.layout.x;
-    if (v.layout.x > i.maxx) i.maxx = v.layout.x;
-    i.radius = i.minRadius = (i.maxx - i.minx) / Math.PI / 2;
   });
 
   console.log(depthRadiusMap, structuredClone(root));
 
   const sep = left === right ? 1 : separation(left, right) / 2; // extra separation to prevent overlaps on same levels (start and end nodes)
   const fullWidth = right.layout.x - left.layout.x + sep;
+  console.log(`leftmost: ${left.name}, rightmost: ${right.name}, fullWidth: ${fullWidth}`);
 
   // calculateRadiuses
   const levels = Object.keys(depthRadiusMap);
@@ -80,22 +75,35 @@ export function layout(root: DirModel): void {
   // const minSeparationBetweenDiffParentDirs = ; // can be larger that this if radius needs to be bigger
 
   // each next level inherit previous radius
+  let skipCompression = true;
   for (let i = 1; i < levels.length; i++) {
     const depth = parseInt(levels[i]);
     const entry = depthRadiusMap[depth];
     const prevEntry = depthRadiusMap[depth - 1];
+    entry.nodes.sort((a, b) => a.layout.x - b.layout.x);
+    const minx = entry.nodes[0];
+    const maxx = entry.nodes[entry.nodes.length - 1];
+    entry.minRadius = fullWidth / Math.PI / 2;
+    if (entry.minRadius > entry.radius) entry.radius = entry.minRadius;
 
-    if (entry.minRadius < prevEntry.minRadius) {
-      entry.minRadius = prevEntry.minRadius;
-    }
+    // const prevMinx = prevEntry.nodes[0];
+    // const prevMaxx = prevEntry.nodes[prevEntry.nodes.length - 1];
+    // const prevMinRadius = (prevMaxx.layout.x + prevMaxx.files.length * 12 - prevMinx.layout.x) / Math.PI / 2;
+
+    // if (minRadius < prevMinRadius) {
+    //   minRadius = prevMinRadius;
+    // }
     if (entry.radius < prevEntry.radius + minOffset) {
       entry.radius = prevEntry.radius + minOffset;
-      const isSingleParent = entry.nodes.every((n, i) => i === 0 || n.parent === entry.nodes[i - 1].parent);
-      if (isSingleParent) {
+      // if (depth === 1) entry.radius = 600;
+      const isSingleParent = skipCompression && entry.nodes.every((n, i) => i === 0 || n.parent === entry.nodes[i - 1].parent);
+      if (isSingleParent) { // dont compress the first levels only, if needed
         console.log(true, depth);
         continue; // if node is the only one in this entire level
+      } else {
+        skipCompression = false;
       }
-      const ratio = fullWidth / (2 * Math.PI * entry.radius); // < 1
+      const ratio = entry.compressionRatio = fullWidth / (2 * Math.PI * entry.radius); // < 1
       console.log(`compressing level:${depth} by ${ratio}`);
       entry.nodes.forEach(s => {
         const center = s.parent!.layout.x;
@@ -108,19 +116,43 @@ export function layout(root: DirModel): void {
   const tx = sep - left.layout.x;
   const kx = fullCircle / fullWidth;
 
-  eachBefore(root, (node: DirModel) => {
-    // const { minx, maxx } = depthRadiusMap[node.layout.depth];
-    const angleRadians = (node.layout.x = (node.layout.x + node.layout.angleAdjustment + tx) * kx); // originally tree is vertical top to bottom
-    const radius = (node.layout.y = depthRadiusMap[node.layout.depth].radius);
-    node.layout.layoutX = radius * Math.cos(angleRadians - Math.PI / 2);
-    node.layout.layoutY = radius * Math.sin(angleRadians - Math.PI / 2);
-    // node.layout.layoutX = node.layout.x;
-    // node.layout.layoutY = node.layout.y;
+  eachBefore(root, ({ layout, files, parent }: DirModel) => {
+    layout.angle = (layout.x + layout.angleAdjustment + tx) * kx; // radians
+    layout.y = depthRadiusMap[layout.depth].radius;
+    files.forEach((file, idx) => {
+      const fX = layout.x + 12 * (idx + 1);
+      let fAngleAdjustment = 0;
+      if (layout.angleAdjustment) {
+        const center = parent!.layout.x;
+        fAngleAdjustment = (fX - center) * depthRadiusMap[layout.depth].compressionRatio + center - fX + parent!.layout.angleAdjustment;
+      }
+      const fAngle = (fX + fAngleAdjustment + tx) * kx;
+      const fRadius = layout.y;
+      file.layout.radialX = fRadius * Math.cos(fAngle - Math.PI / 2);
+      file.layout.radialY = fRadius * Math.sin(fAngle - Math.PI / 2);
+      // file.layout.radialX = layout.x + 12 * (idx + 1);
+      // file.layout.radialY = fRadius;
+    });
+
+    layout.radialX = layout.y * Math.cos(layout.angle - Math.PI / 2);
+    layout.radialY = layout.y * Math.sin(layout.angle - Math.PI / 2);
+    // layout.radialX = layout.x;
+    // layout.radialY = layout.y;
   });
 }
 
 function separation(a: DirModel, b: DirModel) {
-  return a.parent == b.parent ? 12 : 12;
+  let isABeforeB = true;
+  if (a.parent === b.parent) {
+    if (a.parent) isABeforeB = a.layout.i < b.layout.i;
+  } else if (a.layout.depth === b.layout.depth) {
+    isABeforeB = a.parent!.layout.i < b.parent!.layout.i;
+  } else {
+    isABeforeB = a.layout.x < b.layout.x;
+  }
+  const nodeRadius = 6;
+  const childrenWidth = (isABeforeB ? a.files.length : b.files.length) * nodeRadius * 2;
+  return nodeRadius * 2 + childrenWidth;
 }
 
 // Computes all real x-coordinates by summing up the modifiers recursively.

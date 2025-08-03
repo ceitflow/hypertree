@@ -30,8 +30,8 @@ export function linkRadial(graphic: Graphics, { source, target }: LinkModel): vo
     lastY = y;
   }
 
-  point(source.layout.x, source.layout.y);
-  point(target.layout.x, target.layout.y);
+  point(source.layout.angle, source.layout.y);
+  point(target.layout.angle, target.layout.y);
   // linear links
   // ctx.moveTo(source.layout.x, source.layout.y);
   // ctx.lineTo(target.layout.x, target.layout.y);

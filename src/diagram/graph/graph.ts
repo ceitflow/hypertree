@@ -11,6 +11,7 @@ export class Graph {
     // outputs the same tree but with added properties
     const { nodes, links } = this.model;
     const result = this.createDirModel(json, 0, null);
+    if (json.files) json.files.forEach(f => result.files.push(this.createFileModel(f)))
     const stack = [json];
     json._modelRef = result;
     nodes.push(result);
@@ -38,7 +39,7 @@ export class Graph {
   }
 
   private createDirModel(data: RawDir, index: number, parent: DirModel | null): DirModel {
-    const model = {
+    const model: DirModel = {
       name: data.name,
       nestLevel: data.nestLevel,
       idPath: data.path,
@@ -48,9 +49,10 @@ export class Graph {
       layout: {
         x: 0,
         y: 0,
+        angle: 0,
         angleAdjustment: 0,
-        layoutX: 0,
-        layoutY: 0,
+        radialX: 0,
+        radialY: 0,
         depth: parent ? parent.layout.depth + 1 : 0,
         A: null,
         a: null as unknown as DirModel,
@@ -70,7 +72,11 @@ export class Graph {
     return {
       idPath: data.path,
       name: data.name,
-      nestLevel: data.nestLevel
+      nestLevel: data.nestLevel,
+      layout: {
+        radialX: 0,
+        radialY: 0,
+      }
     }
   }
 

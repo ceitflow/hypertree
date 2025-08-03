@@ -12,7 +12,7 @@ export class Paper {
   scroller: ScreenType;
 
   private constructor(graph: Graph, engine: Application, paper: Container, background: Graphics, scroller: ScreenType) {
-    this.graph = graph
+    this.graph = graph;
     this.engine = engine;
     this.paper = paper;
     this.background = background;
@@ -46,27 +46,34 @@ export class Paper {
       linksContainer.addChild(linkGraphic);
     });
 
+    const createCircle = (x: number, y: number, name: string, isDir: boolean) => {
+      const circle = new Graphics().circle(0, 0, 6).fill(isDir ? '0xcfcfcf' : '0xe24c00');
+      circle.x = x;
+      circle.y = y;
+      circle.label = name;
+      nodesContainer.addChild(circle);
+    };
+
     nodes.forEach(d => {
       const isDir = true;
       /* node */
-      const circle = new Graphics().circle(0, 0, 6).fill(isDir ? '0xcfcfcf' : '0xe24c00');
-      circle.x = d.layout.layoutX;
-      circle.y = d.layout.layoutY;
-      circle.label = d.name;
-      nodesContainer.addChild(circle);
+      createCircle(d.layout.radialX, d.layout.radialY, d.name, true);
+      d.files.forEach(file => {
+        createCircle(file.layout.radialX, file.layout.radialY, file.name, false);
+      });
 
       /* label */
       const bitmapFontText = new BitmapText({
-        text: `   ${d.name}     `,
+        text: `   ${d.name}(${d.files.length})     `,
         style: {
           fontFamily: 'sans-serif',
           fontSize: isDir ? 12 : 9,
         },
       });
-      bitmapFontText.anchor = (d.layout.x < Math.PI) === !isDir ? 0 : { x: 1, y: 0 }; // if d.x less than half circle and no children
-      bitmapFontText.x = d.layout.layoutX;
-      bitmapFontText.y = d.layout.layoutY + (isDir ? -6 : -6);
-      bitmapFontText.angle = (d.layout.x * 180) / Math.PI - 90 + (d.layout.x >= Math.PI ? 180 : 0);
+      bitmapFontText.anchor = d.layout.angle < Math.PI === !isDir ? 0 : { x: 1, y: 0 }; // if d.angle less than half circle and no children
+      bitmapFontText.x = d.layout.radialX;
+      bitmapFontText.y = d.layout.radialY + (isDir ? -6 : -6);
+      bitmapFontText.angle = (d.layout.angle * 180) / Math.PI - 90 + (d.layout.angle >= Math.PI ? 180 : 0);
 
       textContainer.addChild(bitmapFontText);
     });

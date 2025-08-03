@@ -6,8 +6,8 @@ import { createProgram, findConfigFile, parseJsonConfigFileContent, readConfigFi
 // Generate AST for JavaScript or TypeScript
 (function main() {
   const args = {
-    src: 'C:\\Users\\Neoteric\\WebstormProjects\\mosaicX\\gyrus-backend\\ivap-nerve-engine',
-    output: 'C:\\Users\\Neoteric\\WebstormProjects\\prototypes\\graphkit\\astgen\\dist',
+    src: 'C:\\Users\\Neoteric\\WebstormProjects\\koia-adminflow\\adminflow',
+    output: 'C:\\Users\\Neoteric\\WebstormProjects\\prototypes\\graphkit\\backend\\dist',
     // depth: 2,
     "exclude-file": ['eslint.config.js', 'vite.config.ts'],
   }
