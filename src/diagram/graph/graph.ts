@@ -1,4 +1,4 @@
-import { layout } from './layout/tree.ts';
+import { tidyLayout } from './layout/tree.ts';
 import { DirModel, RawDir, GraphModel, LinkModel, FileModel, RawFile } from './types.ts';
 
 export class Graph {
@@ -34,7 +34,7 @@ export class Graph {
       }
     }
     (result.parent = this.createDirModel({} as any, 0, null)).dirs = [result];
-    layout(result);
+    tidyLayout(result);
     console.log(result)
   }
 
@@ -74,6 +74,8 @@ export class Graph {
       name: data.name,
       nestLevel: data.nestLevel,
       layout: {
+        angle: 0,
+        angleAdjustment: 0,
         radialX: 0,
         radialY: 0,
       }

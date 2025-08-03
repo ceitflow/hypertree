@@ -3,7 +3,7 @@ import { DirModel } from '../types.ts';
 // Tree diagram using the Reingold-Tilford "tidy" algorithm
 // Computes the layout using Buchheim et al.'s algorithm.
 // Create a radial tree layout. The layout’s first dimension (x) is the angle, while the second (y) is the radius.
-export function layout(root: DirModel): void {
+export function tidyLayout(root: DirModel): void {
   // Computes a preliminary x-coordinate for v. Before that, FIRST WALK is
   // applied recursively to the children of v, as well as the function
   // APPORTION. After spacing out the children by calling EXECUTE SHIFTS, the
@@ -38,7 +38,6 @@ export function layout(root: DirModel): void {
     [depth: number]: {
       nodes: DirModel[];
       radius: number;
-      minRadius: number;
       compressionRatio: number;
     };
   } = {};
@@ -56,7 +55,6 @@ export function layout(root: DirModel): void {
       depthRadiusMap[v.layout.depth] = {
         nodes: [],
         radius: 0,
-        minRadius: 0,
         compressionRatio: 0,
       };
     const i = depthRadiusMap[v.layout.depth];
@@ -71,43 +69,25 @@ export function layout(root: DirModel): void {
 
   // calculateRadiuses
   const levels = Object.keys(depthRadiusMap);
-  const minOffset = 100;
+  const minOffset = 140;
   // const minSeparationBetweenDiffParentDirs = ; // can be larger that this if radius needs to be bigger
 
   // each next level inherit previous radius
-  let skipCompression = true;
   for (let i = 1; i < levels.length; i++) {
     const depth = parseInt(levels[i]);
     const entry = depthRadiusMap[depth];
     const prevEntry = depthRadiusMap[depth - 1];
     entry.nodes.sort((a, b) => a.layout.x - b.layout.x);
-    const minx = entry.nodes[0];
-    const maxx = entry.nodes[entry.nodes.length - 1];
-    entry.minRadius = fullWidth / Math.PI / 2;
-    if (entry.minRadius > entry.radius) entry.radius = entry.minRadius;
+    entry.radius = fullWidth / Math.PI / 2;
 
-    // const prevMinx = prevEntry.nodes[0];
-    // const prevMaxx = prevEntry.nodes[prevEntry.nodes.length - 1];
-    // const prevMinRadius = (prevMaxx.layout.x + prevMaxx.files.length * 12 - prevMinx.layout.x) / Math.PI / 2;
-
-    // if (minRadius < prevMinRadius) {
-    //   minRadius = prevMinRadius;
-    // }
-    if (entry.radius < prevEntry.radius + minOffset) {
+    if (i > 1) {
       entry.radius = prevEntry.radius + minOffset;
-      // if (depth === 1) entry.radius = 600;
-      const isSingleParent = skipCompression && entry.nodes.every((n, i) => i === 0 || n.parent === entry.nodes[i - 1].parent);
-      if (isSingleParent) { // dont compress the first levels only, if needed
-        console.log(true, depth);
-        continue; // if node is the only one in this entire level
-      } else {
-        skipCompression = false;
-      }
       const ratio = entry.compressionRatio = fullWidth / (2 * Math.PI * entry.radius); // < 1
       console.log(`compressing level:${depth} by ${ratio}`);
-      entry.nodes.forEach(s => {
-        const center = s.parent!.layout.x;
-        s.layout.angleAdjustment = (s.layout.x - center) * ratio + center - s.layout.x + s.parent!.layout.angleAdjustment;
+      entry.nodes.forEach(dir => {
+        // compressing nodes in the level
+        const center = dir.parent!.layout.x;
+        dir.layout.angleAdjustment = (dir.layout.x - center) * ratio + center - dir.layout.x + dir.parent!.layout.angleAdjustment;
       });
     }
   }
@@ -116,20 +96,20 @@ export function layout(root: DirModel): void {
   const tx = sep - left.layout.x;
   const kx = fullCircle / fullWidth;
 
-  eachBefore(root, ({ layout, files, parent }: DirModel) => {
+  eachBefore(root, ({ layout, files, parent, name }: DirModel) => {
+    const entry = depthRadiusMap[layout.depth];
     layout.angle = (layout.x + layout.angleAdjustment + tx) * kx; // radians
-    layout.y = depthRadiusMap[layout.depth].radius;
+    layout.y = entry.radius;
     files.forEach((file, idx) => {
-      const fX = layout.x + 12 * (idx + 1);
-      let fAngleAdjustment = 0;
-      if (layout.angleAdjustment) {
+      const fileX = layout.x + 12 * (idx + 1);
+      if (entry.compressionRatio) { // adjust files always if level was compressed
         const center = parent!.layout.x;
-        fAngleAdjustment = (fX - center) * depthRadiusMap[layout.depth].compressionRatio + center - fX + parent!.layout.angleAdjustment;
+        file.layout.angleAdjustment = (fileX - center) * entry.compressionRatio + center - fileX + parent!.layout.angleAdjustment;
       }
-      const fAngle = (fX + fAngleAdjustment + tx) * kx;
+      file.layout.angle = (fileX + file.layout.angleAdjustment + tx) * kx;
       const fRadius = layout.y;
-      file.layout.radialX = fRadius * Math.cos(fAngle - Math.PI / 2);
-      file.layout.radialY = fRadius * Math.sin(fAngle - Math.PI / 2);
+      file.layout.radialX = fRadius * Math.cos(file.layout.angle - Math.PI / 2);
+      file.layout.radialY = fRadius * Math.sin(file.layout.angle - Math.PI / 2);
       // file.layout.radialX = layout.x + 12 * (idx + 1);
       // file.layout.radialY = fRadius;
     });

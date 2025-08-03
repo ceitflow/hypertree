@@ -52,7 +52,7 @@ function context(graphic: Graphics) {
 
   const bezierCurveTo = (x1: number, y1: number, x2: number, y2: number, x: number, y: number) => {
     // PixiJS uses bezierCurveTo method for cubic Bézier curves
-    graphic.bezierCurveTo(x1, y1, x2, y2, x, y).stroke({ width: 2, color: 0xFC8A17 });
+    graphic.bezierCurveTo(x1, y1, x2, y2, x, y).stroke({ width: Math.ceil(1 + 11 * Math.random()), color: 0xFC8A17 });
     _x1 = x;
     _y1 = y;
     // console.log(`C${x1},${y1},${x2},${y2},${_x1},${_y1}`);

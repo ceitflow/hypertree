@@ -54,28 +54,29 @@ export class Paper {
       nodesContainer.addChild(circle);
     };
 
-    nodes.forEach(d => {
-      const isDir = true;
-      /* node */
-      createCircle(d.layout.radialX, d.layout.radialY, d.name, true);
-      d.files.forEach(file => {
-        createCircle(file.layout.radialX, file.layout.radialY, file.name, false);
-      });
-
-      /* label */
+    const createLabel = (x: number, y: number, angle: number, name: string, isDir: boolean) => {
       const bitmapFontText = new BitmapText({
-        text: `   ${d.name}(${d.files.length})     `,
+        text: `   ${name}     `,
         style: {
           fontFamily: 'sans-serif',
           fontSize: isDir ? 12 : 9,
         },
       });
-      bitmapFontText.anchor = d.layout.angle < Math.PI === !isDir ? 0 : { x: 1, y: 0 }; // if d.angle less than half circle and no children
-      bitmapFontText.x = d.layout.radialX;
-      bitmapFontText.y = d.layout.radialY + (isDir ? -6 : -6);
-      bitmapFontText.angle = (d.layout.angle * 180) / Math.PI - 90 + (d.layout.angle >= Math.PI ? 180 : 0);
+      bitmapFontText.anchor = angle < Math.PI === !isDir ? 0 : { x: 1, y: 0 }; // if d.angle less than half circle and no children
+      bitmapFontText.x = x;
+      bitmapFontText.y = y + (isDir ? -6 : -6);
+      bitmapFontText.angle = (angle * 180) / Math.PI - 90 + (angle >= Math.PI ? 180 : 0);
 
       textContainer.addChild(bitmapFontText);
+    }
+
+    nodes.forEach(d => {
+      createCircle(d.layout.radialX, d.layout.radialY, d.name, true);
+      createLabel(d.layout.radialX, d.layout.radialY, d.layout.angle, `${d.name}(${d.files.length})`, true);
+      d.files.forEach(file => {
+        createCircle(file.layout.radialX, file.layout.radialY, file.name, false);
+        createLabel(file.layout.radialX, file.layout.radialY, file.layout.angle, file.name, false);
+      });
     });
     const dx = result.width / 2;
     const dy = result.height / 2;
