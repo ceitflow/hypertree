@@ -54,12 +54,13 @@ export class Paper {
       nodesContainer.addChild(circle);
     };
 
-    const createLabel = (x: number, y: number, angle: number, name: string, isDir: boolean) => {
+    const createLabel = (x: number, y: number, angle: number, name: string, isDir: boolean, altColor: boolean) => {
       const bitmapFontText = new BitmapText({
         text: `   ${name}     `,
         style: {
           fontFamily: 'sans-serif',
           fontSize: isDir ? 12 : 9,
+          fill: altColor ? '#ffb976' : '#f5f5f5',
         },
       });
       bitmapFontText.anchor = angle < Math.PI === !isDir ? 0 : { x: 1, y: 0 }; // if d.angle less than half circle and no children
@@ -70,12 +71,12 @@ export class Paper {
       textContainer.addChild(bitmapFontText);
     }
 
-    nodes.forEach(d => {
+    nodes.forEach((d) => {
       createCircle(d.layout.radialX, d.layout.radialY, d.name, true);
-      createLabel(d.layout.radialX, d.layout.radialY, d.layout.angle, `${d.name}(${d.files.length})`, true);
-      d.files.forEach(file => {
+      createLabel(d.layout.radialX, d.layout.radialY, d.layout.angle, `${d.name}(${d.files.length})`, true, false);
+      d.files.forEach((file, idx) => {
         createCircle(file.layout.radialX, file.layout.radialY, file.name, false);
-        createLabel(file.layout.radialX, file.layout.radialY, file.layout.angle, file.name, false);
+        createLabel(file.layout.radialX, file.layout.radialY, file.layout.angle, file.name, false, idx % 2 === 0);
       });
     });
     const dx = result.width / 2;

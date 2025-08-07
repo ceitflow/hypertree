@@ -28,7 +28,8 @@ export class Graph {
         stack.push(dir);
         nodes.push(childDirModel);
         links.push(this.createLinkModel(node, childDirModel));
-        dir.files?.forEach(file => {
+        // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+        dir.name !== 'node_modules' && dir.files?.forEach(file => {
           childDirModel.files.push(this.createFileModel(file));
         })
       }

@@ -45,8 +45,8 @@ export type FileModel = {
   layout: {
     // x: number;
     // y: number; // radius
-    // angle: number; // x
-    // angleAdjustment: number;
+    angle: number; // x
+    angleAdjustment: number;
     radialX: number;
     radialY: number;
   }

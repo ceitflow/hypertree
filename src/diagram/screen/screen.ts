@@ -25,7 +25,7 @@ export function Screen(updateTransform: UpdateTransform) {
         animEaseFn: Ease.outBack,
       },
       drag: {
-        limitToViewport: true,
+        limitToViewport: false,
         animDurationMs: 0,
         animEaseFn: Ease.outQuint,
       },
