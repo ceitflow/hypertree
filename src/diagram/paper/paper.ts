@@ -56,7 +56,7 @@ export class Paper {
 
     const createLabel = (x: number, y: number, angle: number, name: string, isDir: boolean, altColor: boolean) => {
       const bitmapFontText = new BitmapText({
-        text: `   ${name}     `,
+        text: `   ${name.substring(0, 5)}..     `,
         style: {
           fontFamily: 'sans-serif',
           fontSize: isDir ? 12 : 9,
@@ -71,13 +71,9 @@ export class Paper {
       textContainer.addChild(bitmapFontText);
     }
 
-    nodes.forEach((d) => {
-      createCircle(d.layout.radialX, d.layout.radialY, d.name, true);
-      createLabel(d.layout.radialX, d.layout.radialY, d.layout.angle, `${d.name}(${d.files.length})`, true, false);
-      d.files.forEach((file, idx) => {
-        createCircle(file.layout.radialX, file.layout.radialY, file.name, false);
-        createLabel(file.layout.radialX, file.layout.radialY, file.layout.angle, file.name, false, idx % 2 === 0);
-      });
+    nodes.forEach((d, idx) => {
+      createCircle(d.layout.radialX, d.layout.radialY, d.name, d.type === 'dir');
+      createLabel(d.layout.radialX, d.layout.radialY, d.layout.angle, `${d.name}`, d.type === 'dir', idx % 2 === 0);
     });
     const dx = result.width / 2;
     const dy = result.height / 2;

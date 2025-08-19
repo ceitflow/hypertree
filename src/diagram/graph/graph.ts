@@ -1,5 +1,5 @@
-import { tidyLayout } from './layout/tree.ts';
-import { DirModel, RawDir, GraphModel, LinkModel, FileModel, RawFile } from './types.ts';
+import { Layout } from './layout/layout.ts';
+import { LayoutModel, RawDir, GraphModel, LinkModel, RawFile } from './types.ts';
 
 export class Graph {
   model: GraphModel = {
@@ -10,53 +10,61 @@ export class Graph {
   parseJson(json: RawDir): void {
     // outputs the same tree but with added properties
     const { nodes, links } = this.model;
-    const result = this.createDirModel(json, 0, null);
-    if (json.files) json.files.forEach(f => result.files.push(this.createFileModel(f)))
+    const result = this.createModel(json, 0, null);
+    (result.parent = this.createModel({} as any, 0, null)).children = [result];
+    if (json.files) json.files.forEach((f, i) => {
+      const file = this.createFileModel(f, i, result);
+      links.push(this.createLinkModel(result, file));
+      result.children.push(file);
+    });
     const stack = [json];
     json._modelRef = result;
-    nodes.push(result);
+    nodes.push(result, ...result.children);
 
     while (stack.length) {
       const rawNode = stack.pop()!;
-      const node = rawNode._modelRef!;
+      const parentModel = rawNode._modelRef!;
       const rawDirs = rawNode.dirs || [];
-      for (let i = rawDirs.length - 1; i >= 0; --i) { // iterate from end to avoid resizing array i times
-        const dir = rawDirs[i];
-        const childDirModel = this.createDirModel(dir, i, node);
-        dir._modelRef = childDirModel;
-        node.dirs[i] = childDirModel;
-        stack.push(dir);
-        nodes.push(childDirModel);
-        links.push(this.createLinkModel(node, childDirModel));
-        // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-        dir.name !== 'node_modules' && dir.files?.forEach(file => {
-          childDirModel.files.push(this.createFileModel(file));
-        })
+      const cidx = parentModel.children.length;
+      for (let i = 0; i < rawDirs.length; i++) {
+        const rawDir = rawDirs[i];
+        const childModel = this.createModel(rawDir, cidx + i, parentModel);
+        if (rawDir.files && rawDir.name !== 'node_modules') {
+          rawDir.files.forEach((f, idx) => {
+            const file = this.createFileModel(f, idx, childModel);
+            links.push(this.createLinkModel(childModel, file));
+            childModel.children.push(file);
+            nodes.push(file);
+          });
+        }
+        rawDir._modelRef = childModel;
+        parentModel.children.push(childModel);
+        stack.push(rawDir);
+        links.push(this.createLinkModel(parentModel, childModel));
+        nodes.push(childModel);
       }
     }
-    (result.parent = this.createDirModel({} as any, 0, null)).dirs = [result];
-    tidyLayout(result);
+    Layout(result);
     console.log(result)
   }
 
-  private createDirModel(data: RawDir, index: number, parent: DirModel | null): DirModel {
-    const model: DirModel = {
+  private createModel(data: RawDir, index: number, parent: LayoutModel | null, type: LayoutModel['type'] = 'dir'): LayoutModel {
+    const model: LayoutModel = {
       name: data.name,
       nestLevel: data.nestLevel,
       idPath: data.path,
+      type,
       parent,
-      files: [],
-      dirs: [],
+      children: [],
       layout: {
         x: 0,
         y: 0,
         angle: 0,
-        angleAdjustment: 0,
         radialX: 0,
         radialY: 0,
         depth: parent ? parent.layout.depth + 1 : 0,
         A: null,
-        a: null as unknown as DirModel,
+        a: null as unknown as LayoutModel,
         z: 0,
         m: 0,
         c: 0,
@@ -69,21 +77,15 @@ export class Graph {
     return model;
   }
 
-  private createFileModel(data: RawFile): FileModel {
-    return {
-      idPath: data.path,
-      name: data.name,
-      nestLevel: data.nestLevel,
-      layout: {
-        angle: 0,
-        angleAdjustment: 0,
-        radialX: 0,
-        radialY: 0,
-      }
-    }
+  private createFileModel(data: RawFile, index: number, parent: LayoutModel | null): LayoutModel {
+    const m = this.createModel(data, index, parent, 'file');
+    // m.children = [this.createModel(data, 0, m)];
+    // this.model.nodes.push(m.children[0]);
+    // this.model.links.push(this.createLinkModel(m, m.children[0]))
+    return m;
   }
 
-  private createLinkModel(source: DirModel, target: DirModel): LinkModel {
+  private createLinkModel(source: LayoutModel, target: LayoutModel): LinkModel {
     return { source, target };
   }
 }
