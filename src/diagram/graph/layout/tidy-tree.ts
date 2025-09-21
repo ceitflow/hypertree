@@ -39,7 +39,7 @@ export function TidyTree(root: LayoutModel): { left: LayoutModel, right: LayoutM
     v.layout.x = v.layout.z + v.parent!.layout.m;
     v.layout.angle = v.layout.x;
     v.layout.m += v.parent!.layout.m;
-    v.layout.y = v.layout.depth * 100;
+    v.layout.y = v.layout.depth * 400
 
     // Compute the left-most, right-most, and depth-most nodes for extents.
     if (v.layout.x < left.layout.x) left = v;

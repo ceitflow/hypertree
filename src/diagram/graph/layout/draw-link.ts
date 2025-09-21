@@ -1,7 +1,7 @@
 import { Graphics } from 'pixi.js';
 import { LinkModel } from '../types.ts';
 
-export function linkRadial(graphic: Graphics, { source, target }: LinkModel): void {
+export function drawLinkGraphics(graphic: Graphics, { source, target }: LinkModel): void {
   const ctx = context(graphic);
 
   ctx.moveTo(source.layout.radialX, source.layout.radialY);

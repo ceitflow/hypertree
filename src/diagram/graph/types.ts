@@ -19,13 +19,20 @@ export type LayoutModel = {
   nestLevel: number;
   parent: LayoutModel | null;
   children: LayoutModel[]; // todo links create by { source: this, target: children[i] }
+  links: LinkModel[];
   layout: {
     x: number;
     y: number; // radius
+    depth: number;
     angle: number; // x
     radialX: number;
     radialY: number;
-    depth: number;
+
+    isCircleRoot: boolean;
+    radialXOffset: number;
+    radialYOffset: number;
+    isVirtual: boolean;
+
     A: LayoutModel | null; // default ancestor
     a: LayoutModel; // ancestor
     z: number; // prelim
@@ -35,6 +42,8 @@ export type LayoutModel = {
     t: LayoutModel | null; // thread
     i: number; // number
   };
+
+  clearLayoutDataRecursively: (parent: LayoutModel | null, i: number) => void;
 }
 
 export type LinkModel = { // GroupLink and Link
@@ -43,8 +52,7 @@ export type LinkModel = { // GroupLink and Link
 }
 
 export type GraphModel = {
-  nodes: LayoutModel[],
-  links: LinkModel[],
+  root: null | LayoutModel;
   // mapByDepth;
   // linksMap
   // nodesMap
