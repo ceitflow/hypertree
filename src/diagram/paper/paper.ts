@@ -33,7 +33,7 @@ export class Paper {
   }
 
   private createCircle = ({ layout: { radialX, radialY }, name, type }: LayoutModel) => {
-    const circle = new Graphics().circle(0, 0, 6).fill(type === 'dir' ? '0xcfcfcf' : '0xe24c00');
+    const circle = new Graphics().circle(0, 0, 6).fill(type === 'dir' ? '0xcfcfcf' : (type === 'file' ? '0xe24c00' : '0x277DFF'));
     circle.x = radialX;
     circle.y = radialY;
     circle.label = name;
@@ -43,7 +43,7 @@ export class Paper {
   private createLabel = ({ layout: { radialX, radialY, angle }, name, type }: LayoutModel) => {
     const isDir = type === 'dir';
     const bitmapFontText = new BitmapText({
-      text: `   ${name.substring(0, 15)}..     `,
+      text: `   ${name.substring(0)}     `,
       style: {
         fontFamily: 'sans-serif',
         fontSize: isDir ? 12 : 9,

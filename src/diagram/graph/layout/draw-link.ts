@@ -30,7 +30,7 @@ function context(graphic: Graphics) {
   };
 
   const lineTo = (x: number, y: number) => {
-    graphic.lineTo(x, y).stroke({ width: 2, color: 0xfc8a17 });
+    graphic.lineTo(x, y).stroke({ width: 2, color: 0xffd7b2 });
   };
 
   return { moveTo, bezierCurveTo, lineTo };

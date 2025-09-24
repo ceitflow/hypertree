@@ -3,7 +3,6 @@ import { eachBefore, separation, TidyTree } from './tidy-tree.ts';
 
 export function Layout(root: LayoutModel) {
   // todo this is layout for single CircleNode
-  root.clearLayoutDataRecursively(null, 0)
 
   // 1. check if radius has too many nodes
   // 2. replace too large subtrees with single nodes
@@ -25,16 +24,16 @@ export function Layout(root: LayoutModel) {
 
   eachBefore(root, ({ layout, name }: LayoutModel) => {
     layout.angle = (layout.x + tx) * kx; // radians
-    layout.radialX = layout.y * Math.cos(layout.angle - Math.PI / 2);
-    layout.radialY = layout.y * Math.sin(layout.angle - Math.PI / 2);
-    // layout.radialX = layout.x;
-    // layout.radialY = layout.y;
+    // layout.radialX = layout.y * Math.cos(layout.angle - Math.PI / 2);
+    // layout.radialY = (layout.y) * Math.sin(layout.angle - Math.PI / 2);
+    layout.radialX = layout.x;
+    layout.radialY = layout.y;
   });
 
-  const a = root.children.find(c => c.name === 'accflow');
-  if (a) {
-    console.log(a)
-    a.clearLayoutDataRecursively(null, 0);
-    Layout(a);
-  }
+  // const a = root.children.find(c => c.name === 'accflow');
+  // if (a) {
+  //   console.log(a)
+  //   a.clearLayoutDataRecursively(null, 0);
+  //   Layout(a);
+  // }
 }

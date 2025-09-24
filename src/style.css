@@ -18,6 +18,10 @@ body {
 
 .wrapper {
   height: 100vh;
+  min-height: 100vh;
+  /* mobile viewport bug fix */
+  min-height: -webkit-fill-available;
+  /*color: #277dff;*/
   width: 100vw;
   overflow: hidden;
   display: flex;

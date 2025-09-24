@@ -1,18 +1,19 @@
 import { Layout } from './layout/layout.ts';
-import { LayoutModel, RawDir, GraphModel, LinkModel, RawFile } from './types.ts';
+import { LayoutModel, RawProgramGraph, RawDir, GraphModel, LinkModel, RawFile, RawFileNode } from './types.ts';
 
 export class Graph {
   model: GraphModel = {
     root: null, // recursive tree
   };
 
-  parseJson(json: RawDir): void {
+  parseJson(program: RawProgramGraph): void {
     // outputs the same tree but with added properties
+    const json = program.dirGraph.dirs!.find(c => c.name === 'src')!.dirs!.find(c => c.name === 'app')!;
     const result = this.createModel(json, 0, null);
     (result.parent = this.createModel({} as any, 0, null)).children = [result];
     if (json.files)
       json.files.forEach((f, i) => {
-        const file = this.createFileModel(f, i, result);
+        const file = this.createFileModel(f, program.files[f.path], i, result);
         result.links.push(this.createLinkModel(result, file));
         result.children.push(file);
       });
@@ -30,7 +31,7 @@ export class Graph {
         const childModel = this.createModel(rawDir, cidx + i, parentModel);
         if (rawDir.files && rawDir.name !== 'node_modules') {
           rawDir.files.forEach((f, idx) => {
-            const file = this.createFileModel(f, idx, childModel);
+            const file = this.createFileModel(f, program.files[f.path], idx, childModel);
             childModel.links.push(this.createLinkModel(childModel, file));
             childModel.children.push(file);
           });
@@ -46,7 +47,7 @@ export class Graph {
   }
 
   private createModel(
-    data: RawDir,
+    data: Pick<RawDir, 'name' | 'nestLevel' | 'path'>,
     index: number,
     modelParent: LayoutModel | null,
     type: LayoutModel['type'] = 'dir'
@@ -61,8 +62,8 @@ export class Graph {
       links: [],
       layout: null as any,
       clearLayoutDataRecursively: (parent: LayoutModel | null, idx: number) => {
-        model.layout = this.createModelLayoutData(parent, idx)
-        model.layout.a = model;
+        model.layout = this.createModelLayoutData(parent, idx);
+        model.layout.ancestor = model;
         model.children.forEach((c, i) => c.clearLayoutDataRecursively(model, i));
       },
     };
@@ -70,7 +71,7 @@ export class Graph {
     return model;
   }
 
-  private createModelLayoutData = (parent: LayoutModel | null, index: number) => {
+  private createModelLayoutData = (parent: LayoutModel | null, index: number): LayoutModel['layout'] => {
     return {
       // layout inside circle data
       x: 0,
@@ -87,22 +88,48 @@ export class Graph {
       radialYOffset: 0,
 
       // tidy tree temp data
-      A: null,
-      a: null as unknown as LayoutModel,
-      z: 0,
-      m: 0,
-      c: 0,
-      s: 0,
-      t: null,
+      Ancestor: null,
+      ancestor: null as unknown as LayoutModel,
+      prelim: 0,
+      mod: 0,
+      change: 0,
+      shift: 0,
+      thread: null,
       i: index,
     };
   };
 
-  private createFileModel(data: RawFile, index: number, parent: LayoutModel | null): LayoutModel {
+  private createFileModel(data: RawFile, node: RawFileNode, index: number, parent: LayoutModel | null): LayoutModel {
     const m = this.createModel(data, index, parent, 'file');
-    // m.children = [this.createModel(data, 0, m)];
-    // this.model.nodes.push(m.children[0]);
-    // this.model.links.push(this.createLinkModel(m, m.children[0]))
+    node.exports.forEach((e, i) =>
+      m.children.push(
+        this.createModel(
+          {
+            name: e.name,
+            nestLevel: data.nestLevel + 1,
+            path: `${data.path}//${e.name}`,
+          },
+          i,
+          m,
+          'declaration'
+        )
+      )
+    );
+    // node.reexports.forEach((r, i) =>
+    //   m.children.push(
+    //     this.createModel(
+    //       {
+    //         name: r.token.name,
+    //         nestLevel: data.nestLevel,
+    //         path: `${data.path}//${r.token.name}`,
+    //       },
+    //       i,
+    //       m,
+    //       'declaration'
+    //     )
+    //   )
+    // );
+    m.children.forEach(c => m.links.push(this.createLinkModel(m, c)));
     return m;
   }
 

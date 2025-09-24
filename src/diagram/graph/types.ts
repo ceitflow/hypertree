@@ -1,21 +1,22 @@
-import { DirectoryMapItem, FileMapItem } from '../../../backend/src/files';
+import { DirectoryMapItem, FileMapItem, FileNode, ProgramGraph } from '../../../backend/src/files';
 
 // Augment json type to simplify parsing
+export type RawProgramGraph = Omit<ProgramGraph, 'dirGraph'> & {
+  dirGraph: RawDir;
+};
+
 export type RawDir = Omit<DirectoryMapItem, 'dirs'> & {
   _modelRef?: LayoutModel;
   dirs?: RawDir[];
 };
 
+export type RawFileNode = FileNode;
 export type RawFile = FileMapItem;
-
-export type RawData = {
-  dirGraph: RawDir;
-}
 
 export type LayoutModel = {
   idPath: string;
   name: string;
-  type: 'dir' | 'file';
+  type: 'dir' | 'file' | 'declaration';
   nestLevel: number;
   parent: LayoutModel | null;
   children: LayoutModel[]; // todo links create by { source: this, target: children[i] }
@@ -33,14 +34,16 @@ export type LayoutModel = {
     radialYOffset: number;
     isVirtual: boolean;
 
-    A: LayoutModel | null; // default ancestor
-    a: LayoutModel; // ancestor
-    z: number; // prelim
-    m: number; // mod
-    c: number; // change
-    s: number; // shift
-    t: LayoutModel | null; // thread
-    i: number; // number
+    // todo tree-ejector types like left/right thread etc.
+
+    Ancestor: LayoutModel | null; // default ancestor
+    ancestor: LayoutModel; // ancestor
+    prelim: number;
+    mod: number;
+    change: number;
+    shift: number;
+    thread: LayoutModel | null;
+    i: number; // index of child in parent.children
   };
 
   clearLayoutDataRecursively: (parent: LayoutModel | null, i: number) => void;

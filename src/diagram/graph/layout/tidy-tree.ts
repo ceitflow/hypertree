@@ -2,8 +2,8 @@ import { LayoutModel } from '../types.ts';
 
 // Tree diagram using the Reingold-Tilford "tidy" algorithm
 // Computes the layout using Buchheim et al.'s algorithm.
-// Create a radial tree layout. The layout’s first dimension (x) is the angle, while the second (y) is the radius.
-export function TidyTree(root: LayoutModel): { left: LayoutModel, right: LayoutModel } {
+// Later on create a radial tree layout. The layout’s first dimension (x) is the angle, while the second (y) is the radius.
+export function TidyTree(root: LayoutModel): { left: LayoutModel; right: LayoutModel } {
   // Computes a preliminary x-coordinate for v. Before that, FIRST WALK is
   // applied recursively to the children of v, as well as the function
   // APPORTION. After spacing out the children by calling EXECUTE SHIFTS, the
@@ -12,22 +12,22 @@ export function TidyTree(root: LayoutModel): { left: LayoutModel, right: LayoutM
   eachAfter(root, (v: LayoutModel) => {
     const children = v.children;
     const siblings = v.parent!.children;
-    const w = v.layout.i ? siblings[v.layout.i - 1] : null;
+    const leftSibling = v.layout.i ? siblings[v.layout.i - 1] : null;
     if (children.length) {
       executeShifts(v);
-      const midpoint = (children[0].layout.z + children[children.length - 1].layout.z) / 2;
-      if (w) {
-        v.layout.z = w.layout.z + separation(v, w);
-        v.layout.m = v.layout.z - midpoint;
+      const midpoint = (children[0].layout.prelim + children[children.length - 1].layout.prelim) / 2;
+      if (leftSibling) {
+        v.layout.prelim = leftSibling.layout.prelim + separation(v, leftSibling);
+        v.layout.mod = v.layout.prelim - midpoint;
       } else {
-        v.layout.z = midpoint;
+        v.layout.prelim = midpoint;
       }
-    } else if (w) {
-      v.layout.z = w.layout.z + separation(v, w);
+    } else if (leftSibling) {
+      v.layout.prelim = leftSibling.layout.prelim + separation(v, leftSibling);
     }
-    v.parent!.layout.A = apportion(v, w, v.parent!.layout.A || siblings[0]);
+    v.parent!.layout.Ancestor = apportion(v, leftSibling, v.parent!.layout.Ancestor || siblings[0]);
   });
-  root.parent!.layout.m = -root.layout.z; // edge case for root node to move it upward
+  root.parent!.layout.mod = -root.layout.prelim; // edge case for root node to move it upward
 
   // Computes all real x-coordinates by summing up the modifiers recursively.
   // second walk
@@ -36,10 +36,10 @@ export function TidyTree(root: LayoutModel): { left: LayoutModel, right: LayoutM
   let bottom = root;
 
   eachBefore(root, (v: LayoutModel) => {
-    v.layout.x = v.layout.z + v.parent!.layout.m;
+    v.layout.x = v.layout.prelim + v.parent!.layout.mod;
     v.layout.angle = v.layout.x;
-    v.layout.m += v.parent!.layout.m;
-    v.layout.y = v.layout.depth * 400
+    v.layout.mod += v.parent!.layout.mod;
+    v.layout.y = v.layout.depth * 160;
 
     // Compute the left-most, right-most, and depth-most nodes for extents.
     if (v.layout.x < left.layout.x) left = v;
@@ -66,43 +66,47 @@ export function separation(a: LayoutModel, b: LayoutModel) {
 // greatest uncommon ancestors using the function ANCESTOR and call MOVE
 // SUBTREE to shift the subtree and prepare the shifts of smaller subtrees.
 // Finally, we add a new thread (if necessary).
-function apportion(v: LayoutModel, w: LayoutModel | null, ancestor: LayoutModel): LayoutModel {
-  if (w) {
-    let vip = v;
-    let vop = v;
-    let vim = w;
-    let vom = vip.parent!.children[0];
-    let sip = vip.layout.m;
-    let sop = vop.layout.m;
-    let sim = vim.layout.m;
-    let som = vom.layout.m;
+function apportion(currentNode: LayoutModel, leftSibling: LayoutModel | null, defaultAncestor: LayoutModel): LayoutModel {
+  if (leftSibling) {
+    let insideRightNode = currentNode;
+    let outsideRightNode = currentNode;
+    let insideLeftNode = leftSibling;
+    let outsideLeftNode = insideRightNode.parent!.children[0];
+    let insideRightModSum = insideRightNode.layout.mod;
+    let outsideRightModSum = outsideRightNode.layout.mod;
+    let insideLeftModSum = insideLeftNode.layout.mod;
+    let outsideLeftModSum = outsideLeftNode.layout.mod;
     let shift: number;
-    while (((vim = nextRight(vim)!), (vip = nextLeft(vip)!), vim && vip)) {
-      vom = nextLeft(vom)!;
-      vop = nextRight(vop)!;
-      vop.layout.a = v;
-      shift = vim.layout.z + sim - vip.layout.z - sip + separation(vim, vip);
+    while (
+      ((insideLeftNode = nextRight(insideLeftNode)!),
+      (insideRightNode = nextLeft(insideRightNode)!),
+      insideLeftNode && insideRightNode)
+    ) {
+      outsideLeftNode = nextLeft(outsideLeftNode)!;
+      outsideRightNode = nextRight(outsideRightNode)!;
+      outsideRightNode.layout.ancestor = currentNode;
+      shift = insideLeftNode.layout.prelim + insideLeftModSum - insideRightNode.layout.prelim - insideRightModSum + separation(insideLeftNode, insideRightNode);
       if (shift > 0) {
-        moveSubtree(nextAncestor(vim, v, ancestor), v, shift);
-        sip += shift;
-        sop += shift;
+        moveSubtree(nextAncestor(insideLeftNode, currentNode, defaultAncestor), currentNode, shift);
+        insideRightModSum += shift;
+        outsideRightModSum += shift;
       }
-      sim += vim.layout.m;
-      sip += vip.layout.m;
-      som += vom.layout.m;
-      sop += vop.layout.m;
+      insideLeftModSum += insideLeftNode.layout.mod;
+      insideRightModSum += insideRightNode.layout.mod;
+      outsideLeftModSum += outsideLeftNode.layout.mod;
+      outsideRightModSum += outsideRightNode.layout.mod;
     }
-    if (vim && !nextRight(vop)) {
-      vop.layout.t = vim;
-      vop.layout.m += sim - sop;
+    if (insideLeftNode && !nextRight(outsideRightNode)) {
+      outsideRightNode.layout.thread = insideLeftNode;
+      outsideRightNode.layout.mod += insideLeftModSum - outsideRightModSum;
     }
-    if (vip && !nextLeft(vom)) {
-      vom.layout.t = vip;
-      vom.layout.m += sip - som;
-      ancestor = v;
+    if (insideRightNode && !nextLeft(outsideLeftNode)) {
+      outsideLeftNode.layout.thread = insideRightNode;
+      outsideLeftNode.layout.mod += insideRightModSum - outsideLeftModSum;
+      defaultAncestor = currentNode;
     }
   }
-  return ancestor;
+  return defaultAncestor;
 }
 
 export function eachAfter(root: LayoutModel, callback: (node: LayoutModel) => void): void {
@@ -133,27 +137,26 @@ export function eachBefore(root: LayoutModel | LayoutModel[], callback: (node: L
    subforest). It returns the successor of v on this contour. This successor is
    either given by the leftmost child of v or by the thread of v. The function
    returns null if and only if v is on the highest level of its subtree. */
-
 function nextLeft(v: LayoutModel): LayoutModel | null {
   const children = v.children;
-  return children.length ? children[0] : v.layout.t;
+  return children.length ? children[0] : v.layout.thread;
 }
 
 // This function works analogously to nextLeft.
 function nextRight(v: LayoutModel): LayoutModel | null {
   const children = v.children;
-  return children.length ? children[children.length - 1] : v.layout.t;
+  return children.length ? children[children.length - 1] : v.layout.thread;
 }
 
 // Shifts the current subtree rooted at w+. This is done by increasing
 // prelim(w+) and mod(w+) by shift.
 function moveSubtree(wm: LayoutModel, wp: LayoutModel, shift: number): void {
   const change = shift / (wp.layout.i - wm.layout.i);
-  wp.layout.c -= change;
-  wp.layout.s += shift;
-  wm.layout.c += change;
-  wp.layout.z += shift;
-  wp.layout.m += shift;
+  wp.layout.change -= change;
+  wp.layout.shift += shift;
+  wm.layout.change += change;
+  wp.layout.prelim += shift;
+  wp.layout.mod += shift;
 }
 
 // All other shifts, applied to the smaller subtrees between w- and w+, are
@@ -169,14 +172,14 @@ export function executeShifts(v: LayoutModel): void {
   let w: LayoutModel;
   while (--i >= 0) {
     w = children[i];
-    w.layout.z += shift;
-    w.layout.m += shift;
-    shift += w.layout.s + (change += w.layout.c);
+    w.layout.prelim += shift;
+    w.layout.mod += shift;
+    shift += w.layout.shift + (change += w.layout.change);
   }
 }
 
 // If vi-'s ancestor is a sibling of v, returns vi-'s ancestor. Otherwise,
 // returns the specified (default) ancestor.
 function nextAncestor(vim: LayoutModel, v: LayoutModel, ancestor: LayoutModel): LayoutModel {
-  return vim.layout.a.parent === v.parent ? vim.layout.a : ancestor;
+  return vim.layout.ancestor.parent === v.parent ? vim.layout.ancestor : ancestor;
 }
