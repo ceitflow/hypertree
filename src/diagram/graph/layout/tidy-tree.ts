@@ -3,7 +3,7 @@ import { LayoutModel } from '../types.ts';
 // Tree diagram using the Reingold-Tilford "tidy" algorithm
 // Computes the layout using Buchheim et al.'s algorithm.
 // Later on create a radial tree layout. The layout’s first dimension (x) is the angle, while the second (y) is the radius.
-export function TidyTree(root: LayoutModel): { left: LayoutModel; right: LayoutModel } {
+export function TidyTree(root: LayoutModel): { left: LayoutModel; right: LayoutModel, totalDepth: number } {
   // Computes a preliminary x-coordinate for v. Before that, FIRST WALK is
   // applied recursively to the children of v, as well as the function
   // APPORTION. After spacing out the children by calling EXECUTE SHIFTS, the
@@ -34,12 +34,15 @@ export function TidyTree(root: LayoutModel): { left: LayoutModel; right: LayoutM
   let left = root;
   let right = root;
   let bottom = root;
+  let totalDepth = 0;
 
   eachBefore(root, (v: LayoutModel) => {
     v.layout.x = v.layout.prelim + v.parent!.layout.mod;
     v.layout.angle = v.layout.x;
     v.layout.mod += v.parent!.layout.mod;
     v.layout.y = v.layout.depth * 160;
+    const depth = v.layout.depth;
+    if (depth > totalDepth) totalDepth = depth;
 
     // Compute the left-most, right-most, and depth-most nodes for extents.
     if (v.layout.x < left.layout.x) left = v;
@@ -47,7 +50,7 @@ export function TidyTree(root: LayoutModel): { left: LayoutModel; right: LayoutM
     if (v.layout.depth > bottom.layout.depth) bottom = v;
   });
 
-  return { left, right };
+  return { left, right, totalDepth };
 }
 
 export function separation(a: LayoutModel, b: LayoutModel) {
@@ -72,11 +75,13 @@ function apportion(currentNode: LayoutModel, leftSibling: LayoutModel | null, de
     let outsideRightNode = currentNode;
     let insideLeftNode = leftSibling;
     let outsideLeftNode = insideRightNode.parent!.children[0];
+
     let insideRightModSum = insideRightNode.layout.mod;
     let outsideRightModSum = outsideRightNode.layout.mod;
     let insideLeftModSum = insideLeftNode.layout.mod;
     let outsideLeftModSum = outsideLeftNode.layout.mod;
     let shift: number;
+
     while (
       ((insideLeftNode = nextRight(insideLeftNode)!),
       (insideRightNode = nextLeft(insideRightNode)!),
@@ -96,10 +101,12 @@ function apportion(currentNode: LayoutModel, leftSibling: LayoutModel | null, de
       outsideLeftModSum += outsideLeftNode.layout.mod;
       outsideRightModSum += outsideRightNode.layout.mod;
     }
+
     if (insideLeftNode && !nextRight(outsideRightNode)) {
       outsideRightNode.layout.thread = insideLeftNode;
       outsideRightNode.layout.mod += insideLeftModSum - outsideRightModSum;
     }
+
     if (insideRightNode && !nextLeft(outsideLeftNode)) {
       outsideLeftNode.layout.thread = insideRightNode;
       outsideLeftNode.layout.mod += insideRightModSum - outsideLeftModSum;

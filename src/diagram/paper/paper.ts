@@ -37,6 +37,8 @@ export class Paper {
     circle.x = radialX;
     circle.y = radialY;
     circle.label = name;
+    circle.interactive = true;
+    circle.on('pointerdown', (e) => console.log(name, type))
     return circle;
   };
 

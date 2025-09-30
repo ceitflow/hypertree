@@ -2,7 +2,7 @@ import { InputController } from '../screen';
 
 export function Mouse({ drag, zoom, inertia, invert }: InputController) {
   let isDragging = false;
-  const wheelStrength = 0.2;
+  const wheelStrength = 0.1;
   const dblClickStrength = 1;
 
   return {
@@ -44,7 +44,7 @@ export function Mouse({ drag, zoom, inertia, invert }: InputController) {
     wheel: (e: WheelEvent) => {
       const delta = -e.deltaY;
       if (delta !== 0) {
-        zoom.zoomStep(invert(e.clientX, e.clientY), wheelStrength * Math.sign(delta));
+        zoom.zoomStep(invert(e.clientX, e.clientY), delta * wheelStrength);
       }
     },
   };

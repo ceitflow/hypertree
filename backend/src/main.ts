@@ -9,8 +9,8 @@ import { createProgram, findConfigFile, parseJsonConfigFileContent, readConfigFi
     src: '/Users/ceitflow/WebstormProjects/m3/coplan-visualizer',
     output: '/Users/ceitflow/WebstormProjects/prototypes/graphkit/backend/dist',
     // depth: 2,
-    "exclude-file": ['eslint.config.js', 'vite.config.ts'],
-  }
+    'exclude-file': ['eslint.config.js', 'vite.config.ts'],
+  };
   try {
     const srcPath = args.src;
     const configPath = findConfigFile(srcPath, sys.fileExists);

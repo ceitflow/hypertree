@@ -21,6 +21,12 @@ export type LayoutModel = {
   parent: LayoutModel | null;
   children: LayoutModel[]; // todo links create by { source: this, target: children[i] }
   links: LinkModel[];
+  postLayout: {
+    leftNeighbour: null | LayoutModel;
+    rightNeighbour: null | LayoutModel;
+    virtualNodesToBottom: null | LayoutModel[]; // if no children then virtualNodes till totalDepth
+    depthsLeftRightNodes: [LayoutModel, LayoutModel][]; // this subtree left/right most children
+  };
   layout: {
     x: number;
     y: number; // radius
@@ -34,8 +40,6 @@ export type LayoutModel = {
     radialYOffset: number;
     isVirtual: boolean;
 
-    // todo tree-ejector types like left/right thread etc.
-
     Ancestor: LayoutModel | null; // default ancestor
     ancestor: LayoutModel; // ancestor
     prelim: number;
@@ -45,7 +49,6 @@ export type LayoutModel = {
     thread: LayoutModel | null;
     i: number; // index of child in parent.children
   };
-
   clearLayoutDataRecursively: (parent: LayoutModel | null, i: number) => void;
 }
 

@@ -1,4 +1,5 @@
 import { LayoutModel } from '../types.ts';
+import { TreeEjector } from './tree-ejector.ts';
 import { eachBefore, separation, TidyTree } from './tidy-tree.ts';
 
 export function Layout(root: LayoutModel) {
@@ -9,7 +10,8 @@ export function Layout(root: LayoutModel) {
   //
   root.layout.isCircleRoot = true;
 
-  const { left, right } = TidyTree(root);
+  const { left, right, totalDepth } = TidyTree(root);
+  TreeEjector(root, totalDepth);
 
   // todo check for ejects
   // root.layout.depth root.children
