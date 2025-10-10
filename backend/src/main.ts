@@ -6,6 +6,8 @@ import { createProgram, findConfigFile, parseJsonConfigFileContent, readConfigFi
 // Generate AST for JavaScript or TypeScript
 (function main() {
   const args = {
+    // /Users/ceitflow/WebstormProjects/koia-adminflow/adminflow
+    // /Users/ceitflow/WebstormProjects/m3/coplan-visualizer
     src: '/Users/ceitflow/WebstormProjects/m3/coplan-visualizer',
     output: '/Users/ceitflow/WebstormProjects/prototypes/graphkit/backend/dist',
     // depth: 2,

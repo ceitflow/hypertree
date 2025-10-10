@@ -2,7 +2,7 @@ import { InputController } from '../screen';
 
 export function Mouse({ drag, zoom, inertia, invert }: InputController) {
   let isDragging = false;
-  const wheelStrength = 0.1;
+  const wheelStrength = 0.005;
   const dblClickStrength = 1;
 
   return {

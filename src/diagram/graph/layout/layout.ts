@@ -1,20 +1,30 @@
 import { LayoutModel } from '../types.ts';
-import { TreeEjector } from './tree-ejector.ts';
-import { eachBefore, separation, TidyTree } from './tidy-tree.ts';
+import { RecalculateTreeEjector } from './tree-ejector.ts';
+import { eachAfter, eachBefore, separation, TidyTree } from './tidy-tree.ts';
+import { GraphFactory } from '../graph-factory.ts';
 
-export function Layout(root: LayoutModel) {
-  // todo this is layout for single CircleNode
+export function Layout(root: LayoutModel, totalDepth: number) {
+  console.log(root, `depth: ${totalDepth}`);
 
-  // 1. check if radius has too many nodes
-  // 2. replace too large subtrees with single nodes
-  //
-  root.layout.isCircleRoot = true;
+  // add Virtual nodes to leftmost and rightmost leaves
+  eachAfter(root, (n) => {
+    if (n.children.length || n.type === 'virtual') return;
+    if (n.layout.i !== 0 && n.layout.i !== n.parent!.children.length - 1) return;
 
-  const { left, right, totalDepth } = TidyTree(root);
-  TreeEjector(root, totalDepth);
-
-  // todo check for ejects
-  // root.layout.depth root.children
+    let tempVirtualNode!: LayoutModel;
+    for (let i = n.layout.depth + 1; i <= totalDepth; i++) {
+      if (!tempVirtualNode) {
+        tempVirtualNode = GraphFactory.createModel({ name: '', path: 'virt', nestLevel: i }, 0, n, 'virtual');
+        n.children.push(tempVirtualNode);
+        continue;
+      }
+      const c = GraphFactory.createModel({ name: '', path: 'virt', nestLevel: i }, 0, tempVirtualNode, 'virtual');
+      tempVirtualNode.children.push(c);
+      tempVirtualNode = c;
+    }
+  });
+  const { left, right } = TidyTree(root);
+  RecalculateTreeEjector(root, totalDepth);
 
   const sep = left === right ? 1 : separation(left, right) / 2; // extra separation to prevent overlaps on same levels (start and end nodes)
   const fullWidth = right.layout.x - left.layout.x + sep;
@@ -31,11 +41,4 @@ export function Layout(root: LayoutModel) {
     layout.radialX = layout.x;
     layout.radialY = layout.y;
   });
-
-  // const a = root.children.find(c => c.name === 'accflow');
-  // if (a) {
-  //   console.log(a)
-  //   a.clearLayoutDataRecursively(null, 0);
-  //   Layout(a);
-  // }
 }

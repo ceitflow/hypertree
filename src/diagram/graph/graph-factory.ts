@@ -20,9 +20,14 @@ export class GraphFactory {
         rightNeighbour: null,
         virtualNodesToBottom: null,
         depthsLeftRightNodes: [],
+        shrunkLeftXPos: -Infinity,
+        leftMost: null,
+        rightMost: null,
+        totalWidth: 0,
       },
       layout: null as any,
       clearLayoutDataRecursively: (parent: LayoutModel | null, idx: number) => {
+        model.postLayout.depthsLeftRightNodes = [[model, model]];  // self is leftmost and rightmost node
         model.layout = this.createModelLayoutData(parent, idx);
         model.layout.ancestor = model;
         model.children.forEach((c, i) => c.clearLayoutDataRecursively(model, i));

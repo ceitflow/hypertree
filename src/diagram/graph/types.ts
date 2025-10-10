@@ -1,6 +1,6 @@
 import { DirectoryMapItem, FileMapItem, FileNode, ProgramGraph } from '../../../backend/src/files';
 
-// Augment json type to simplify parsing
+// Augment json type with '_modelRef' for easier parsing
 export type RawProgramGraph = Omit<ProgramGraph, 'dirGraph'> & {
   dirGraph: RawDir;
 };
@@ -16,7 +16,7 @@ export type RawFile = FileMapItem;
 export type LayoutModel = {
   idPath: string;
   name: string;
-  type: 'dir' | 'file' | 'declaration';
+  type: 'dir' | 'file' | 'declaration' | 'virtual';
   nestLevel: number;
   parent: LayoutModel | null;
   children: LayoutModel[]; // todo links create by { source: this, target: children[i] }
@@ -24,8 +24,12 @@ export type LayoutModel = {
   postLayout: {
     leftNeighbour: null | LayoutModel;
     rightNeighbour: null | LayoutModel;
-    virtualNodesToBottom: null | LayoutModel[]; // if no children then virtualNodes till totalDepth
+    virtualNodesToBottom: null | LayoutModel[]; // if is leaf node then virtualNodes till totalDepth
     depthsLeftRightNodes: [LayoutModel, LayoutModel][]; // this subtree left/right most children
+    shrunkLeftXPos: number;
+    leftMost: null | LayoutModel;
+    rightMost: null | LayoutModel;
+    totalWidth: number;
   };
   layout: {
     x: number;
@@ -40,6 +44,7 @@ export type LayoutModel = {
     radialYOffset: number;
     isVirtual: boolean;
 
+    // tidy tree algorithm data
     Ancestor: LayoutModel | null; // default ancestor
     ancestor: LayoutModel; // ancestor
     prelim: number;

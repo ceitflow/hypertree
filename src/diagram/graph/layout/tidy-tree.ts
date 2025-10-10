@@ -3,6 +3,9 @@ import { LayoutModel } from '../types.ts';
 // Tree diagram using the Reingold-Tilford "tidy" algorithm
 // Computes the layout using Buchheim et al.'s algorithm.
 // Later on create a radial tree layout. The layout’s first dimension (x) is the angle, while the second (y) is the radius.
+export const SEPARATION = 12;
+export const RADIUS = 160;
+
 export function TidyTree(root: LayoutModel): { left: LayoutModel; right: LayoutModel, totalDepth: number } {
   // Computes a preliminary x-coordinate for v. Before that, FIRST WALK is
   // applied recursively to the children of v, as well as the function
@@ -40,7 +43,7 @@ export function TidyTree(root: LayoutModel): { left: LayoutModel; right: LayoutM
     v.layout.x = v.layout.prelim + v.parent!.layout.mod;
     v.layout.angle = v.layout.x;
     v.layout.mod += v.parent!.layout.mod;
-    v.layout.y = v.layout.depth * 160;
+    v.layout.y = v.layout.depth * RADIUS;
     const depth = v.layout.depth;
     if (depth > totalDepth) totalDepth = depth;
 
@@ -54,7 +57,7 @@ export function TidyTree(root: LayoutModel): { left: LayoutModel; right: LayoutM
 }
 
 export function separation(a: LayoutModel, b: LayoutModel) {
-  return 12;
+  return SEPARATION;
 }
 
 // Computes all real x-coordinates by summing up the modifiers recursively.

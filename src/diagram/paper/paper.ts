@@ -6,19 +6,14 @@ import { drawLinkGraphics } from '../graph/layout/draw-link.ts';
 import { Application, BitmapText, Container, Graphics } from 'pixi.js';
 
 export class Paper {
-  engine: Application;
-  graph: Graph;
-  paper: Container;
-  background: Graphics;
-  scroller: ScreenType;
 
-  private constructor(graph: Graph, engine: Application, paper: Container, background: Graphics, scroller: ScreenType) {
-    this.graph = graph;
-    this.engine = engine;
-    this.paper = paper;
-    this.background = background;
-    this.scroller = scroller;
-  }
+  private constructor(
+    public graph: Graph,
+    private engine: Application,
+    private paper: Container,
+    public background: Graphics,
+    public scroller: ScreenType
+  ) {}
 
   static async Create(host: HTMLElement) {
     const graph = new Graph();
@@ -32,13 +27,29 @@ export class Paper {
     return new Paper(graph, engine, paper, background, viewport);
   }
 
-  private createCircle = ({ layout: { radialX, radialY }, name, type }: LayoutModel) => {
-    const circle = new Graphics().circle(0, 0, 6).fill(type === 'dir' ? '0xcfcfcf' : (type === 'file' ? '0xe24c00' : '0x277DFF'));
+  private createCircle = (model: LayoutModel) => {
+    const { layout: { radialX, radialY }, postLayout, name, type } = model;
+    let color: string;
+    switch (type) {
+      case 'dir':
+        color = '0xcfcfcf';
+        break;
+      case 'file':
+        color = '0xe24c00';
+        break;
+      case 'declaration':
+        color = '0x277DFF';
+        break;
+      case 'virtual':
+        color = '0x007C0033';
+        break;
+    }
+    const circle = new Graphics().circle(0, 0, 6).fill(color);
     circle.x = radialX;
     circle.y = radialY;
     circle.label = name;
     circle.interactive = true;
-    circle.on('pointerdown', (e) => console.log(name, type))
+    circle.on('pointerdown', e => console.log('radialX: ' + radialX, model));
     return circle;
   };
 
@@ -75,6 +86,8 @@ export class Paper {
       const stack = [root];
       while (stack.length) {
         const d = stack.pop()!;
+
+        if (d.type === 'virtual') continue;
 
         if (d.layout.isCircleRoot && d !== root) {
           const nested = recursion(d);
