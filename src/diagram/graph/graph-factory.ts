@@ -18,11 +18,8 @@ export class GraphFactory {
       postLayout: {
         leftNeighbour: null,
         rightNeighbour: null,
-        virtualNodesToBottom: null,
         depthsLeftRightNodes: [],
         shrunkLeftXPos: -Infinity,
-        leftMost: null,
-        rightMost: null,
         totalWidth: 0,
       },
       layout: null as any,

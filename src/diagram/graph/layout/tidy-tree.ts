@@ -4,9 +4,9 @@ import { LayoutModel } from '../types.ts';
 // Computes the layout using Buchheim et al.'s algorithm.
 // Later on create a radial tree layout. The layout’s first dimension (x) is the angle, while the second (y) is the radius.
 export const SEPARATION = 12;
-export const RADIUS = 160;
+export const RADIUS = 460;
 
-export function TidyTree(root: LayoutModel): { left: LayoutModel; right: LayoutModel, totalDepth: number } {
+export function TidyTree(root: LayoutModel) {
   // Computes a preliminary x-coordinate for v. Before that, FIRST WALK is
   // applied recursively to the children of v, as well as the function
   // APPORTION. After spacing out the children by calling EXECUTE SHIFTS, the
@@ -53,7 +53,26 @@ export function TidyTree(root: LayoutModel): { left: LayoutModel; right: LayoutM
     if (v.layout.depth > bottom.layout.depth) bottom = v;
   });
 
-  return { left, right, totalDepth };
+  return { left, right }
+}
+
+export function RadialTree(root: LayoutModel, left: LayoutModel, right: LayoutModel) {
+  const sep = left === right ? 1 : separation(left, right) / 2; // extra separation to prevent overlaps on same levels (start and end nodes)
+  const fullWidth = right.layout.x - left.layout.x + sep;
+  console.log(`leftmost: ${left.name}, rightmost: ${right.name}, fullWidth: ${fullWidth}`);
+
+  const fullCircle = 2 * Math.PI;
+  const tx = sep - left.layout.x;
+  const kx = fullCircle / fullWidth;
+
+  // todo for debugging, comment out radialX and radialY to get flat tree layout
+  eachBefore(root, ({ layout, name }: LayoutModel) => {
+    layout.angle = (layout.x + tx) * kx; // radians
+    layout.radialX = layout.y * Math.cos(layout.angle - Math.PI / 2);
+    layout.radialY = (layout.y) * Math.sin(layout.angle - Math.PI / 2);
+    // layout.radialX = layout.x;
+    // layout.radialY = layout.y;
+  });
 }
 
 export function separation(a: LayoutModel, b: LayoutModel) {
@@ -93,7 +112,12 @@ function apportion(currentNode: LayoutModel, leftSibling: LayoutModel | null, de
       outsideLeftNode = nextLeft(outsideLeftNode)!;
       outsideRightNode = nextRight(outsideRightNode)!;
       outsideRightNode.layout.ancestor = currentNode;
-      shift = insideLeftNode.layout.prelim + insideLeftModSum - insideRightNode.layout.prelim - insideRightModSum + separation(insideLeftNode, insideRightNode);
+      shift =
+        insideLeftNode.layout.prelim +
+        insideLeftModSum -
+        insideRightNode.layout.prelim -
+        insideRightModSum +
+        separation(insideLeftNode, insideRightNode);
       if (shift > 0) {
         moveSubtree(nextAncestor(insideLeftNode, currentNode, defaultAncestor), currentNode, shift);
         insideRightModSum += shift;

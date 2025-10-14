@@ -28,7 +28,7 @@ export class Paper {
   }
 
   private createCircle = (model: LayoutModel) => {
-    const { layout: { radialX, radialY }, postLayout, name, type } = model;
+    const { layout: { radialX, radialY }, name, type } = model;
     let color: string;
     switch (type) {
       case 'dir':
@@ -41,7 +41,7 @@ export class Paper {
         color = '0x277DFF';
         break;
       case 'virtual':
-        color = '0x007C0033';
+        color = '0x00FF00';
         break;
     }
     const circle = new Graphics().circle(0, 0, 6).fill(color);
@@ -49,7 +49,7 @@ export class Paper {
     circle.y = radialY;
     circle.label = name;
     circle.interactive = true;
-    circle.on('pointerdown', e => console.log('radialX: ' + radialX, model));
+    circle.on('pointerdown', e => console.log(`w: ${model.postLayout.totalWidth}`, model));
     return circle;
   };
 
@@ -87,7 +87,7 @@ export class Paper {
       while (stack.length) {
         const d = stack.pop()!;
 
-        if (d.type === 'virtual') continue;
+        if (d.type === 'virtual' && !d.name) continue;
 
         if (d.layout.isCircleRoot && d !== root) {
           const nested = recursion(d);

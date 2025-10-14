@@ -1,16 +1,39 @@
 import { LayoutModel } from '../types.ts';
-import { RecalculateTreeEjector } from './tree-ejector.ts';
-import { eachAfter, eachBefore, separation, TidyTree } from './tidy-tree.ts';
 import { GraphFactory } from '../graph-factory.ts';
+import { eachAfter, RadialTree, RADIUS, TidyTree } from './tidy-tree.ts';
+import { ProcessEjects, recalculatePostLayout } from './tree-ejector.ts';
 
 export function Layout(root: LayoutModel, totalDepth: number) {
-  console.log(root, `depth: ${totalDepth}`);
+  console.log('root', root, `depth: ${totalDepth}`);
+  addVirtualWallNodes(root, totalDepth);
 
-  // add Virtual nodes to leftmost and rightmost leaves
-  eachAfter(root, (n) => {
-    if (n.children.length || n.type === 'virtual') return;
-    if (n.layout.i !== 0 && n.layout.i !== n.parent!.children.length - 1) return;
+  // run layout
+  TidyTree(root);
 
+  // post processing
+  // ProcessEjects(root, totalDepth);
+
+  // rerun layout after possible changes
+  root.clearLayoutDataRecursively(root.parent, 0);
+  const { left, right } = TidyTree(root);
+  RadialTree(root, left, right);
+
+  // debug
+  console.log('\n')
+  recalculatePostLayout(root, totalDepth);
+  root.postLayout.depthsLeftRightNodes.forEach(([leftMost, rightMost], depth) => {
+    console.log(`${depth}. available: ${2 * Math.PI * RADIUS * (depth + 1)}, taken: ${rightMost.layout.x - leftMost.layout.x}`);
+  });
+}
+
+function addVirtualWallNodes(root: LayoutModel, totalDepth: number) {
+  eachAfter(root, n => {
+    // add Virtual nodes to leftmost and rightmost leaves
+    const isLeaf = !n.children.length;
+    const isLeftOrRight = n.layout.i === 0 || n.layout.i === n.parent!.children.length - 1;
+    if (!isLeaf || !isLeftOrRight) {
+      return;
+    }
     let tempVirtualNode!: LayoutModel;
     for (let i = n.layout.depth + 1; i <= totalDepth; i++) {
       if (!tempVirtualNode) {
@@ -22,23 +45,5 @@ export function Layout(root: LayoutModel, totalDepth: number) {
       tempVirtualNode.children.push(c);
       tempVirtualNode = c;
     }
-  });
-  const { left, right } = TidyTree(root);
-  RecalculateTreeEjector(root, totalDepth);
-
-  const sep = left === right ? 1 : separation(left, right) / 2; // extra separation to prevent overlaps on same levels (start and end nodes)
-  const fullWidth = right.layout.x - left.layout.x + sep;
-  console.log(`leftmost: ${left.name}, rightmost: ${right.name}, fullWidth: ${fullWidth}`);
-
-  const fullCircle = 2 * Math.PI;
-  const tx = sep - left.layout.x;
-  const kx = fullCircle / fullWidth;
-
-  eachBefore(root, ({ layout, name }: LayoutModel) => {
-    layout.angle = (layout.x + tx) * kx; // radians
-    // layout.radialX = layout.y * Math.cos(layout.angle - Math.PI / 2);
-    // layout.radialY = (layout.y) * Math.sin(layout.angle - Math.PI / 2);
-    layout.radialX = layout.x;
-    layout.radialY = layout.y;
   });
 }

@@ -24,11 +24,8 @@ export type LayoutModel = {
   postLayout: {
     leftNeighbour: null | LayoutModel;
     rightNeighbour: null | LayoutModel;
-    virtualNodesToBottom: null | LayoutModel[]; // if is leaf node then virtualNodes till totalDepth
     depthsLeftRightNodes: [LayoutModel, LayoutModel][]; // this subtree left/right most children
     shrunkLeftXPos: number;
-    leftMost: null | LayoutModel;
-    rightMost: null | LayoutModel;
     totalWidth: number;
   };
   layout: {
