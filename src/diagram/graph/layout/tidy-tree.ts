@@ -1,12 +1,15 @@
 import { LayoutModel } from '../types.ts';
+import { GraphFactory } from '../graph-factory.ts';
 
 // Tree diagram using the Reingold-Tilford "tidy" algorithm
 // Computes the layout using Buchheim et al.'s algorithm.
 // Later on create a radial tree layout. The layout’s first dimension (x) is the angle, while the second (y) is the radius.
 export const SEPARATION = 12;
-export const RADIUS = 460;
+export const RADIUS = 160;
 
-export function TidyTree(root: LayoutModel) {
+export function TidyTree(root: LayoutModel, totalDepth: number) {
+  addVirtualWallNodes(root, totalDepth);
+
   // Computes a preliminary x-coordinate for v. Before that, FIRST WALK is
   // applied recursively to the children of v, as well as the function
   // APPORTION. After spacing out the children by calling EXECUTE SHIFTS, the
@@ -37,23 +40,21 @@ export function TidyTree(root: LayoutModel) {
   let left = root;
   let right = root;
   let bottom = root;
-  let totalDepth = 0;
 
   eachBefore(root, (v: LayoutModel) => {
     v.layout.x = v.layout.prelim + v.parent!.layout.mod;
     v.layout.angle = v.layout.x;
     v.layout.mod += v.parent!.layout.mod;
     v.layout.y = v.layout.depth * RADIUS;
-    const depth = v.layout.depth;
-    if (depth > totalDepth) totalDepth = depth;
 
     // Compute the left-most, right-most, and depth-most nodes for extents.
     if (v.layout.x < left.layout.x) left = v;
     if (v.layout.x > right.layout.x) right = v;
     if (v.layout.depth > bottom.layout.depth) bottom = v;
+    if (v.type === 'virtual') v.parent!.children = []; // remove virtual wall nodes
   });
 
-  return { left, right }
+  return { left, right };
 }
 
 export function RadialTree(root: LayoutModel, left: LayoutModel, right: LayoutModel) {
@@ -68,14 +69,44 @@ export function RadialTree(root: LayoutModel, left: LayoutModel, right: LayoutMo
   // todo for debugging, comment out radialX and radialY to get flat tree layout
   eachBefore(root, ({ layout, name }: LayoutModel) => {
     layout.angle = (layout.x + tx) * kx; // radians
-    layout.radialX = layout.y * Math.cos(layout.angle - Math.PI / 2);
-    layout.radialY = (layout.y) * Math.sin(layout.angle - Math.PI / 2);
-    // layout.radialX = layout.x;
-    // layout.radialY = layout.y;
+    // layout.radialX = layout.y * Math.cos(layout.angle - Math.PI / 2);
+    // layout.radialY = layout.y * Math.sin(layout.angle - Math.PI / 2);
+    layout.radialX = layout.x;
+    layout.radialY = layout.y;
   });
 }
 
-export function separation(a: LayoutModel, b: LayoutModel) {
+// adds 'virtual' nodes to leftmost and rightmost leaves to prevent subtrees from overlapping
+function addVirtualWallNodes(root: LayoutModel, totalDepth: number) {
+  const leafs: LayoutModel[] = [];
+  const temp: LayoutModel[] = [root];
+
+  while (temp.length) {
+    const node = temp.pop()!;
+    if (!node.children.length) leafs.push(node);
+    else for (let i = 0; i < node.children.length; i++) temp.push(node.children[i]);
+  }
+  while (leafs.length) {
+    const n = leafs.pop()!;
+    const isLeftOrRight = n.layout.i === 0 || n.layout.i === n.parent!.children.length - 1;
+    if (!isLeftOrRight) {
+      return;
+    }
+    let tempVirtualNode!: LayoutModel;
+    for (let i = n.layout.depth + 1; i <= totalDepth; i++) {
+      if (!tempVirtualNode) {
+        tempVirtualNode = GraphFactory.createModel({ name: '', path: 'virt', nestLevel: i }, 0, n, 'virtual');
+        n.children.push(tempVirtualNode);
+        continue;
+      }
+      const c = GraphFactory.createModel({ name: '', path: 'virt', nestLevel: i }, 0, tempVirtualNode, 'virtual');
+      tempVirtualNode.children.push(c);
+      tempVirtualNode = c;
+    }
+  }
+}
+
+function separation(a: LayoutModel, b: LayoutModel) {
   return SEPARATION;
 }
 

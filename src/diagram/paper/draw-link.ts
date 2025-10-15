@@ -1,5 +1,5 @@
 import { Graphics } from 'pixi.js';
-import { LinkModel } from '../types.ts';
+import { LinkModel } from '../graph/types.ts';
 
 export function drawLinkGraphics(graphic: Graphics, { source, target }: LinkModel): void {
   const ctx = context(graphic);

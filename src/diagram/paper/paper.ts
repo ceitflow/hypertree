@@ -2,11 +2,10 @@ import { Graph } from '../graph/graph.ts';
 import { createEngine } from './engine.ts';
 import { LayoutModel } from '../graph/types.ts';
 import { CreateViewport, ScreenType } from '../screen';
-import { drawLinkGraphics } from '../graph/layout/draw-link.ts';
+import { drawLinkGraphics } from './draw-link.ts';
 import { Application, BitmapText, Container, Graphics } from 'pixi.js';
 
 export class Paper {
-
   private constructor(
     public graph: Graph,
     private engine: Application,
@@ -28,7 +27,11 @@ export class Paper {
   }
 
   private createCircle = (model: LayoutModel) => {
-    const { layout: { radialX, radialY }, name, type } = model;
+    const {
+      layout: { radialX, radialY },
+      name,
+      type,
+    } = model;
     let color: string;
     switch (type) {
       case 'dir':
@@ -40,6 +43,7 @@ export class Paper {
       case 'declaration':
         color = '0x277DFF';
         break;
+      case 'ejected':
       case 'virtual':
         color = '0x00FF00';
         break;
@@ -87,7 +91,7 @@ export class Paper {
       while (stack.length) {
         const d = stack.pop()!;
 
-        if (d.type === 'virtual' && !d.name) continue;
+        // if (d.type === 'virtual' && !d.name) continue;
 
         if (d.layout.isCircleRoot && d !== root) {
           const nested = recursion(d);
@@ -121,7 +125,6 @@ export class Paper {
       c.y += dy;
     });
 
-    console.log(result.width, result.height);
     this.scroller.transformer.updateExtentArea({ x: 0, y: 0, width: result.width, height: result.height });
     this.paper.addChild(result);
   }

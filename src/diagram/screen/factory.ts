@@ -26,7 +26,6 @@ export function CreateViewport(engine: Application, scrollableContainer: Contain
 function createResizeHandler(target: HTMLElement) {
   const callbacks: ResizeCallback[] = [];
   new ResizeObserver(entries => {
-    console.log('resize', entries[0].contentRect)
     callbacks.forEach(c => c(entries[0].contentRect));
   }).observe(target);
 

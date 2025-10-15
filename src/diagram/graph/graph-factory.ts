@@ -46,7 +46,6 @@ export class GraphFactory {
 
       // global layout data
       isCircleRoot: false,
-      isVirtual: false,
       radialXOffset: 0,
       radialYOffset: 0,
 

@@ -16,7 +16,7 @@ export type RawFile = FileMapItem;
 export type LayoutModel = {
   idPath: string;
   name: string;
-  type: 'dir' | 'file' | 'declaration' | 'virtual';
+  type: 'dir' | 'file' | 'declaration' | 'ejected' | 'virtual';
   nestLevel: number;
   parent: LayoutModel | null;
   children: LayoutModel[]; // todo links create by { source: this, target: children[i] }
@@ -39,7 +39,6 @@ export type LayoutModel = {
     isCircleRoot: boolean;
     radialXOffset: number;
     radialYOffset: number;
-    isVirtual: boolean;
 
     // tidy tree algorithm data
     Ancestor: LayoutModel | null; // default ancestor
