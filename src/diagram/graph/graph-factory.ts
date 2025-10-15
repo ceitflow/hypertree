@@ -15,22 +15,13 @@ export class GraphFactory {
       parent: modelParent,
       children: [],
       links: [],
-      postLayout: {
-        leftNeighbour: null,
-        rightNeighbour: null,
-        depthsLeftRightNodes: [],
-        shrunkLeftXPos: -Infinity,
-        totalWidth: 0,
-      },
       layout: null as any,
-      clearLayoutDataRecursively: (parent: LayoutModel | null, idx: number) => {
-        model.postLayout.depthsLeftRightNodes = [[model, model]];  // self is leftmost and rightmost node
-        model.layout = this.createModelLayoutData(parent, idx);
+      resetLayoutData: () => {
+        model.layout = this.createModelLayoutData(modelParent, index);
         model.layout.ancestor = model;
-        model.children.forEach((c, i) => c.clearLayoutDataRecursively(model, i));
       },
     };
-    model.clearLayoutDataRecursively(modelParent, index);
+    model.resetLayoutData();
     return model;
   }
 
@@ -39,10 +30,12 @@ export class GraphFactory {
       // layout inside circle data
       x: 0,
       y: 0,
+      totalWidth: 0,
       depth: parent ? parent.layout.depth + 1 : 0,
       angle: 0,
       radialX: 0,
       radialY: 0,
+      angleAdjustment: 0,
 
       // global layout data
       isCircleRoot: false,

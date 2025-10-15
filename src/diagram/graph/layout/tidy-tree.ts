@@ -5,10 +5,12 @@ import { GraphFactory } from '../graph-factory.ts';
 // Computes the layout using Buchheim et al.'s algorithm.
 // Later on create a radial tree layout. The layout’s first dimension (x) is the angle, while the second (y) is the radius.
 export const SEPARATION = 12;
-export const RADIUS = 160;
+const RADIUS_STEP = 360;
+const RADIUS_OFFSET = 0;
 
 export function TidyTree(root: LayoutModel, totalDepth: number) {
   addVirtualWallNodes(root, totalDepth);
+  const map = new Map<number, LayoutModel[]>();
 
   // Computes a preliminary x-coordinate for v. Before that, FIRST WALK is
   // applied recursively to the children of v, as well as the function
@@ -32,6 +34,7 @@ export function TidyTree(root: LayoutModel, totalDepth: number) {
       v.layout.prelim = leftSibling.layout.prelim + separation(v, leftSibling);
     }
     v.parent!.layout.Ancestor = apportion(v, leftSibling, v.parent!.layout.Ancestor || siblings[0]);
+    v.layout.totalWidth = children.length ? children.reduce((acc, curr) => acc + curr.layout.totalWidth, 0) : SEPARATION;
   });
   root.parent!.layout.mod = -root.layout.prelim; // edge case for root node to move it upward
 
@@ -45,34 +48,46 @@ export function TidyTree(root: LayoutModel, totalDepth: number) {
     v.layout.x = v.layout.prelim + v.parent!.layout.mod;
     v.layout.angle = v.layout.x;
     v.layout.mod += v.parent!.layout.mod;
-    v.layout.y = v.layout.depth * RADIUS;
+    v.layout.y = Radius(v.layout.depth);
 
     // Compute the left-most, right-most, and depth-most nodes for extents.
     if (v.layout.x < left.layout.x) left = v;
     if (v.layout.x > right.layout.x) right = v;
     if (v.layout.depth > bottom.layout.depth) bottom = v;
     if (v.type === 'virtual') v.parent!.children = []; // remove virtual wall nodes
+    else {
+      if (map.get(v.layout.depth)) map.get(v.layout.depth)!.push(v);
+      else map.set(v.layout.depth, [v]);
+    }
   });
 
-  return { left, right };
+  return { left, right, map };
 }
 
-export function RadialTree(root: LayoutModel, left: LayoutModel, right: LayoutModel) {
-  const sep = left === right ? 1 : separation(left, right) / 2; // extra separation to prevent overlaps on same levels (start and end nodes)
+export function RadialTree(root: LayoutModel, left: LayoutModel, right: LayoutModel, map: Map<number, LayoutModel[]>) {
+  const sep = left === right ? 1 : separation(left, right); // extra separation to prevent overlaps on same levels (start and end nodes)
   const fullWidth = right.layout.x - left.layout.x + sep;
-  console.log(`leftmost: ${left.name}, rightmost: ${right.name}, fullWidth: ${fullWidth}`);
+  console.log(`leftmost: ${left.name}, rightmost: ${right.name}, fullWidth: ${fullWidth}`, map);
 
   const fullCircle = 2 * Math.PI;
   const tx = sep - left.layout.x;
   const kx = fullCircle / fullWidth;
 
-  // todo for debugging, comment out radialX and radialY to get flat tree layout
-  eachBefore(root, ({ layout, name }: LayoutModel) => {
-    layout.angle = (layout.x + tx) * kx; // radians
-    // layout.radialX = layout.y * Math.cos(layout.angle - Math.PI / 2);
-    // layout.radialY = layout.y * Math.sin(layout.angle - Math.PI / 2);
-    layout.radialX = layout.x;
-    layout.radialY = layout.y;
+  map.forEach((nodes, depth) => {
+    const minRequiredRadius = fullWidth / Math.PI / 2;
+    const radius = Radius(depth);
+    const ratio = (radius / minRequiredRadius) || 1; // >1
+    console.log(`${depth}. radius: ${radius}, minRadius: ${minRequiredRadius}, ratio: ${ratio}`);
+
+    nodes.forEach(({ layout, parent }) => {
+      const center = parent!.layout.x;
+      layout.angleAdjustment = ((layout.x - center) / ratio + center - layout.x) + parent!.layout.angleAdjustment;
+      layout.angle = (layout.x + layout.angleAdjustment + tx) * kx; // radians
+      layout.radialX = layout.y * Math.cos(layout.angle - Math.PI / 2);
+      layout.radialY = layout.y * Math.sin(layout.angle - Math.PI / 2);
+      // layout.radialX = layout.x;
+      // layout.radialY = layout.y;
+    });
   });
 }
 
@@ -108,6 +123,14 @@ function addVirtualWallNodes(root: LayoutModel, totalDepth: number) {
 
 function separation(a: LayoutModel, b: LayoutModel) {
   return SEPARATION;
+}
+
+export function Radius(depth: number): number {
+  if (depth < 0) throw new Error('depth must be a positive integer');
+  if (depth === 0) return 0;
+  let result = RADIUS_OFFSET;
+  for (let i = 0; i < depth; i++) result += Math.floor(Math.max(RADIUS_STEP * Math.pow(2 / 3, i), SEPARATION * 2));
+  return result;
 }
 
 // Computes all real x-coordinates by summing up the modifiers recursively.

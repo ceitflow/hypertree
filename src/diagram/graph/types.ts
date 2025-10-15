@@ -21,20 +21,15 @@ export type LayoutModel = {
   parent: LayoutModel | null;
   children: LayoutModel[]; // todo links create by { source: this, target: children[i] }
   links: LinkModel[];
-  postLayout: {
-    leftNeighbour: null | LayoutModel;
-    rightNeighbour: null | LayoutModel;
-    depthsLeftRightNodes: [LayoutModel, LayoutModel][]; // this subtree left/right most children
-    shrunkLeftXPos: number;
-    totalWidth: number;
-  };
   layout: {
     x: number;
     y: number; // radius
+    totalWidth: number;
     depth: number;
     angle: number; // x
     radialX: number;
     radialY: number;
+    angleAdjustment: number;
 
     isCircleRoot: boolean;
     radialXOffset: number;
@@ -50,7 +45,7 @@ export type LayoutModel = {
     thread: LayoutModel | null;
     i: number; // index of child in parent.children
   };
-  clearLayoutDataRecursively: (parent: LayoutModel | null, i: number) => void;
+  resetLayoutData: () => void;
 }
 
 export type LinkModel = { // GroupLink and Link

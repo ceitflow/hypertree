@@ -44,6 +44,9 @@ export class Paper {
         color = '0x277DFF';
         break;
       case 'ejected':
+        // visible ejects are only the first and last one
+        color = (model.parent!.type !== 'ejected' || !model.children.length) ? '0x00FF00' : '0x00000000';
+        break;
       case 'virtual':
         color = '0x00FF00';
         break;
@@ -53,7 +56,7 @@ export class Paper {
     circle.y = radialY;
     circle.label = name;
     circle.interactive = true;
-    circle.on('pointerdown', e => console.log(`w: ${model.postLayout.totalWidth}`, model));
+    circle.on('pointerdown', e => console.log(`w: ${model.layout.totalWidth}`, model));
     return circle;
   };
 

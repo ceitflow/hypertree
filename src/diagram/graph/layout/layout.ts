@@ -1,6 +1,6 @@
 import { LayoutModel } from '../types.ts';
-import { RadialTree, RADIUS, TidyTree } from './tidy-tree.ts';
-import { ProcessEjects, recalculatePostLayout } from './tree-ejector.ts';
+import { ProcessEjects } from './tree-ejector.ts';
+import { eachBefore, RadialTree, TidyTree } from './tidy-tree.ts';
 
 // todo turn to classes
 export function Layout(root: LayoutModel, totalDepth: number) {
@@ -10,17 +10,10 @@ export function Layout(root: LayoutModel, totalDepth: number) {
   TidyTree(root, totalDepth);
 
   // post processing
-  ProcessEjects(root, totalDepth);
+  ProcessEjects(root);
 
-  // rerun layout after possible changes
-  root.clearLayoutDataRecursively(root.parent, 0);
-  const { left, right } = TidyTree(root, totalDepth);
-  RadialTree(root, left, right); // todo scale to avoid gaps if width < circle radius
-
-  // debug
-  recalculatePostLayout(root, totalDepth);
-  console.log('\n')
-  root.postLayout.depthsLeftRightNodes.forEach(([leftMost, rightMost], depth) => {
-    console.log(`${depth}. available: ${2 * Math.PI * RADIUS * (depth + 1)}, taken: ${rightMost.layout.x - leftMost.layout.x}`);
-  });
+  // rerun layout after possible changes, finally calculate positions for radial layout
+  eachBefore(root, n => n.resetLayoutData())
+  const { left, right, map } = TidyTree(root, totalDepth);
+  RadialTree(root, left, right, map);
 }

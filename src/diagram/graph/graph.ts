@@ -9,10 +9,13 @@ export class Graph {
 
   parseJson(program: RawProgramGraph): void {
     // outputs the same tree but with added properties
-    const json = program.dirGraph.dirs!.find(c => c.name === 'src')!;
+    const json = program.dirGraph.dirs!.find(c => c.name === 'src')!.dirs!.find(c => c.name === 'app')!;
     const result = GraphFactory.createModel(json, 0, null);
     result.layout.isCircleRoot = true;
-    (result.parent = GraphFactory.createModel({} as any, 0, null)).children = [result];
+    result.parent = GraphFactory.createModel({} as any, 0, null);
+    result.parent!.type = 'virtual';
+    result.parent!.layout.depth = -1;
+    result.parent!.children = [result];
     if (json.files)
       json.files.forEach((f, i) => {
         const file = GraphFactory.createFileModel(f, program.files[f.path], i, result);
