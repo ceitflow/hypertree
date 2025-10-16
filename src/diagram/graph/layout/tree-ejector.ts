@@ -21,7 +21,6 @@ export function ProcessEjects(root: LayoutModel) {
         child.type = 'ejected';
         child.children = [];
         child.links = [];
-        console.log(`ejected ${child.idPath} ${child.layout.totalWidth} from depth ${child.layout.depth}.`);
       });
     }
     currDepthEntry.nodes = [];
@@ -37,7 +36,8 @@ export function ProcessEjects(root: LayoutModel) {
     });
   }
 
-  // pull ejected nodes to the last depth
+  // mark ejects and pull them until the last depth
+  // TODO dont overwrite real nodes
   const newTotalDepth = currDepthEntry.depth;
   for (const node of ejectMap.keys()) {
     let temp = node;
@@ -49,6 +49,7 @@ export function ProcessEjects(root: LayoutModel) {
     // single link from node to last rendered eject
     node.links.push(GraphFactory.createLinkModel(node, temp));
   }
+  console.log(ejectMap)
 }
 
 function pickNodesToEject(allNodes: LayoutModel[], ejectMap: EjectMap, widthToRemove: number): LayoutModel[] {

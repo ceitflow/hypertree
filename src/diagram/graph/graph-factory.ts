@@ -17,8 +17,10 @@ export class GraphFactory {
       links: [],
       layout: null as any,
       resetLayoutData: () => {
+        const isRoot = model.layout?.isCircleRoot
         model.layout = this.createModelLayoutData(modelParent, index);
         model.layout.ancestor = model;
+        model.layout.isCircleRoot = isRoot;
       },
     };
     model.resetLayoutData();

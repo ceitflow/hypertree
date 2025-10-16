@@ -5,8 +5,8 @@ import { GraphFactory } from '../graph-factory.ts';
 // Computes the layout using Buchheim et al.'s algorithm.
 // Later on create a radial tree layout. The layout’s first dimension (x) is the angle, while the second (y) is the radius.
 export const SEPARATION = 12;
-const RADIUS_STEP = 360;
-const RADIUS_OFFSET = 0;
+const RADIUS_STEP = 600;
+const RADIUS_OFFSET = 800;
 
 export function TidyTree(root: LayoutModel, totalDepth: number) {
   addVirtualWallNodes(root, totalDepth);
@@ -64,24 +64,24 @@ export function TidyTree(root: LayoutModel, totalDepth: number) {
   return { left, right, map };
 }
 
-export function RadialTree(root: LayoutModel, left: LayoutModel, right: LayoutModel, map: Map<number, LayoutModel[]>) {
-  const sep = left === right ? 1 : separation(left, right); // extra separation to prevent overlaps on same levels (start and end nodes)
-  const fullWidth = right.layout.x - left.layout.x + sep;
-  console.log(`leftmost: ${left.name}, rightmost: ${right.name}, fullWidth: ${fullWidth}`, map);
+export function RadialTree(leftMost: LayoutModel, rightMost: LayoutModel, map: Map<number, LayoutModel[]>) {
+  const sep = leftMost === rightMost ? 1 : separation(leftMost, rightMost); // extra separation to prevent overlaps on same levels (start and end nodes)
+  const fullWidth = rightMost.layout.x - leftMost.layout.x + sep;
+  console.log(`leftmost: ${leftMost.name}, rightmost: ${rightMost.name}, fullWidth: ${fullWidth}`, map);
 
   const fullCircle = 2 * Math.PI;
-  const tx = sep - left.layout.x;
+  const tx = sep - leftMost.layout.x;
   const kx = fullCircle / fullWidth;
 
   map.forEach((nodes, depth) => {
     const minRequiredRadius = fullWidth / Math.PI / 2;
     const radius = Radius(depth);
     const ratio = (radius / minRequiredRadius) || 1; // >1
-    console.log(`${depth}. radius: ${radius}, minRadius: ${minRequiredRadius}, ratio: ${ratio}`);
+    console.log(`${depth}. radius: ${radius}, minRadius: ${minRequiredRadius}, ratio: ${ratio}, width: ${nodes[nodes.length - 1].layout.x - nodes[0].layout.x}`);
 
     nodes.forEach(({ layout, parent }) => {
       const center = parent!.layout.x;
-      layout.angleAdjustment = ((layout.x - center) / ratio + center - layout.x) + parent!.layout.angleAdjustment;
+      // layout.angleAdjustment = ((layout.x - center) / ratio + center - layout.x) + parent!.layout.angleAdjustment;
       layout.angle = (layout.x + layout.angleAdjustment + tx) * kx; // radians
       layout.radialX = layout.y * Math.cos(layout.angle - Math.PI / 2);
       layout.radialY = layout.y * Math.sin(layout.angle - Math.PI / 2);

@@ -15,5 +15,5 @@ export function Layout(root: LayoutModel, totalDepth: number) {
   // rerun layout after possible changes, finally calculate positions for radial layout
   eachBefore(root, n => n.resetLayoutData())
   const { left, right, map } = TidyTree(root, totalDepth);
-  RadialTree(root, left, right, map);
+  RadialTree(left, right, map);
 }

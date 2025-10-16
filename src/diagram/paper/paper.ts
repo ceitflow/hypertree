@@ -28,7 +28,7 @@ export class Paper {
 
   private createCircle = (model: LayoutModel) => {
     const {
-      layout: { radialX, radialY },
+      layout: { radialX, radialY, isCircleRoot },
       name,
       type,
     } = model;
@@ -44,14 +44,13 @@ export class Paper {
         color = '0x277DFF';
         break;
       case 'ejected':
-        // visible ejects are only the first and last one
-        color = (model.parent!.type !== 'ejected' || !model.children.length) ? '0x00FF00' : '0x00000000';
+        color = '0x00FF00';
         break;
       case 'virtual':
         color = '0x00FF00';
         break;
     }
-    const circle = new Graphics().circle(0, 0, 6).fill(color);
+    const circle = new Graphics().circle(0, 0, isCircleRoot ? 120 : 6).fill(color);
     circle.x = radialX;
     circle.y = radialY;
     circle.label = name;
@@ -94,8 +93,6 @@ export class Paper {
       while (stack.length) {
         const d = stack.pop()!;
 
-        // if (d.type === 'virtual' && !d.name) continue;
-
         if (d.layout.isCircleRoot && d !== root) {
           const nested = recursion(d);
           nested.x += 1400;
@@ -110,6 +107,10 @@ export class Paper {
           linksContainer.addChild(linkGraphic);
         });
 
+        if (d.type === 'ejected' && (d.children.length && d.parent!.type === 'ejected' )) {
+          stack.push(...d.children);
+          continue;
+        }
         nodesContainer.addChild(this.createCircle(d));
         textContainer.addChild(this.createLabel(d));
 
