@@ -6,10 +6,11 @@ import { GraphFactory } from '../graph-factory.ts';
 // Later on create a radial tree layout. The layout’s first dimension (x) is the angle, while the second (y) is the radius.
 export const SEPARATION = 12;
 const RADIUS_STEP = 600;
-const RADIUS_OFFSET = 800;
+const RADIUS_OFFSET = 100;
+type Options = { radial?: boolean }
 
-export function TidyTree(root: LayoutModel, totalDepth: number) {
-  addVirtualWallNodes(root, totalDepth);
+export function TidyTree(root: LayoutModel, opt: Options = {}) {
+  addVirtualWallNodes(root);
   const map = new Map<number, LayoutModel[]>();
 
   // Computes a preliminary x-coordinate for v. Before that, FIRST WALK is
@@ -18,8 +19,8 @@ export function TidyTree(root: LayoutModel, totalDepth: number) {
   // node v is placed to the midpoint of its outermost children.
   // first walk
   eachAfter(root, (v: LayoutModel) => {
-    const children = v.children;
-    const siblings = v.parent!.children;
+    const children = v.layoutChildren;
+    const siblings = v.parent!.layoutChildren;
     const leftSibling = v.layout.i ? siblings[v.layout.i - 1] : null;
     if (children.length) {
       executeShifts(v);
@@ -48,29 +49,26 @@ export function TidyTree(root: LayoutModel, totalDepth: number) {
     v.layout.x = v.layout.prelim + v.parent!.layout.mod;
     v.layout.angle = v.layout.x;
     v.layout.mod += v.parent!.layout.mod;
-    v.layout.y = Radius(v.layout.depth);
+    v.layout.y = Radius(v.layoutDepth);
 
     // Compute the left-most, right-most, and depth-most nodes for extents.
     if (v.layout.x < left.layout.x) left = v;
     if (v.layout.x > right.layout.x) right = v;
-    if (v.layout.depth > bottom.layout.depth) bottom = v;
-    if (v.type === 'virtual') v.parent!.children = []; // remove virtual wall nodes
+    if (v.layoutDepth > bottom.layoutDepth) bottom = v;
+    if (v.type === 'virtual') v.parent!.layoutChildren = []; // remove virtual wall nodes
     else {
-      if (map.get(v.layout.depth)) map.get(v.layout.depth)!.push(v);
-      else map.set(v.layout.depth, [v]);
+      if (map.get(v.layoutDepth)) map.get(v.layoutDepth)!.push(v);
+      else map.set(v.layoutDepth, [v]);
     }
   });
 
-  return { left, right, map };
-}
-
-export function RadialTree(leftMost: LayoutModel, rightMost: LayoutModel, map: Map<number, LayoutModel[]>) {
-  const sep = leftMost === rightMost ? 1 : separation(leftMost, rightMost); // extra separation to prevent overlaps on same levels (start and end nodes)
-  const fullWidth = rightMost.layout.x - leftMost.layout.x + sep;
-  console.log(`leftmost: ${leftMost.name}, rightmost: ${rightMost.name}, fullWidth: ${fullWidth}`, map);
+  // final positions calculation
+  const sep = left === right ? 1 : separation(left, right); // extra separation to prevent overlaps on same levels (start and end nodes)
+  const fullWidth = right.layout.x - left.layout.x + sep;
+  console.log(`${root.name} leftmost: ${left.name}, rightmost: ${right.name}, fullWidth: ${fullWidth}`, map);
 
   const fullCircle = 2 * Math.PI;
-  const tx = sep - leftMost.layout.x;
+  const tx = sep - left.layout.x;
   const kx = fullCircle / fullWidth;
 
   map.forEach((nodes, depth) => {
@@ -80,42 +78,50 @@ export function RadialTree(leftMost: LayoutModel, rightMost: LayoutModel, map: M
     console.log(`${depth}. radius: ${radius}, minRadius: ${minRequiredRadius}, ratio: ${ratio}, width: ${nodes[nodes.length - 1].layout.x - nodes[0].layout.x}`);
 
     nodes.forEach(({ layout, parent }) => {
-      const center = parent!.layout.x;
-      // layout.angleAdjustment = ((layout.x - center) / ratio + center - layout.x) + parent!.layout.angleAdjustment;
-      layout.angle = (layout.x + layout.angleAdjustment + tx) * kx; // radians
-      layout.radialX = layout.y * Math.cos(layout.angle - Math.PI / 2);
-      layout.radialY = layout.y * Math.sin(layout.angle - Math.PI / 2);
-      // layout.radialX = layout.x;
-      // layout.radialY = layout.y;
+      if (opt.radial) {
+        // const center = parent!.layout.x;
+        // layout.angleAdjustment = ((layout.x - center) / ratio + center - layout.x) + parent!.layout.angleAdjustment;
+        layout.angle = (layout.x + layout.angleAdjustment + tx) * kx; // radians
+        layout.radialX = layout.y * Math.cos(layout.angle - Math.PI / 2);
+        layout.radialY = layout.y * Math.sin(layout.angle - Math.PI / 2);
+      } else {
+        layout.radialX = layout.x;
+        layout.radialY = layout.y;
+      }
     });
   });
 }
 
-// adds 'virtual' nodes to leftmost and rightmost leaves to prevent subtrees from overlapping
-function addVirtualWallNodes(root: LayoutModel, totalDepth: number) {
+// adds 'virtual' nodes to leftmost and rightmost leaves of each parent to prevent subtrees from overlapping
+function addVirtualWallNodes(root: LayoutModel) {
   const leafs: LayoutModel[] = [];
   const temp: LayoutModel[] = [root];
+  let totalDepth = 0;
 
   while (temp.length) {
     const node = temp.pop()!;
-    if (!node.children.length) leafs.push(node);
-    else for (let i = 0; i < node.children.length; i++) temp.push(node.children[i]);
+    if (!node.layoutChildren.length) {
+      leafs.push(node);
+      totalDepth = Math.max(totalDepth, node.layoutDepth)
+    }
+    else for (let i = 0; i < node.layoutChildren.length; i++) temp.push(node.layoutChildren[i]);
   }
+
   while (leafs.length) {
     const n = leafs.pop()!;
-    const isLeftOrRight = n.layout.i === 0 || n.layout.i === n.parent!.children.length - 1;
+    const isLeftOrRight = n.layout.i === 0 || n.layout.i === n.parent!.layoutChildren.length - 1;
     if (!isLeftOrRight) {
-      return;
+      continue;
     }
     let tempVirtualNode!: LayoutModel;
-    for (let i = n.layout.depth + 1; i <= totalDepth; i++) {
+    for (let i = n.layoutDepth + 1; i <= totalDepth; i++) {
       if (!tempVirtualNode) {
         tempVirtualNode = GraphFactory.createModel({ name: '', path: 'virt', nestLevel: i }, 0, n, 'virtual');
-        n.children.push(tempVirtualNode);
+        n.layoutChildren.push(tempVirtualNode);
         continue;
       }
       const c = GraphFactory.createModel({ name: '', path: 'virt', nestLevel: i }, 0, tempVirtualNode, 'virtual');
-      tempVirtualNode.children.push(c);
+      tempVirtualNode.layoutChildren.push(c);
       tempVirtualNode = c;
     }
   }
@@ -150,7 +156,7 @@ function apportion(currentNode: LayoutModel, leftSibling: LayoutModel | null, de
     let insideRightNode = currentNode;
     let outsideRightNode = currentNode;
     let insideLeftNode = leftSibling;
-    let outsideLeftNode = insideRightNode.parent!.children[0];
+    let outsideLeftNode = insideRightNode.parent!.layoutChildren[0];
 
     let insideRightModSum = insideRightNode.layout.mod;
     let outsideRightModSum = outsideRightNode.layout.mod;
@@ -205,7 +211,7 @@ export function eachAfter(root: LayoutModel, callback: (node: LayoutModel) => vo
   while (nodes.length) {
     node = nodes.pop()!;
     next.push(node);
-    for (let i = 0; i < node.children.length; i++) nodes.push(node.children[i]);
+    for (let i = 0; i < node.layoutChildren.length; i++) nodes.push(node.layoutChildren[i]);
   }
   while (next.length) callback(next.pop()!);
 }
@@ -217,7 +223,7 @@ export function eachBefore(root: LayoutModel | LayoutModel[], callback: (node: L
   while (nodes.length) {
     node = nodes.pop()!;
     callback(node);
-    for (let i = node.children.length - 1; i >= 0; i--) nodes.push(node.children[i]);
+    for (let i = node.layoutChildren.length - 1; i >= 0; i--) nodes.push(node.layoutChildren[i]);
   }
 }
 
@@ -226,13 +232,13 @@ export function eachBefore(root: LayoutModel | LayoutModel[], callback: (node: L
    either given by the leftmost child of v or by the thread of v. The function
    returns null if and only if v is on the highest level of its subtree. */
 function nextLeft(v: LayoutModel): LayoutModel | null {
-  const children = v.children;
+  const children = v.layoutChildren;
   return children.length ? children[0] : v.layout.thread;
 }
 
 // This function works analogously to nextLeft.
 function nextRight(v: LayoutModel): LayoutModel | null {
-  const children = v.children;
+  const children = v.layoutChildren;
   return children.length ? children[children.length - 1] : v.layout.thread;
 }
 
@@ -253,7 +259,7 @@ function moveSubtree(wm: LayoutModel, wp: LayoutModel, shift: number): void {
 export function executeShifts(v: LayoutModel): void {
   let shift = 0;
   let change = 0;
-  const children = v.children;
+  const children = v.layoutChildren;
   if (!children.length) return;
 
   let i = children.length;

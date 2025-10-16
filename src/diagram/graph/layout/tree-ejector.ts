@@ -2,25 +2,23 @@ import { LayoutModel } from '../types.ts';
 import { GraphFactory } from '../graph-factory.ts';
 import { Radius, SEPARATION } from './tidy-tree.ts';
 
-export type EjectMap = Map<LayoutModel, boolean>;
+export type EjectMap = Set<LayoutModel>;
 
-export function ProcessEjects(root: LayoutModel) {
-  const ejectMap: EjectMap = new Map();
-  const currDepthEntry = { nodes: [...root.children], totalWidth: root.layout.totalWidth, depth: 1 };
+export function ProcessEjects(root: LayoutModel): EjectMap {
+  const ejectMap: EjectMap = new Set();
+  const currDepthEntry = { nodes: [...root.layoutChildren], totalWidth: root.layout.totalWidth, depth: 1 };
 
   while (currDepthEntry.nodes.length) {
     const { nodes, totalWidth } = currDepthEntry;
-    const depth = nodes[0].layout.depth;
+    const depth = nodes[0].layoutDepth;
     const available = 2 * Math.PI * Radius(depth);
     const widthToRemove = Math.max(0, totalWidth - available);
     console.log(`${depth}. available: ${available}, taken: ${totalWidth}, toRemove: ${widthToRemove}`);
 
     if (widthToRemove) {
       pickNodesToEject(nodes, ejectMap, widthToRemove).forEach(child => {
-        ejectMap.set(child, true);
-        child.type = 'ejected';
-        child.children = [];
-        child.links = [];
+        ejectMap.add(child);
+        child.isEjected = true;
       });
     }
     currDepthEntry.nodes = [];
@@ -28,7 +26,8 @@ export function ProcessEjects(root: LayoutModel) {
     currDepthEntry.depth = currDepthEntry.depth + 1;
 
     nodes.forEach(node => {
-      node.children.forEach(child => {
+      if (node.isEjected) return;
+      node.layoutChildren.forEach(child => {
         if (ejectMap.has(child)) return;
         currDepthEntry.nodes.push(child);
         currDepthEntry.totalWidth += child.layout.totalWidth || SEPARATION; // if its leaf node then use its width instead
@@ -37,19 +36,21 @@ export function ProcessEjects(root: LayoutModel) {
   }
 
   // mark ejects and pull them until the last depth
-  // TODO dont overwrite real nodes
   const newTotalDepth = currDepthEntry.depth;
-  for (const node of ejectMap.keys()) {
+  for (const node of Array.from(ejectMap.values())) {
     let temp = node;
-    for (let i = node.layout.depth + 1; i < newTotalDepth; i++) {
-      const ejected = GraphFactory.createModel({ name: node.name, nestLevel: i, path: node.idPath }, 0, temp, 'ejected');
-      temp.children = [ejected];
+    for (let i = node.layoutDepth + 1; i < newTotalDepth; i++) {
+      const ejected = GraphFactory.createModel({ name: node.name, nestLevel: i, path: node.idPath }, 0, temp, node.type);
+      ejected.isEjected = true;
+      ejected.childrenData = node.childrenData;
+      temp.layoutChildren = [ejected];
       temp = ejected;
     }
-    // single link from node to last rendered eject
-    node.links.push(GraphFactory.createLinkModel(node, temp));
+    // make sure ejects point to nodes on the edge of layout
+    ejectMap.delete(node);
+    ejectMap.add(temp);
   }
-  console.log(ejectMap)
+  return ejectMap;
 }
 
 function pickNodesToEject(allNodes: LayoutModel[], ejectMap: EjectMap, widthToRemove: number): LayoutModel[] {
@@ -75,7 +76,7 @@ function pickNodesToEject(allNodes: LayoutModel[], ejectMap: EjectMap, widthToRe
   }
 
   if (partialToRemove) {
-    const partialChildren = partialToRemove.children.filter(c => !ejectMap.has(c));
+    const partialChildren = partialToRemove.layoutChildren.filter(c => !ejectMap.has(c));
     const childrenToRemove = pickNodesToEject(partialChildren, ejectMap, tempRemainingWidth);
     // if no children removal will be enough, remove partial node itself
     if (!childrenToRemove.length) nodesToRemove.push(partialToRemove);

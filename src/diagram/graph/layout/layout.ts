@@ -1,19 +1,49 @@
 import { LayoutModel } from '../types.ts';
 import { ProcessEjects } from './tree-ejector.ts';
-import { eachBefore, RadialTree, TidyTree } from './tidy-tree.ts';
+import { GraphFactory } from '../graph-factory.ts';
+import { eachBefore, TidyTree } from './tidy-tree.ts';
 
 // todo turn to classes
-export function Layout(root: LayoutModel, totalDepth: number) {
-  console.log('root', root, `depth: ${totalDepth}`);
+export function Layout(root: LayoutModel) {
+  const stack = [root];
+  root.isRoot = true;
 
-  // run layout
-  TidyTree(root, totalDepth);
+  while (stack.length) {
+    const node = stack.pop()!;
+    console.log('root', node);
 
-  // post processing
-  ProcessEjects(root);
+    /* First layout run */
+    // todo each Root instantiates Layout with own radius?
+    TidyTree(node, { radial: false });
 
-  // rerun layout after possible changes, finally calculate positions for radial layout
-  eachBefore(root, n => n.resetLayoutData())
-  const { left, right, map } = TidyTree(root, totalDepth);
-  RadialTree(left, right, map);
+    /* Post-processing */
+    const ejects = ProcessEjects(node);
+    eachBefore(node, n => {
+      n.resetLayoutData(); // force recalculate layout
+      if (ejects.has(n)) {
+        stack.push(BuildRoot(n));
+      }
+    });
+
+    TidyTree(node, { radial: true });
+  }
+}
+
+function BuildRoot(node: LayoutModel): LayoutModel {
+  const root = GraphFactory.createModel({ name: node.name, path: node.idPath, nestLevel: 0 }, 0, null, node.type);
+  root.parent = GraphFactory.createModel({} as any, 0, null);
+  root.parent!.type = 'virtual';
+  root.parent!.depthData = root.parent!.layoutDepth = -1;
+  root.parent!.childrenData = [root];
+  root.isRoot = true;
+  node.childrenData.forEach(child => {
+    root.childrenData.push(child);
+    root.layoutChildren.push(child);
+    child.parent = root;
+  });
+  eachBefore(root, (child) => {
+    child.layoutDepth = child.parent ? child.parent.layoutDepth + 1 : 0;
+  });
+  node.ejectRoot = root;
+  return root;
 }

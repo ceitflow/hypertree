@@ -16,24 +16,23 @@ export type RawFile = FileMapItem;
 export type LayoutModel = {
   idPath: string;
   name: string;
-  type: 'dir' | 'file' | 'declaration' | 'ejected' | 'virtual';
-  nestLevel: number;
+  type: 'dir' | 'file' | 'declaration' | 'virtual';
   parent: LayoutModel | null;
-  children: LayoutModel[]; // todo links create by { source: this, target: children[i] }
-  links: LinkModel[];
+  depthData: number; // original depth
+  childrenData: LayoutModel[]; // original children data
+  isRoot: boolean;
+  isEjected: boolean;
+  ejectRoot: LayoutModel | null;
+  layoutChildren: LayoutModel[]; // actual children rendered in layout
+  layoutDepth: number; // depth in actual layout
   layout: {
     x: number;
     y: number; // radius
     totalWidth: number;
-    depth: number;
     angle: number; // x
     radialX: number;
     radialY: number;
     angleAdjustment: number;
-
-    isCircleRoot: boolean;
-    radialXOffset: number;
-    radialYOffset: number;
 
     // tidy tree algorithm data
     Ancestor: LayoutModel | null; // default ancestor

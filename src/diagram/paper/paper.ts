@@ -1,8 +1,9 @@
 import { Graph } from '../graph/graph.ts';
 import { createEngine } from './engine.ts';
 import { LayoutModel } from '../graph/types.ts';
-import { CreateViewport, ScreenType } from '../screen';
 import { drawLinkGraphics } from './draw-link.ts';
+import { CreateViewport, ScreenType } from '../screen';
+import { GraphFactory } from '../graph/graph-factory.ts';
 import { Application, BitmapText, Container, Graphics } from 'pixi.js';
 
 export class Paper {
@@ -26,11 +27,67 @@ export class Paper {
     return new Paper(graph, engine, paper, background, viewport);
   }
 
+  reloadPaper(): void {
+    const { root } = this.graph.model;
+    if (!root) return;
+
+    const recursion = (root: LayoutModel): Container => {
+      const container = new Container();
+      const linksContainer = new Container();
+      const textContainer = new Container();
+      const nodesContainer = new Container();
+
+      container.addChild(linksContainer, nodesContainer, textContainer);
+
+      const stack = [root];
+      while (stack.length) {
+        const node = stack.pop()!;
+
+        const structuralLinks = node.layoutChildren.map(c => GraphFactory.createLinkModel(node, c));
+
+        structuralLinks.forEach(link => {
+          const linkGraphic = new Graphics();
+          drawLinkGraphics(linkGraphic, link);
+          linksContainer.addChild(linkGraphic);
+        });
+
+        nodesContainer.addChild(this.createCircle(node));
+        textContainer.addChild(this.createLabel(node));
+
+        stack.push(...node.layoutChildren);
+
+        if (node.ejectRoot && (node.idPath.startsWith('src/app/accflow') || node.idPath.startsWith('src/app/shareholders'))) {
+          const nestedContainer = recursion(node.ejectRoot);
+          const length = Math.hypot(node.layout.radialX, node.layout.radialY); // same as sqrt(x*x + y*y)
+          const newLength = length * 2;
+          nestedContainer.x = (node.layout.radialX / length) * newLength;
+          nestedContainer.y = (node.layout.radialY / length) * newLength;
+          container.addChild(nestedContainer);
+        }
+      }
+
+      return container;
+    };
+
+    const result = recursion(root);
+
+    const dx = result.width / 2;
+    const dy = result.height / 2;
+    result.children.forEach(c => {
+      c.x += dx;
+      c.y += dy;
+    });
+
+    this.scroller.transformer.updateExtentArea({ x: 0, y: 0, width: result.width, height: result.height });
+    this.paper.addChild(result);
+  }
+
   private createCircle = (model: LayoutModel) => {
     const {
-      layout: { radialX, radialY, isCircleRoot },
+      layout: { radialX, radialY },
       name,
       type,
+      isRoot,
     } = model;
     let color: string;
     switch (type) {
@@ -43,14 +100,13 @@ export class Paper {
       case 'declaration':
         color = '0x277DFF';
         break;
-      case 'ejected':
-        color = '0x00FF00';
-        break;
+      // virtual is for debugging only
       case 'virtual':
         color = '0x00FF00';
         break;
     }
-    const circle = new Graphics().circle(0, 0, isCircleRoot ? 120 : 6).fill(color);
+    if (model.isEjected) color = '0x00FF00';
+    const circle = new Graphics().circle(0, 0, isRoot ? 30 : 6).fill(color);
     circle.x = radialX;
     circle.y = radialY;
     circle.label = name;
@@ -76,60 +132,4 @@ export class Paper {
 
     return bitmapFontText;
   };
-
-  reloadPaper(): void {
-    const { root } = this.graph.model;
-    if (!root) return;
-
-    const recursion = (root: LayoutModel): Container => {
-      const container = new Container();
-      const linksContainer = new Container();
-      const textContainer = new Container();
-      const nodesContainer = new Container();
-
-      container.addChild(linksContainer, nodesContainer, textContainer);
-
-      const stack = [root];
-      while (stack.length) {
-        const d = stack.pop()!;
-
-        if (d.layout.isCircleRoot && d !== root) {
-          const nested = recursion(d);
-          nested.x += 1400;
-          nested.y -= 2000;
-          container.addChild(nested);
-          continue;
-        }
-
-        d.links.forEach(link => {
-          const linkGraphic = new Graphics();
-          drawLinkGraphics(linkGraphic, link);
-          linksContainer.addChild(linkGraphic);
-        });
-
-        if (d.type === 'ejected' && (d.children.length && d.parent!.type === 'ejected' )) {
-          stack.push(...d.children);
-          continue;
-        }
-        nodesContainer.addChild(this.createCircle(d));
-        textContainer.addChild(this.createLabel(d));
-
-        stack.push(...d.children);
-      }
-
-      return container;
-    };
-
-    const result = recursion(root);
-
-    const dx = result.width / 2;
-    const dy = result.height / 2;
-    result.children.forEach(c => {
-      c.x += dx;
-      c.y += dy;
-    });
-
-    this.scroller.transformer.updateExtentArea({ x: 0, y: 0, width: result.width, height: result.height });
-    this.paper.addChild(result);
-  }
 }
