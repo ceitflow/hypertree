@@ -1,5 +1,5 @@
-import { LayoutModel } from '../types.ts';
-import { GraphFactory } from '../graph-factory.ts';
+import { LayoutModel } from '../graph/types.ts';
+import { GraphFactory } from '../graph/graph-factory.ts';
 import { Radius, SEPARATION } from './tidy-tree.ts';
 
 export type EjectMap = Set<LayoutModel>;
@@ -40,7 +40,8 @@ export function ProcessEjects(root: LayoutModel): EjectMap {
   for (const node of Array.from(ejectMap.values())) {
     let temp = node;
     for (let i = node.layoutDepth + 1; i < newTotalDepth; i++) {
-      const ejected = GraphFactory.createModel({ name: node.name, nestLevel: i, path: node.idPath }, 0, temp, node.type);
+      const ejected = GraphFactory.createModel({ name: node.name, path: node.idPath }, 0, temp, node.depthData, node.type);
+      ejected.layoutDepth = i;
       ejected.isEjected = true;
       ejected.childrenData = node.childrenData;
       temp.layoutChildren = [ejected];

@@ -2,12 +2,12 @@ import { LayoutModel, LinkModel, RawDir, RawProgramGraph } from './types.ts';
 
 export class GraphFactory {
   static createModel(
-    data: Pick<RawDir, 'name' | 'nestLevel' | 'path'>,
+    data: Pick<RawDir, 'name' | 'path'>,
     index: number,
     parent: LayoutModel | null,
+    depth: number,
     type: LayoutModel['type'] = 'dir'
   ): LayoutModel {
-    const depth = parent ? parent.depthData + 1 : 0;
     const model: LayoutModel = {
       name: data.name,
       idPath: data.path,

@@ -1,4 +1,4 @@
-import { InputController } from '../screen';
+import { InputController } from '../paper/screen';
 
 type Point = [number, number];
 

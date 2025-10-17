@@ -1,4 +1,4 @@
-import { State, Vector4 } from '../types';
+import { State, Vector4 } from '../types.ts';
 import { Round } from '../plugins';
 import { ExtentLimiter } from '../plugins/limiter.ts';
 

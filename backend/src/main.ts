@@ -8,7 +8,7 @@ import { createProgram, findConfigFile, parseJsonConfigFileContent, readConfigFi
   const args = {
     // /Users/ceitflow/WebstormProjects/koia-adminflow/adminflow
     // /Users/ceitflow/WebstormProjects/m3/coplan-visualizer
-    src: '/Users/ceitflow/WebstormProjects/koia-adminflow/adminflow',
+    src: '/Users/ceitflow/WebstormProjects/m3/coplan-visualizer',
     output: '/Users/ceitflow/WebstormProjects/prototypes/graphkit/backend/dist',
     // depth: 2,
     'exclude-file': ['eslint.config.js', 'vite.config.ts'],

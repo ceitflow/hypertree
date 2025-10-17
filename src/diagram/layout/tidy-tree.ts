@@ -1,11 +1,11 @@
-import { LayoutModel } from '../types.ts';
-import { GraphFactory } from '../graph-factory.ts';
+import { LayoutModel } from '../graph/types.ts';
+import { GraphFactory } from '../graph/graph-factory.ts';
 
 // Tree diagram using the Reingold-Tilford "tidy" algorithm
 // Computes the layout using Buchheim et al.'s algorithm.
 // Later on create a radial tree layout. The layout’s first dimension (x) is the angle, while the second (y) is the radius.
 export const SEPARATION = 12;
-const RADIUS_STEP = 600;
+const RADIUS_STEP = 200;
 const RADIUS_OFFSET = 100;
 type Options = { radial?: boolean }
 
@@ -79,7 +79,7 @@ export function TidyTree(root: LayoutModel, opt: Options = {}) {
 
     nodes.forEach(({ layout, parent }) => {
       if (opt.radial) {
-        // const center = parent!.layout.x;
+        const center = parent!.layout.x;
         // layout.angleAdjustment = ((layout.x - center) / ratio + center - layout.x) + parent!.layout.angleAdjustment;
         layout.angle = (layout.x + layout.angleAdjustment + tx) * kx; // radians
         layout.radialX = layout.y * Math.cos(layout.angle - Math.PI / 2);
@@ -116,11 +116,13 @@ function addVirtualWallNodes(root: LayoutModel) {
     let tempVirtualNode!: LayoutModel;
     for (let i = n.layoutDepth + 1; i <= totalDepth; i++) {
       if (!tempVirtualNode) {
-        tempVirtualNode = GraphFactory.createModel({ name: '', path: 'virt', nestLevel: i }, 0, n, 'virtual');
+        tempVirtualNode = GraphFactory.createModel({ name: '', path: 'virt' }, 0, n, n.depthData,'virtual');
+        tempVirtualNode.layoutDepth = i;
         n.layoutChildren.push(tempVirtualNode);
         continue;
       }
-      const c = GraphFactory.createModel({ name: '', path: 'virt', nestLevel: i }, 0, tempVirtualNode, 'virtual');
+      const c = GraphFactory.createModel({ name: '', path: 'virt' }, 0, tempVirtualNode, tempVirtualNode.depthData,'virtual');
+      c.layoutDepth = i;
       tempVirtualNode.layoutChildren.push(c);
       tempVirtualNode = c;
     }

@@ -1,7 +1,7 @@
-import { LayoutModel } from '../types.ts';
+import { LayoutModel } from '../graph/types.ts';
 import { ProcessEjects } from './tree-ejector.ts';
-import { GraphFactory } from '../graph-factory.ts';
 import { eachBefore, TidyTree } from './tidy-tree.ts';
+import { GraphFactory } from '../graph/graph-factory.ts';
 
 // todo turn to classes
 export function Layout(root: LayoutModel) {
@@ -30,10 +30,11 @@ export function Layout(root: LayoutModel) {
 }
 
 function BuildRoot(node: LayoutModel): LayoutModel {
-  const root = GraphFactory.createModel({ name: node.name, path: node.idPath, nestLevel: 0 }, 0, null, node.type);
-  root.parent = GraphFactory.createModel({} as any, 0, null);
+  const root = GraphFactory.createModel({ name: node.name, path: node.idPath }, 0, null, node.depthData, node.type);
+  root.layoutDepth = 0;
+  root.parent = GraphFactory.createModel({} as any, 0, null, -1);
+  root.depthData = node.depthData;
   root.parent!.type = 'virtual';
-  root.parent!.depthData = root.parent!.layoutDepth = -1;
   root.parent!.childrenData = [root];
   root.isRoot = true;
   node.childrenData.forEach(child => {
@@ -42,6 +43,7 @@ function BuildRoot(node: LayoutModel): LayoutModel {
     child.parent = root;
   });
   eachBefore(root, (child) => {
+    child.resetLayoutData();
     child.layoutDepth = child.parent ? child.parent.layoutDepth + 1 : 0;
   });
   node.ejectRoot = root;

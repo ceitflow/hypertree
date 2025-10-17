@@ -2,7 +2,7 @@ import { Graph } from '../graph/graph.ts';
 import { createEngine } from './engine.ts';
 import { LayoutModel } from '../graph/types.ts';
 import { drawLinkGraphics } from './draw-link.ts';
-import { CreateViewport, ScreenType } from '../screen';
+import { CreateViewport, ScreenType } from './screen';
 import { GraphFactory } from '../graph/graph-factory.ts';
 import { Application, BitmapText, Container, Graphics } from 'pixi.js';
 
@@ -56,10 +56,10 @@ export class Paper {
 
         stack.push(...node.layoutChildren);
 
-        if (node.ejectRoot && (node.idPath.startsWith('src/app/accflow') || node.idPath.startsWith('src/app/shareholders'))) {
+        if (node.ejectRoot && (node.idPath.startsWith(''))) {
           const nestedContainer = recursion(node.ejectRoot);
           const length = Math.hypot(node.layout.radialX, node.layout.radialY); // same as sqrt(x*x + y*y)
-          const newLength = length * 2;
+          const newLength = length * 3;
           nestedContainer.x = (node.layout.radialX / length) * newLength;
           nestedContainer.y = (node.layout.radialY / length) * newLength;
           container.addChild(nestedContainer);
