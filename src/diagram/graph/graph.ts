@@ -1,5 +1,6 @@
 import { LayoutFactory } from './layout/layout-factory.ts';
 import { IdPath, NodeModel, ProgramGraph, RadialModel } from './types.ts';
+import { Radius } from './layout/tidy-tree.ts';
 
 type GraphModel = {
   rootRadialId: IdPath;
@@ -28,8 +29,9 @@ export class Graph {
   }
 
   createRadialWithChildren(root: NodeModel, parentNode: NodeModel | null): RadialModel {
-    const radialRoot = LayoutFactory.createRadial(root, parentNode, { x: root.polarX, y: root.polarY });
+    const radial = LayoutFactory.createRadial(root, parentNode, { x: root.polarX, y: root.polarY });
 
+    let totalDepth = 0;
     const stack = [root];
     while (stack.length) {
       const node = stack.pop()!;
@@ -39,7 +41,8 @@ export class Graph {
         const child = LayoutFactory.createNode(ref, id, node.radialId, node);
         node.children.push(child);
         stack.push(child);
-        radialRoot.children.set(child.id, child);
+        radial.children.set(child.id, child);
+        if (child.depth > totalDepth) totalDepth = child.depth;
       };
 
       switch (node.ref.type) {
@@ -55,7 +58,9 @@ export class Graph {
           break;
       }
     }
-    this.model!.radialsMap.set(radialRoot.rootId, radialRoot);
-    return radialRoot;
+
+    this.model!.radialsMap.set(radial.rootId, radial);
+    radial.radius = radial.selfRadius = Radius(totalDepth);
+    return radial;
   }
 }

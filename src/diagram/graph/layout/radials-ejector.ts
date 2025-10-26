@@ -48,18 +48,15 @@ export function ProcessEjects(radial: RadialModel): NodeModel[] {
   console.log('\n');
 
   // mark ejects and pull them to the last depth
-  // todo add virtual nodes for layout
-  /*const newTotalDepth = depthEntry.depth;
+  const newTotalDepth = depthEntry.depth;
   for (const node of Array.from(ejectedNodesMap.values())) {
     let temp = node;
     for (let i = node.depth + 1; i < newTotalDepth; i++) {
-      const ejected = LayoutFactory.createNode(temp.ref, '', temp.radialId, temp, {
-        isEjected: { ejectedNodeId: node.id },
-      });
-      temp.children = [ejected];
-      temp = ejected;
+      const virtual = LayoutFactory.createNode(temp.ref, '', temp.radialId, temp, { isVirtual: true});
+      temp.children = [virtual];
+      temp = virtual;
     }
-  }*/
+  }
   return Array.from(ejectedNodesMap);
 }
 

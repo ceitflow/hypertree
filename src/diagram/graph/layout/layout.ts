@@ -1,6 +1,7 @@
 import { Graph } from '../graph.ts';
-import { ProcessEjects } from './radials-ejector.ts';
 import { LayoutFactory } from './layout-factory.ts';
+import { RadialsLayout } from './radials-layout.ts';
+import { ProcessEjects } from './radials-ejector.ts';
 import { eachBefore, TidyTree } from './tidy-tree.ts';
 
 export function Layout(graph: Graph) {
@@ -30,14 +31,7 @@ export function Layout(graph: Graph) {
     /* Rerun layout and calculate radial positions this time */
     eachBefore(root, c => c.resetLayout());
     TidyTree(root, { mode: 'radial' });
-
-    radial.ejectedRadials.forEach(e => {
-      const p = e.parentNode!;
-      const length = Math.hypot(p.polarX, p.polarY); // same as sqrt(x*x + y*y)
-      const newLength = length * 5;
-      e.x = p.polarX / length * newLength;
-      e.y = p.polarY / length * newLength;
-    })
-    // todo layout ejects around root radial
   }
+
+  RadialsLayout(root);
 }

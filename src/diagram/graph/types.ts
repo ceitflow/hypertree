@@ -16,6 +16,8 @@ export type RadialModel = {
   ejectedRadials: Map<IdPath, RadialModel>;
   x: number;
   y: number;
+  radius: number; // including ejectedRadials
+  selfRadius: number;
 };
 
 export type NodeModel = {

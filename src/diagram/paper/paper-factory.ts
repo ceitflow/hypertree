@@ -32,20 +32,21 @@ export class PaperFactory {
         fill: '#ffb976', // altColor ? '#ffb976' : '#f5f5f5',
       },
     });
-    bitmapFontText.anchor = angle < Math.PI === !isDir ? 0 : { x: 1, y: 0 }; // if d.angle less than half circle and no children
+    const adjAngle = angle + Math.PI / 2;
+    bitmapFontText.anchor = adjAngle < Math.PI === !isDir ? 0 : { x: 1, y: 0 }; // if d.angle less than half circle and no children
     bitmapFontText.x = polarX;
     bitmapFontText.y = polarY + (isDir ? -6 : -6);
-    bitmapFontText.angle = (angle * 180) / Math.PI - 90 + (angle >= Math.PI ? 180 : 0);
+    bitmapFontText.angle = (adjAngle * 180) / Math.PI - 90 + (adjAngle >= Math.PI ? 180 : 0);
 
     return bitmapFontText;
   }
 
-  static createLink({ source, target }: LinkModel): Graphics {
+  static createLink(sourceX: number, sourceY: number, targetX: number, targetY: number): Graphics {
     const linkGraphic = new Graphics();
     const ctx = this.context(linkGraphic);
 
-    ctx.moveTo(source.polarX, source.polarY);
-    ctx.lineTo(target.polarX, target.polarY);
+    ctx.moveTo(sourceX, sourceY);
+    ctx.lineTo(targetX, targetY);
     return linkGraphic;
   }
 
