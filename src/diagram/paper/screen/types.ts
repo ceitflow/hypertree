@@ -12,7 +12,7 @@ export type BBox = {
   y: number;
   width: number;
   height: number;
-}
+};
 
 export type ScreenConfig = {
   viewportPadding: number; // 0 - 1.0 percentage of current viewport to use as padding

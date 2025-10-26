@@ -35,10 +35,13 @@ import { Analyzer } from '../util';
 import { FileCache } from './file-cache';
 import { DeclarationNode } from './declaration.type';
 import { ExportFactory } from './declaration-factory';
-import { FileEmptyImport, FileImportToken, FileNode, FileReExportToken, IdPath } from './file.type';
+import { FileEmptyImport, FileImportToken, File, FileReExportToken, IdPath } from './file.type';
+import path from 'node:path';
 
 export class FileBuilder {
   id: IdPath; // path relative to options.src
+  name: string;
+  depth: number;
   cache: FileCache;
   isExternalFile = false; // node_modules
   areReferencesResolved = false;
@@ -52,6 +55,9 @@ export class FileBuilder {
 
   constructor(file: SourceFile, analyzer: Analyzer) {
     this.id = analyzer.getRelativePath(file.fileName);
+    const idPathSplit = this.id.split(path.sep);
+    this.name = idPathSplit.pop()!;
+    this.depth = idPathSplit.length - 1;
     this.isExternalFile = analyzer.isExternalFile(file);
     this.cache = new FileCache(analyzer);
 
@@ -148,13 +154,16 @@ export class FileBuilder {
     const alias = init && isIdentifier(init) && analyzer.findIdentifierAliasImportPath(init);
 
     switch (name.kind) {
-      case SyntaxKind.Identifier:
-        alias ? this.cache.addReExport(name, alias.resolvedPath, alias.isExternal)
-            : this.cache.addExport(name);
+      case SyntaxKind.Identifier:{
+        if (alias)
+          this.cache.addReExport(name, alias.resolvedPath, alias.isExternal);
+        else
+          this.cache.addExport(name);
         break;
+      }
 
       case SyntaxKind.ArrayBindingPattern:
-      case SyntaxKind.ObjectBindingPattern:
+      case SyntaxKind.ObjectBindingPattern:{
         // const [one] = [1,2]
         // const { d } = obj;
         const stack: (ObjectBindingPattern | ArrayBindingPattern)[] = [name];
@@ -167,11 +176,14 @@ export class FileBuilder {
               stack.push(el.name);
               return;
             }
-            alias ? this.cache.addReExport(el.name, alias.resolvedPath, alias.isExternal)
-                : this.cache.addExport(el.name);
+            if (alias)
+              this.cache.addReExport(el.name, alias.resolvedPath, alias.isExternal);
+            else
+              this.cache.addExport(el.name);
           });
         }
         break;
+      }
     }
   }
 
@@ -216,9 +228,11 @@ export class FileBuilder {
     this.cache.addExport(node.expression as any); // todo
   }
 
-  build(): FileNode {
+  build(): File {
     return {
       id: this.id,
+      name: this.name,
+      depth: this.depth,
       loc: 0,
       extension: '',
       isExternalFile: this.isExternalFile || undefined,

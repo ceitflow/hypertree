@@ -1,9 +1,9 @@
 import {
-  DirectoryMapItem,
+  Directory,
   EmptyImportFactory,
   ExternalSourceFile,
   FileBuilder,
-  FileNode,
+  File,
   IdPath,
   ImportFactory,
   ProgramGraph,
@@ -17,15 +17,17 @@ export class AstGraph {
   graph: ProgramGraph;
 
   constructor(files: SourceFile[], analyzer: Analyzer) {
+    const srcPath = analyzer.getProgramSrcPath();
+    const srcName = srcPath.split(path.sep).pop()!;
     this.graph = {
-      name: '',
-      files: {},
-      dirGraph: {
-        name: analyzer.getProgramSrcPath(),
+      name: srcName,
+      filesMap: {},
+      root: {
+        name: srcName,
         dirs: [],
         files: [],
-        nestLevel: 0,
-        path: '',
+        depth: 0,
+        path: srcPath,
       },
     };
     const filesBuilder = new Map<IdPath, FileBuilder>();
@@ -48,10 +50,10 @@ export class AstGraph {
     for (const extFile of externalFiles.values()) createFile(extFile.file, extFile.packageName);
 
     console.log('3. calculate reexports from other files \n \n');
-    for (let node of filesBuilder.values()) this.buildReExports(node, filesBuilder, analyzer);
+    for (const node of filesBuilder.values()) this.buildReExports(node, filesBuilder, analyzer);
 
     console.log('4. calculate imports from other files \n \n');
-    for (let graphNode of filesBuilder.values()) {
+    for (const graphNode of filesBuilder.values()) {
       graphNode.cache.cachedImports.forEach(({ node, resolvedPath }) => {
         if (!node.importClause) {
           graphNode.fileEmptyImports.push(EmptyImportFactory(node, analyzer));
@@ -66,7 +68,7 @@ export class AstGraph {
     // build files and dirGraph
     for (const file of filesBuilder.values()) {
       const builtFile = file.build();
-      this.graph.files[builtFile.id] = builtFile;
+      this.graph.filesMap[builtFile.id] = builtFile;
       this.addToDirectoryGraph(builtFile);
     }
   }
@@ -119,34 +121,38 @@ export class AstGraph {
     }
   }
 
-  private addToDirectoryGraph(file: FileNode): void {
+  private addToDirectoryGraph(file: File): void {
     const osSeparator = path.sep;
     const segments = file.id.split(osSeparator); // unix or windows paths
-    let temp: DirectoryMapItem = this.graph.dirGraph;
+    let temp: Directory = this.graph.root;
 
     if (file.isExternalFile) {
-      // gets reference to node_modules
-      const nodemodules = this.graph.dirGraph.dirs?.find(c => c.name === 'node_modules');
+      // gets reference to node_modules, create one if doesn't exist
+      const nodemodules = this.graph.root.dirs?.find(c => c.name === 'node_modules');
       if (!nodemodules) {
-        temp = { name: 'node_modules', dirs: [], files: [], nestLevel: 1, path: 'node_modules' };
-        this.graph.dirGraph.dirs!.push(temp);
+        temp = { name: 'node_modules', dirs: [], files: [], depth: 1, path: 'node_modules' };
+        this.graph.root.dirs!.push(temp);
       } else temp = nodemodules;
     }
+    // no folders in path
     if (segments.length === 1) {
-      temp.files!.push({ name: segments[segments.length - 1], nestLevel: segments.length, path: file.id });
+      temp.files!.push(file);
       return;
     }
+    // create folder for each path segment
     segments.slice(0, -1).forEach((seg, idx) => {
-      let existing = temp.dirs?.find(child => child.name === seg);
-      if (!existing) {
+      let exists = temp.dirs?.find(child => child.name === seg);
+      if (!exists) {
         if (!temp.dirs) temp.dirs = [];
-        existing = { name: seg, nestLevel: idx + 1, path: segments.slice(0, idx + 1).join(osSeparator) };
-        temp.dirs.push(existing);
+        exists = { name: seg, depth: idx + 1, path: segments.slice(0, idx + 1).join(osSeparator) };
+        temp.dirs.push(exists);
       }
-      temp = existing;
+      temp = exists;
     });
-    if (!temp.files) temp.files = [];
-    temp.files.push({ name: segments[segments.length - 1], nestLevel: segments.length, path: file.id });
+    if (!temp.files) {
+      temp.files = [];
+    }
+    temp.files.push(file);
   }
 
   toJSON(): string {

@@ -16,8 +16,7 @@ import { createProgram, findConfigFile, parseJsonConfigFileContent, readConfigFi
   try {
     const srcPath = args.src;
     const configPath = findConfigFile(srcPath, sys.fileExists);
-    if (!configPath)
-      return console.warn(`Unable to find source files and tsconfig in: ${srcPath}, stopping`);
+    if (!configPath) return console.warn(`Unable to find source files and tsconfig in: ${srcPath}, stopping`);
 
     const configFile = readConfigFile(configPath, sys.readFile);
     const compilerOptions = parseJsonConfigFileContent(configFile.config, sys, srcPath);
@@ -26,16 +25,15 @@ import { createProgram, findConfigFile, parseJsonConfigFileContent, readConfigFi
     const program = createProgram(fileNames, options);
 
     const astGraph = new AstGraph(
-        fileNames.map(f => program.getSourceFile(f)!),
-        new Analyzer(srcPath, program)
+      fileNames.map(f => program.getSourceFile(f)!),
+      new Analyzer(srcPath, program)
     );
 
-    const f = Object.values(astGraph.graph.files);
-    const ef = f.filter(f => f.isExternalFile);
-    console.log(`outputting json graph (${f.length - ef.length} files + ${ef.length} external)`)
+    const allFiles = Object.values(astGraph.graph.filesMap);
+    const extFiles = allFiles.filter(f => f.isExternalFile);
+    console.log(`outputting json graph (${allFiles.length - extFiles.length} files + ${extFiles.length} external)`);
     writeFileSync(args.output + '/output.json', astGraph.toJSON());
   } catch (err) {
     console.error(err);
   }
 })();
-

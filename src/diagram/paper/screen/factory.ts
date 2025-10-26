@@ -5,7 +5,7 @@ type ResizeCallback = (bbox: DOMRectReadOnly) => void;
 
 export function CreateViewport(engine: Application, scrollableContainer: Container) {
   const screen = Screen((x: number, y: number, scaleX: number, scaleY: number) => {
-    scrollableContainer.position.set(x, y)
+    scrollableContainer.position.set(x, y);
     scrollableContainer.scale.set(scaleX, scaleY);
   });
 

@@ -8,29 +8,25 @@ export type ExternalSourceFile = {
 
 export type IdPath = string; // path relative to options.src OR package name if external
 
-export type DirectoryMapItem = {
-  name: string,
-  dirs?: DirectoryMapItem[];
-  files?: FileMapItem[];
-  path: IdPath;
-  nestLevel: number;
-};
-
-export type FileMapItem = {
-  name: string,
-  path: IdPath;
-  nestLevel: number;
-}
-
 export type ProgramGraph = {
   name: string;
   // referencedExternalPackages: string[]
-  files: { [id: IdPath]: FileNode };
-  dirGraph: DirectoryMapItem; // for layout
+  filesMap: { [id: IdPath]: File }; // not needed?
+  root: Directory;
 }
 
-export type FileNode = {
+export type Directory = {
+  name: string,
+  dirs?: Directory[];
+  files?: File[];
+  path: IdPath;
+  depth: number;
+};
+
+export type File = {
   id: IdPath;
+  name: string;
+  depth: number;
   isExternalFile?: true; // node_modules
   loc: number;
   extension: string; // ts js etc.
@@ -40,6 +36,7 @@ export type FileNode = {
   imports: FileImportToken[]; // add importGroups (for knowing what was in each import together)
   reexports: FileReExportToken[];
 }
+
 export type FileEmptyImport = {
   // import from './styles.css'
   type: 'empty';

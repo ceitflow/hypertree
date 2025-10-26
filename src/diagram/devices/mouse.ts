@@ -23,8 +23,7 @@ export function Mouse({ drag, zoom, inertia, invert }: InputController) {
       // }
     },
     mousemove: (e: MouseEvent) => {
-      if (isDragging)
-        drag.move(e.clientX, e.clientY);
+      if (isDragging) drag.move(e.clientX, e.clientY);
       // todo if isCellDragging: autoscroll
       /*
         if cell dragging near Viewport border (screen.isViewportBorder(point))

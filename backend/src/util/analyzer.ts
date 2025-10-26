@@ -17,7 +17,7 @@ import {
   SymbolFlags,
   TypeChecker,
 } from 'typescript';
-import path from "node:path"
+import path from 'node:path';
 import { TypeAnalyzer } from './type-analyzer';
 
 // 1. getPath
@@ -45,8 +45,7 @@ export class Analyzer {
   }
 
   getRelativePath(filePath: string): string {
-    const p = path.relative(this.srcPath, filePath);
-    return p;
+    return path.relative(this.srcPath, filePath);
   }
 
   getResolvedImportPath(node: ImportDeclaration | ExportDeclaration): { resolvedPath: string, isExternal?: true } {

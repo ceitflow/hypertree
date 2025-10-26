@@ -1,63 +1,61 @@
-import { GraphFactory } from './graph-factory.ts';
-import { RawProgramGraph, GraphModel, RawFile, RawFileNode, LayoutModel } from './types.ts';
+import { LayoutFactory } from './layout/layout-factory.ts';
+import { IdPath, NodeModel, ProgramGraph, RadialModel } from './types.ts';
+
+type GraphModel = {
+  rootRadialId: IdPath;
+  radialsMap: Map<IdPath, RadialModel>;
+  program: ProgramGraph;
+};
 
 export class Graph {
-  model: GraphModel = {
-    root: null, // recursive tree
-  };
+  model: GraphModel | null = null;
 
-  parseJson(program: RawProgramGraph): void {
-    const json = program.dirGraph.dirs!.find(c => c.name === 'src')!.dirs!.find(c => c.name === 'app')!;
-    const result = GraphFactory.createModel(json, 0, null, 0);
-    result.parent = GraphFactory.createModel({} as any, 0, null, -1);
-    result.parent!.type = 'virtual';
-    result.parent!.childrenData = [result];
-
-    const stack = [json];
-    json._modelRef = result;
-    this.model.root = result;
-
-    while (stack.length) {
-      const rawNode = stack.pop()!;
-      const modelRef = rawNode._modelRef!;
-      const childDirs = rawNode.dirs || [];
-      const childrenCount = modelRef.childrenData.length;
-
-      for (let i = 0; i < childDirs.length; i++) {
-        const childDir = childDirs[i];
-        const childModel = GraphFactory.createModel(childDir, childrenCount + i, modelRef, modelRef.depthData + 1);
-        if (childDir.files && childDir.name !== 'node_modules') {
-          childDir.files.forEach((f, idx) => {
-            const childFile = this.createFileModel(f, program.files[f.path], idx, childModel);
-            childModel.childrenData.push(childFile);
-          });
-        }
-        childDir._modelRef = childModel;
-        modelRef.childrenData.push(childModel);
-        stack.push(childDir);
-      }
-      modelRef.layoutChildren = [...modelRef.childrenData];
-    }
+  getRootRadial(): RadialModel | null {
+    if (this.model) return this.model.radialsMap.get(this.model.rootRadialId)!;
+    return null;
   }
 
-  private createFileModel(data: RawFile, node: RawFileNode, index: number, parent: LayoutModel): LayoutModel {
-    const file = GraphFactory.createModel(data, index, parent, parent.depthData + 1,'file');
+  initialize(program: ProgramGraph) {
+    const data = program.root.dirs!.find(c => c.name === 'src')!.dirs!.find(c => c.name === 'app')!; // todo for testing only
+    this.model = {
+      rootRadialId: data.path,
+      radialsMap: new Map(),
+      program,
+    };
+    const radialId = data.path;
+    const root: NodeModel = LayoutFactory.createNode({ type: 'directory', node: data }, data.path, radialId, null);
+    this.createRadialWithChildren(root, null);
+  }
 
-    node.exports.forEach((e, i) => {
-      const declaration = GraphFactory.createModel(
-        {
-          name: e.name,
-          path: `${data.path}//${e.name}`,
-        },
-        i,
-        file,
-        file.depthData + 1,
-        'declaration'
-      );
-      file.childrenData.push(declaration);
-    });
-    file.layoutChildren = [...file.childrenData];
+  createRadialWithChildren(root: NodeModel, parentNode: NodeModel | null): RadialModel {
+    const radialRoot = LayoutFactory.createRadial(root, parentNode, { x: root.polarX, y: root.polarY });
 
-    return file;
+    const stack = [root];
+    while (stack.length) {
+      const node = stack.pop()!;
+
+      // helper function
+      const addChild = (ref: NodeModel['ref'], id: IdPath) => {
+        const child = LayoutFactory.createNode(ref, id, node.radialId, node);
+        node.children.push(child);
+        stack.push(child);
+        radialRoot.children.set(child.id, child);
+      };
+
+      switch (node.ref.type) {
+        case 'directory':
+          node.ref.node.dirs?.forEach(dir => addChild({ type: 'directory', node: dir }, dir.path));
+          node.ref.node.files?.forEach(file => addChild({ type: 'file', node: file }, file.id));
+          break;
+        case 'file':
+          node.ref.node.exports.forEach(declaration => {
+            const id = node.id + '-' + declaration.name;
+            addChild({ type: 'declaration', node: declaration }, id);
+          });
+          break;
+      }
+    }
+    this.model!.radialsMap.set(radialRoot.rootId, radialRoot);
+    return radialRoot;
   }
 }

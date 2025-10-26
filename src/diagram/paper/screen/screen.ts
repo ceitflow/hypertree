@@ -107,7 +107,7 @@ export function Screen(updateTransform: UpdateTransform) {
   // );
 
   const { frameStart } = state;
-  console.log(state)
+  console.log(state);
 
   return {
     controller,

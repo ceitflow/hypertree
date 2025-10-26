@@ -1,61 +1,58 @@
-import { DirectoryMapItem, FileMapItem, FileNode, ProgramGraph } from '../../../backend/src/files';
+import * as ast from '../../../backend/src/files/file.type';
+import { DeclarationNode } from '../../../backend/src/files/declaration.type.ts';
 
-// Augment json type with '_modelRef' for easier parsing
-export type RawProgramGraph = Omit<ProgramGraph, 'dirGraph'> & {
-  dirGraph: RawDir;
+// reexported types from backend
+export type Directory = ast.Directory;
+export type File = ast.File;
+export type Declaration = DeclarationNode;
+export type ProgramGraph = ast.ProgramGraph;
+export type IdPath = ast.IdPath;
+
+// layout data is created in the frontend
+export type RadialModel = {
+  rootId: IdPath; // id of root LayoutModel
+  parentNode: NodeModel | null;
+  children: Map<IdPath, NodeModel>;
+  ejectedRadials: Map<IdPath, RadialModel>;
+  x: number;
+  y: number;
 };
 
-export type RawDir = Omit<DirectoryMapItem, 'dirs'> & {
-  _modelRef?: LayoutModel;
-  dirs?: RawDir[];
-};
-
-export type RawFileNode = FileNode;
-export type RawFile = FileMapItem;
-
-export type LayoutModel = {
-  idPath: string;
+export type NodeModel = {
+  id: IdPath;
   name: string;
-  type: 'dir' | 'file' | 'declaration' | 'virtual';
-  parent: LayoutModel | null;
-  depthData: number; // original depth
-  childrenData: LayoutModel[]; // original children data
-  isRoot: boolean;
+  radialId: IdPath;
+  readonly ref: // underlying data that this layout represents
+  { type: 'directory'; node: Directory } | { type: 'file'; node: File } | { type: 'declaration'; node: Declaration };
+
+  isVirtual: boolean;
   isEjected: boolean;
-  ejectRoot: LayoutModel | null;
-  layoutChildren: LayoutModel[]; // actual children rendered in layout
-  layoutDepth: number; // depth in actual layout
-  layout: {
-    x: number;
-    y: number; // radius
-    totalWidth: number;
-    angle: number; // x
-    radialX: number;
-    radialY: number;
-    angleAdjustment: number;
 
-    // tidy tree algorithm data
-    Ancestor: LayoutModel | null; // default ancestor
-    ancestor: LayoutModel; // ancestor
-    prelim: number;
-    mod: number;
-    change: number;
-    shift: number;
-    thread: LayoutModel | null;
-    i: number; // index of child in parent.children
-  };
-  resetLayoutData: () => void;
-}
+  parent: NodeModel | null;
+  children: NodeModel[]; // todo in paper check if child.radialId is from different radial
+  depth: number; // dynamically changed depth
+  i: number; // index of child in parent.children
 
-export type LinkModel = { // GroupLink and Link
-  source: LayoutModel,
-  target: LayoutModel,
-}
+  x: number;
+  y: number;
+  Ancestor: NodeModel | null; // default ancestor
+  ancestor: NodeModel; // ancestor
+  prelim: number;
+  mod: number;
+  change: number;
+  shift: number;
+  thread: NodeModel | null;
+  angle: number;
+  angleAdjustment: number;
+  polarX: number;
+  polarY: number;
+  totalWidth: number;
 
-export type GraphModel = {
-  root: null | LayoutModel;
-  // mapByDepth;
-  // linksMap
-  // nodesMap
-  // linksBetweenNodesMap  // A --(3 links)--> B
-}
+  resetLayout: () => void;
+};
+
+export type LinkModel = {
+  // GroupLink and Link
+  source: NodeModel;
+  target: NodeModel;
+};

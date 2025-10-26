@@ -34,7 +34,7 @@ body {
     top: 0;
     bottom: 0;
     z-index: 1;
-    background-color: rgba(255, 255, 255, .35);
+    background-color: rgba(255, 255, 255, 0.35);
     padding: 16px;
     border-radius: 16px 0 0 16px;
     margin: 4px;
@@ -42,7 +42,7 @@ body {
     flex-direction: column;
     font-size: 10px;
     width: 350px;
-    opacity: .5;
+    opacity: 0.5;
   }
 
   #viewport {
@@ -56,4 +56,3 @@ body {
     }
   }
 }
-

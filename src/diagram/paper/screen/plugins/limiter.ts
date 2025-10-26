@@ -6,7 +6,7 @@ export function ExtentLimiter(dx: number, dy: number, t: TransformType, view: Re
   const x = t[0] + dx;
   const y = t[1] + dy;
   const scale = t[2];
-  if (Number.isNaN(scale)) throw new Error('isNaN(scale)')
+  if (Number.isNaN(scale)) throw new Error('isNaN(scale)');
 
   const dstToLeft = x / scale - extent[0];
   const dstToTop = y / scale - extent[1];

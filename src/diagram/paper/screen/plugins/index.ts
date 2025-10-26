@@ -1,2 +1,2 @@
 export * from './ease.ts';
-export * from './utils.ts'
+export * from './utils.ts';

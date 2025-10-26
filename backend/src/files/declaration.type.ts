@@ -1,4 +1,4 @@
-export type DeclarationNode = { // its what is declared in FileNode
+export type DeclarationNode = { // this is what is declared in FileNode
   name: string;
   loc: number;
   referencedImportTokens: string[];
