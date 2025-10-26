@@ -1,8 +1,9 @@
+import { NodeModel } from '../graph/types.ts';
 import { BitmapText, Graphics } from 'pixi.js';
-import { LinkModel, NodeModel } from '../graph/types.ts';
+import { Graph } from '../graph/graph.ts';
 
 export class PaperFactory {
-  static createCircle(model: NodeModel) {
+  static createCircle(model: NodeModel, graph: Graph) {
     const { ref, polarX, polarY, name } = model;
 
     let color: string;
@@ -18,7 +19,7 @@ export class PaperFactory {
     circle.y = polarY;
     circle.label = name;
     circle.interactive = true;
-    circle.on('pointerdown', e => console.log(`w: ${model.totalWidth}`, model));
+    circle.on('pointerdown', e => console.log(`w: ${model.totalWidth}`, model, graph.model!.radialsMap.get(model.radialId)));
     return circle;
   }
 

@@ -14,8 +14,9 @@ export type RadialModel = {
   parentNode: NodeModel | null;
   children: Map<IdPath, NodeModel>;
   ejectedRadials: Map<IdPath, RadialModel>;
-  x: number;
-  y: number;
+  x: number; // relative to parent
+  y: number; // relative to parent
+  depth: number; // total depth
   radius: number; // including ejectedRadials
   selfRadius: number;
 };

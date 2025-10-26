@@ -60,6 +60,7 @@ export class Graph {
     }
 
     this.model!.radialsMap.set(radial.rootId, radial);
+    radial.depth = totalDepth;
     radial.radius = radial.selfRadius = Radius(totalDepth);
     return radial;
   }

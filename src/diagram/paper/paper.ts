@@ -30,22 +30,13 @@ export class Paper {
     const root = this.graph.getRootRadial();
     if (!root) return;
 
-    let rootContainer!: Container;
-    const stack = [root];
-    while (stack.length) {
-      const radialData = stack.pop()!;
-      const container = this.renderRadial(radialData);
-      if (!rootContainer) rootContainer = container;
-      else rootContainer.addChild(container);
-      if (radialData.parentNode) {
-        const {x, y} = this.graph.model!.radialsMap.get(radialData.parentNode.radialId)!;
-        container.x += x;
-        container.y += y;
-      }
-      radialData.ejectedRadials.forEach(child => {
-        stack.push(child);
-      });
+    const recursion = (data: RadialModel, parentContainer: Container | null) => {
+      const container = this.renderRadial(data);
+      parentContainer?.addChild(container);
+      data.ejectedRadials.forEach(ejected => recursion(ejected, container));
+      return container;
     }
+    const rootContainer = recursion(root, null);
 
     // center in viewport
     const dx = rootContainer.width / 2;
@@ -79,7 +70,7 @@ export class Paper {
           PaperFactory.createLink(link.source.polarX, link.source.polarY, link.target.polarX, link.target.polarY)
         )
       );
-      nodesContainer.addChild(PaperFactory.createCircle(node));
+      nodesContainer.addChild(PaperFactory.createCircle(node, this.graph));
       textContainer.addChild(PaperFactory.createLabel(node));
 
       stack.push(...node.children);

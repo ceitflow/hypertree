@@ -6,7 +6,7 @@ import { LayoutFactory } from './layout-factory.ts';
 // Later on create a radial tree layout. The layout’s first dimension (x) is the angle, while the second (y) is the radius.
 export const SEPARATION = 12;
 const RADIUS_STEP = 200;
-const RADIUS_OFFSET = 0;
+const RADIUS_OFFSET = 100;
 
 type Options = {
   mode?: 'horizontal' | 'radial';

@@ -29,6 +29,7 @@ export function Layout(graph: Graph) {
     });
 
     /* Rerun layout and calculate radial positions this time */
+    // todo here can compute auto radius for best layout look
     eachBefore(root, c => c.resetLayout());
     TidyTree(root, { mode: 'radial' });
   }

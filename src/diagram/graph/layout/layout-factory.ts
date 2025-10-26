@@ -68,6 +68,7 @@ export class LayoutFactory {
       ejectedRadials: new Map(),
       x: 0,
       y: 0,
+      depth: 0,
       radius: 0,
       selfRadius: 0,
       ...opt
