@@ -7,14 +7,14 @@ export class PaperFactory {
     const { ref, polarX, polarY, name } = model;
 
     let color: string;
-    if (ref.type === 'directory') color = '0xcfcfcf';
+    if (ref.type === 'directory') color = '0xafafaf';
     else if (ref.type === 'file') color = '0xe24c00';
     else color = '0x277DFF';
     if (model.isEjected) color = '0x00FF00';
     if (model.isVirtual) color = '0x00FF00'; // for debugging only, not going to be part of graph
 
-    const isRoot = model.radialId === model.id;
-    const circle = new Graphics().circle(0, 0, isRoot ? 30 : 6).fill(color);
+    const radius = model.radialId === model.id ? model.diameter : model.diameter / 2;
+    const circle = new Graphics().circle(0, 0, radius).fill(color);
     circle.x = polarX;
     circle.y = polarY;
     circle.label = name;

@@ -2,7 +2,7 @@ import { Graph } from '../graph.ts';
 import { LayoutFactory } from './layout-factory.ts';
 import { RadialsLayout } from './radials-layout.ts';
 import { ProcessEjects } from './radials-ejector.ts';
-import { eachBefore, TidyTree } from './tidy-tree.ts';
+import { eachBefore, Radius, TidyTree } from './tidy-tree.ts';
 
 export function Layout(graph: Graph) {
   const root = graph.getRootRadial();
@@ -29,8 +29,14 @@ export function Layout(graph: Graph) {
     });
 
     /* Rerun layout and calculate radial positions this time */
+    let newMaxDepth = 0;
+    eachBefore(root, c => {
+      c.resetLayout();
+      newMaxDepth = Math.max(newMaxDepth, c.depth);
+    });
+    radial.depth = newMaxDepth;
+    radial.selfRadius = Radius(newMaxDepth);
     // todo here can compute auto radius for best layout look
-    eachBefore(root, c => c.resetLayout());
     TidyTree(root, { mode: 'radial' });
   }
 

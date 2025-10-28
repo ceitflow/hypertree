@@ -1,12 +1,28 @@
 import { NodeModel } from '../types.ts';
-import { LayoutFactory } from './layout-factory.ts';
+import { EjectNodeDiameter, LayoutFactory, NodeDiameter } from './layout-factory.ts';
 
 // Tree diagram using the Reingold-Tilford "tidy" algorithm
 // Computes the layout using Buchheim et al.'s algorithm.
 // Later on create a radial tree layout. The layout’s first dimension (x) is the angle, while the second (y) is the radius.
-export const SEPARATION = 12;
 const RADIUS_STEP = 200;
 const RADIUS_OFFSET = 100;
+
+export function Separation(a: NodeModel, b: NodeModel) {
+  const aSep = a.isEjected ? EjectNodeDiameter / 2 : NodeDiameter / 2;
+  const bSep = b.isEjected ? EjectNodeDiameter / 2 : NodeDiameter / 2;
+  return aSep + bSep;
+}
+
+export function Radius(depth: number): number {
+  if (depth < 0) throw new Error('depth must be a positive integer');
+  if (depth === 0) return 0;
+
+  const MinDepthDistance = 24;
+
+  let result = RADIUS_OFFSET;
+  for (let i = 0; i < depth; i++) result += Math.floor(Math.max(RADIUS_STEP * Math.pow(2 / 3, i), MinDepthDistance));
+  return result;
+}
 
 type Options = {
   mode?: 'horizontal' | 'radial';
@@ -29,17 +45,18 @@ export function TidyTree(root: NodeModel, opt: Options = {}) {
       executeShifts(v);
       const midpoint = (children[0].prelim + children[children.length - 1].prelim) / 2;
       if (leftSibling) {
-        v.prelim = leftSibling.prelim + separation(v, leftSibling);
+        v.prelim = leftSibling.prelim + Separation(v, leftSibling);
         v.mod = v.prelim - midpoint;
       } else {
         v.prelim = midpoint;
       }
     } else if (leftSibling) {
-      v.prelim = leftSibling.prelim + separation(v, leftSibling);
+      v.prelim = leftSibling.prelim + Separation(v, leftSibling);
     }
 
     if (v.parent) v.parent!.Ancestor = apportion(v, leftSibling, v.parent!.Ancestor || siblings[0]);
-    v.totalWidth = children.length ? children.reduce((acc, curr) => acc + curr.totalWidth, 0) : SEPARATION;
+    v.totalWidth =
+      children.length && !children[0].isVirtual ? children.reduce((acc, curr) => acc + curr.totalWidth, 0) : v.diameter;
   });
 
   // root.parent!.mod = -root.prelim; // edge case for root node to move it upward
@@ -70,7 +87,7 @@ export function TidyTree(root: NodeModel, opt: Options = {}) {
   });
 
   // final positions calculation
-  const sep = left === right ? 1 : separation(left, right); // extra separation to prevent overlaps on same levels (start and end nodes)
+  const sep = left === right ? 1 : Separation(left, right); // extra separation to prevent overlaps on same levels (start and end nodes)
   const fullWidth = right.x - left.x + sep;
   // console.log(`${root.name} leftmost: ${left.name}, rightmost: ${right.name}, fullWidth: ${fullWidth}`, map);
 
@@ -87,8 +104,10 @@ export function TidyTree(root: NodeModel, opt: Options = {}) {
 
     nodes.forEach(node => {
       if (opt.mode === 'radial') {
-        // const center = parent!.x;
-        // layout.angleAdjustment = ((layout.x - center) / ratio + center - layout.x) + parent!.angleAdjustment;
+        if (node.parent) {
+          const center = node.parent.x;
+          node.angleAdjustment = ((node.x - center) / ratio + center - node.x) + node.parent.angleAdjustment;
+        }
         node.angle = (node.x + node.angleAdjustment + tx) * kx - Math.PI / 2; // radians
         node.polarX = node.y * Math.cos(node.angle);
         node.polarY = node.y * Math.sin(node.angle);
@@ -136,18 +155,6 @@ function addVirtualWallNodes(root: NodeModel) {
   }
 }
 
-function separation(a: NodeModel, b: NodeModel) {
-  return SEPARATION;
-}
-
-export function Radius(depth: number): number {
-  if (depth < 0) throw new Error('depth must be a positive integer');
-  if (depth === 0) return 0;
-  let result = RADIUS_OFFSET;
-  for (let i = 0; i < depth; i++) result += Math.floor(Math.max(RADIUS_STEP * Math.pow(2 / 3, i), SEPARATION * 2));
-  return result;
-}
-
 // Computes all real x-coordinates by summing up the modifiers recursively.
 // The core of the algorithm. Here, a new subtree is combined with the
 // previous subtrees. Threads are used to traverse the inside and outside
@@ -186,7 +193,7 @@ function apportion(currentNode: NodeModel, leftSibling: NodeModel | null, defaul
         insideLeftModSum -
         insideRightNode.prelim -
         insideRightModSum +
-        separation(insideLeftNode, insideRightNode);
+        Separation(insideLeftNode, insideRightNode);
       if (shift > 0) {
         moveSubtree(nextAncestor(insideLeftNode, currentNode, defaultAncestor), currentNode, shift);
         insideRightModSum += shift;

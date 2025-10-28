@@ -3,6 +3,9 @@ import { NodeModel, RadialModel, IdPath } from '../types.ts';
 type NodeFactoryOpt = Partial<Omit<NodeModel, 'id' | 'radialId' | 'ref' | 'parent' | 'resetLayout'>>;
 type RadialFactoryOpt = Partial<Omit<RadialModel, 'rootId' | 'parentNode'>>;
 
+export const NodeDiameter = 12;
+export const EjectNodeDiameter = 24;
+
 export class LayoutFactory {
   static createNode(
     ref: NodeModel['ref'],
@@ -18,6 +21,7 @@ export class LayoutFactory {
       radialId,
       ref,
       i: parent ? parent.children.length : 0,
+      diameter: NodeDiameter,
       isVirtual: false,
       isEjected: false,
 
@@ -53,6 +57,10 @@ export class LayoutFactory {
         model.polarX = 0;
         model.polarY = 0;
         model.totalWidth = 0;
+      },
+      markAsEjected: () => {
+        model.isEjected = true;
+        model.diameter = EjectNodeDiameter;
       },
       ...opt,
     };

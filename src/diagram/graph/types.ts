@@ -28,6 +28,8 @@ export type NodeModel = {
   readonly ref: // underlying data that this layout represents
   { type: 'directory'; node: Directory } | { type: 'file'; node: File } | { type: 'declaration'; node: Declaration };
 
+  diameter: number;
+
   isVirtual: boolean;
   isEjected: boolean;
 
@@ -52,6 +54,7 @@ export type NodeModel = {
   totalWidth: number;
 
   resetLayout: () => void;
+  markAsEjected: () => void;
 };
 
 export type LinkModel = {

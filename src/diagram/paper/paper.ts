@@ -18,7 +18,7 @@ export class Paper {
     const graph = new Graph();
     const engine = await createEngine(host);
     const { width, height } = host.getBoundingClientRect();
-    const background = new Graphics({ interactive: true, eventMode: 'static', parent: engine.stage })
+    const background = new Graphics({ interactive: true, eventMode: 'dynamic', parent: engine.stage })
       .rect(0, 0, width, height)
       .fill('0x333');
     const paper = new Container({ parent: engine.stage });
@@ -33,7 +33,11 @@ export class Paper {
     const recursion = (data: RadialModel, parentContainer: Container | null) => {
       const container = this.renderRadial(data);
       parentContainer?.addChild(container);
-      data.ejectedRadials.forEach(ejected => recursion(ejected, container));
+      data.ejectedRadials.forEach(ejected => {
+        // const regex = /^src\/app\/(altinn|accflow(?:\/.*)?)$/; // todo for selectively rendering child radials
+        // if (regex.test(ejected.rootId)) recursion(ejected, container);
+        recursion(ejected, container);
+      });
       return container;
     }
     const rootContainer = recursion(root, null);
@@ -54,11 +58,12 @@ export class Paper {
     const textContainer = new Container({ label: 'text' });
     const nodesContainer = new Container({ label: 'nodes' });
     const container = new Container({
-      children: [linksContainer, textContainer, nodesContainer],
+      children: [linksContainer, nodesContainer, textContainer],
       label: radial.rootId,
       x: radial.x,
       y: radial.y,
     });
+    container.addChild(new Graphics().circle(0, 0, radial.radius).stroke(0xff0000)) // todo debug only
     const stack = [radial.children.get(radial.rootId)!];
 
     while (stack.length) {

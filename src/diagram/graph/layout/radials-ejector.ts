@@ -1,9 +1,9 @@
-import { LayoutFactory } from './layout-factory.ts';
+import { Radius, eachBefore } from './tidy-tree.ts';
 import { NodeModel, RadialModel } from '../types.ts';
-import { Radius, SEPARATION, eachBefore } from './tidy-tree.ts';
+import { EjectNodeDiameter, LayoutFactory } from './layout-factory.ts';
 
 export function ProcessEjects(radial: RadialModel): NodeModel[] {
-  console.log(`Processing Ejects for ${radial.rootId}`)
+  console.log(`Processing Ejects for ${radial.rootId}`);
   const ejectedNodesMap = new Set<NodeModel>();
   const radialRoot = radial.children.get(radial.rootId)!;
 
@@ -19,7 +19,7 @@ export function ProcessEjects(radial: RadialModel): NodeModel[] {
     if (widthToRemove) {
       pickNodesToEject(nodes, ejectedNodesMap, widthToRemove).forEach(eject => {
         ejectedNodesMap.add(eject);
-        eject.isEjected = true;
+        eject.markAsEjected();
         // removes child from the old RadialModel and clear its layout data
         eachBefore(eject, c => {
           if (c === eject) return;
@@ -40,7 +40,7 @@ export function ProcessEjects(radial: RadialModel): NodeModel[] {
       node.children.forEach(child => {
         if (!child.isEjected) {
           depthEntry.nodes.push(child);
-          depthEntry.totalWidth += child.totalWidth || SEPARATION; // if its leaf node then use single node width instead
+          depthEntry.totalWidth += child.totalWidth || child.diameter; // if its leaf node then use its width instead
         }
       });
     });
@@ -52,7 +52,7 @@ export function ProcessEjects(radial: RadialModel): NodeModel[] {
   for (const node of Array.from(ejectedNodesMap.values())) {
     let temp = node;
     for (let i = node.depth + 1; i < newTotalDepth; i++) {
-      const virtual = LayoutFactory.createNode(temp.ref, '', temp.radialId, temp, { isVirtual: true});
+      const virtual = LayoutFactory.createNode(temp.ref, '', temp.radialId, temp, { isVirtual: true });
       temp.children = [virtual];
       temp = virtual;
     }
@@ -70,27 +70,28 @@ function pickNodesToEject(allNodes: NodeModel[], ejectedNodesMap: Set<NodeModel>
 
   for (let i = 0; i < allNodes.length; i++) {
     const child = allNodes[i];
-    const width = child.totalWidth;
-    if (width <= SEPARATION) {
-      continue; // replacing single width node won't do anything, so skip
+    const widthSavings = child.totalWidth - EjectNodeDiameter;
+    if (widthSavings <= 0) {
+      continue; // replacing this node won't decrease total width, so skip
     }
-    // if node is smaller than the necessary width to remove, this node will be removed
-    if (width <= tempRemainingWidth) {
+    // if node is less than the necessary width to remove, then remove node
+    if (widthSavings <= tempRemainingWidth) {
       nodesToRemove.push(child);
-      tempRemainingWidth -= width - SEPARATION;
+      tempRemainingWidth -= widthSavings;
       continue;
     }
     partialToRemove = child;
     break;
   }
+
   if (partialToRemove) {
+    // recursion
     const partialChildren = partialToRemove.children.filter(c => !ejectedNodesMap.has(c));
     const childrenToRemove = pickNodesToEject(partialChildren, ejectedNodesMap, tempRemainingWidth);
-    // if no children removal will be enough, remove partial node itself
+    // if no children removal is enough, remove partial node itself
     if (!childrenToRemove.length) {
       nodesToRemove.push(partialToRemove);
-    }
-    else {
+    } else {
       nodesToRemove.push(...childrenToRemove);
     }
   }

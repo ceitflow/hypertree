@@ -1,30 +1,49 @@
+import { Radius } from './tidy-tree.ts';
 import { RadialModel } from '../types.ts';
-import { SEPARATION } from './tidy-tree.ts';
+import { EjectNodeDiameter } from './layout-factory.ts';
 
 export function RadialsLayout(root: RadialModel) {
-  // eachAfter for radials
-  const rStack: RadialModel[] = [root];
-  const radials: RadialModel[] = [];
+  const list: RadialModel[] = [root];
+  const stack: RadialModel[] = [];
   let node: RadialModel | undefined;
-  while (rStack.length) {
-    node = rStack.pop()!;
-    radials.push(node);
-    node.ejectedRadials.forEach(e => rStack.push(e));
+  while (list.length) {
+    node = list.pop()!;
+    stack.push(node);
+    node.ejectedRadials.forEach(e => list.push(e));
   }
-  while (radials.length) {
-    const radial = radials.pop()!;
-    let biggestChildDiameter = 0;
+
+  // eachAfter for radials
+  while (stack.length) {
+    const radial = stack.pop()!;
+    const children: RadialModel[] = [];
+    let radiiSum = 0;
+    let largestChildRadius = 0;
+
     radial.ejectedRadials.forEach(eject => {
-      const parent = eject.parentNode;
-      if (!parent) return;
-      const angle = parent.angle // + parent.angleAdjustment;
-      const newLength = radial.radius + eject.radius + SEPARATION; // min distance + padding
-      eject.x = newLength * Math.cos(angle);
-      eject.y = newLength * Math.sin(angle);
-      biggestChildDiameter = Math.max(biggestChildDiameter, eject.radius);
-      console.log(eject.rootId, eject.x, eject.y);
+      children.push(eject);
+      radiiSum += eject.radius;
+      largestChildRadius = Math.max(largestChildRadius, eject.radius);
     });
-    radial.radius += biggestChildDiameter;
-    console.log(radial);
+
+    if (!children.length) {
+      continue;
+    }
+    // sort to assign correct angles in order
+    children.sort((a, b) => a.parentNode!.angle - b.parentNode!.angle);
+
+    let tempLastAngle = 0;
+    console.log('\n ' + radial.rootId, 'totalRadiiSum:', radiiSum, 'est radius:', radiiSum / 2 / Math.PI);
+    children.forEach(eject => {
+      const angularRange = (eject.radius / radiiSum) * 2 * Math.PI;
+      const a = tempLastAngle + angularRange / 2 - Math.PI / 2; // middle of angular range
+      const radius = largestChildRadius * 4 + radial.selfRadius;
+      const polarX = radius * Math.cos(a); // TODO this is the edge of eject, not the center (offset by eject.radius/2 ??)
+      const polarY = radius * Math.sin(a);
+      eject.x = polarX;
+      eject.y = polarY;
+      tempLastAngle += angularRange;
+      console.log(eject.parentNode!.name, 'angle:', (angularRange * 180) / Math.PI, 'radius:', eject.radius);
+    });
+    radial.radius += largestChildRadius * 2;
   }
 }
