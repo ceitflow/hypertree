@@ -9,9 +9,9 @@ import {
   ProgramGraph,
   ReexportFactory,
 } from './files';
+import path from 'node:path';
 import { Analyzer } from './util';
 import { SourceFile } from 'typescript';
-import path from 'node:path';
 
 export class AstGraph {
   graph: ProgramGraph;
@@ -21,7 +21,6 @@ export class AstGraph {
     const srcName = srcPath.split(path.sep).pop()!;
     this.graph = {
       name: srcName,
-      filesMap: {},
       root: {
         name: srcName,
         dirs: [],
@@ -29,46 +28,65 @@ export class AstGraph {
         depth: 0,
         path: srcPath,
       },
+      stats: {
+        filesCount: files.length,
+        externalFilesCount: 0,
+        totalLoc: 0,
+      }
     };
     const filesBuilder = new Map<IdPath, FileBuilder>();
-    const externalFiles = new Map<SourceFile, ExternalSourceFile>();
-
-    const createFile = (sourceFile: SourceFile, id?: IdPath) => {
-      const file = new FileBuilder(sourceFile, analyzer);
-      if (id) file.id = id;
-      filesBuilder.set(file.id, file);
-      for (const extFile of file.cache.externalReferencedFiles) externalFiles.set(extFile.file, extFile);
-      console.log(`Converting AST graph node: ${file.id}`);
-    };
+    const externalFiles = new Map<IdPath, ExternalSourceFile>();
 
     console.log(`1. build files ${files.length}`);
-    for (const sourceFile of files) createFile(sourceFile);
+    for (const sourceFile of files) {
+      const file = new FileBuilder(sourceFile, analyzer);
+      filesBuilder.set(file.id, file);
+      this.graph.stats.totalLoc += file.loc;
+      for (const extFile of file.cache.externalReferencedFiles) {
+        if (!externalFiles.has(extFile.file.fileName)) {
+          externalFiles.set(extFile.file.fileName, extFile);
+          this.graph.stats.externalFilesCount++;
+        }
+      }
+      console.log(`Converting AST graph node: ${file.id}`);
+    }
 
     console.log(`2. build external files (${externalFiles.size})`);
-    // todo flatten imports in externals so only its exports are extracted as a single file
     // TODO call graphs / flow analysis
-    for (const extFile of externalFiles.values()) createFile(extFile.file, extFile.packageName);
+    for (const extFile of externalFiles.values()) {
+      const file = new FileBuilder(extFile.file, analyzer);
+      file.id = extFile.packageName;
+      filesBuilder.set(file.id, file);
+      console.log(`Converting External AST graph node: ${file.id}`);
+    }
 
     console.log('3. calculate reexports from other files \n \n');
-    for (const node of filesBuilder.values()) this.buildReExports(node, filesBuilder, analyzer);
+    for (const file of filesBuilder.values()) {
+      this.buildReExports(file, filesBuilder, analyzer);
+    }
 
     console.log('4. calculate imports from other files \n \n');
-    for (const graphNode of filesBuilder.values()) {
-      graphNode.cache.cachedImports.forEach(({ node, resolvedPath }) => {
+    for (const file of filesBuilder.values()) {
+      if (file.isExternalFile) {
+        continue; // skip imports in files inside node_modules
+      }
+      file.cache.cachedImports.forEach(({ node, resolvedPath }) => {
         if (!node.importClause) {
-          graphNode.fileEmptyImports.push(EmptyImportFactory(node, analyzer));
+          file.fileEmptyImports.push(EmptyImportFactory(node, analyzer));
           return;
         }
         const fromNode = filesBuilder.get(resolvedPath);
-        if (!fromNode) console.error(`Importing file that was skipped: ${resolvedPath} from: ${graphNode.id}`);
-        else graphNode.fileImports.push(...ImportFactory(node, analyzer, fromNode));
+        if (!fromNode) {
+          console.error(`Attempt to import file that's not registered: ${resolvedPath} from: ${file.id}`);
+        }
+        else file.fileImports.push(...ImportFactory(node, analyzer, fromNode));
       });
     }
 
     // build files and dirGraph
     for (const file of filesBuilder.values()) {
       const builtFile = file.build();
-      this.graph.filesMap[builtFile.id] = builtFile;
+      // this.graph.filesMap[builtFile.id] = builtFile;
       this.addToDirectoryGraph(builtFile);
     }
   }

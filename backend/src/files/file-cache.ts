@@ -82,13 +82,13 @@ export class FileCache {
     }
     this.cachedImports.set(item.node, item);
 
-    if (!isExternal)
-      return;
-    const file = this.analyzer.getSourceFileFromImport(node.moduleSpecifier);
-    if (file)
-      this.externalReferencedFiles.add({ file, packageName: resolvedPath });
-    else
-      console.warn(`Cannot locate file for external import: ${node.moduleSpecifier['text']}`);
+    if (isExternal) {
+      const src = this.analyzer.getSourceFileFromImport(node.moduleSpecifier);
+      if (src)
+        this.externalReferencedFiles.add({ file: src.file, packageName: resolvedPath });
+      else
+        console.warn(`Cannot locate file for external import: ${node.moduleSpecifier['text']}`);
+    }
   }
 
   addReExport(node: CacheReExportItem['node'], fromGraphNode: IdPath, isExternal?: true): void {
@@ -109,24 +109,24 @@ export class FileCache {
     let file: SourceFile | undefined;
     switch (node.kind) {
       case SyntaxKind.ExportSpecifier:
-        file = this.analyzer.getSourceFileFromImport(node.parent.parent.moduleSpecifier);
+        file = this.analyzer.getSourceFileFromImport(node.parent.parent.moduleSpecifier)?.file;
         break;
       case SyntaxKind.Identifier: {
         const alias = this.analyzer.resolveAliasedNode(node);
         if (isImportSpecifier(alias))
-          file = this.analyzer.getSourceFileFromImport(alias.parent.parent.parent.moduleSpecifier);
+          file = this.analyzer.getSourceFileFromImport(alias.parent.parent.parent.moduleSpecifier)?.file;
         break;
       }
       case SyntaxKind.NamespaceExport:
-        file = this.analyzer.getSourceFileFromImport(node.parent.moduleSpecifier);
+        file = this.analyzer.getSourceFileFromImport(node.parent.moduleSpecifier)?.file;
         break;
       case SyntaxKind.ExportDeclaration:
-        file = this.analyzer.getSourceFileFromImport(node.moduleSpecifier);
+        file = this.analyzer.getSourceFileFromImport(node.moduleSpecifier)?.file;
         break;
       case SyntaxKind.ExportAssignment: {
         const alias = this.analyzer.resolveAliasedNode(node.expression as Identifier);
         if (isImportSpecifier(alias))
-          file = this.analyzer.getSourceFileFromImport(alias.parent.parent.parent.moduleSpecifier);
+          file = this.analyzer.getSourceFileFromImport(alias.parent.parent.parent.moduleSpecifier)?.file;
         break;
       }
     }

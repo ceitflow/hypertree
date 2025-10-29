@@ -43,6 +43,7 @@ export class FileBuilder {
   name: string;
   depth: number;
   cache: FileCache;
+  loc: number;
   isExternalFile = false; // node_modules
   areReferencesResolved = false;
   recalculateAgain = false;
@@ -60,6 +61,7 @@ export class FileBuilder {
     this.depth = idPathSplit.length - 1;
     this.isExternalFile = analyzer.isExternalFile(file);
     this.cache = new FileCache(analyzer);
+    this.loc = file.getLineAndCharacterOfPosition(file.end).line + 1;
 
     const modulesStack: ModuleDeclaration[] = [];
 
@@ -233,7 +235,7 @@ export class FileBuilder {
       id: this.id,
       name: this.name,
       depth: this.depth,
-      loc: 0,
+      loc: this.loc,
       extension: '',
       isExternalFile: this.isExternalFile || undefined,
       exports: this.fileExports,

@@ -11,8 +11,12 @@ export type IdPath = string; // path relative to options.src OR package name if 
 export type ProgramGraph = {
   name: string;
   // referencedExternalPackages: string[]
-  filesMap: { [id: IdPath]: File }; // not needed?
   root: Directory;
+  stats: {
+    filesCount: number;
+    externalFilesCount: number;
+    totalLoc: number;
+  }
 }
 
 export type Directory = {

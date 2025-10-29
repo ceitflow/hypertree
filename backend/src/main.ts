@@ -9,7 +9,7 @@ import { createProgram, findConfigFile, parseJsonConfigFileContent, readConfigFi
     // /Users/ceitflow/WebstormProjects/koia-adminflow/adminflow
     // /Users/ceitflow/WebstormProjects/m3/coplan-visualizer
     // /Users/ceitflow/WebstormProjects/prototypes/graphkit-test-repos/angular/packages
-    src: '/Users/ceitflow/WebstormProjects/koia-adminflow/adminflow',
+    src: '/Users/ceitflow/WebstormProjects/m3/coplan-visualizer',
     output: '/Users/ceitflow/WebstormProjects/prototypes/graphkit/backend/dist',
     // depth: 2,
     'exclude-file': ['eslint.config.js', 'vite.config.ts'],
@@ -21,18 +21,17 @@ import { createProgram, findConfigFile, parseJsonConfigFileContent, readConfigFi
 
     const configFile = readConfigFile(configPath, sys.readFile);
     const compilerOptions = parseJsonConfigFileContent(configFile.config, sys, srcPath);
-    const options = compilerOptions.options;
     const fileNames = compilerOptions.fileNames;
-    const program = createProgram(fileNames, options);
+    const program = createProgram(fileNames, compilerOptions.options); // todo this is 'host'
 
     const astGraph = new AstGraph(
       fileNames.map(f => program.getSourceFile(f)!),
       new Analyzer(srcPath, program)
     );
+    const { stats } = astGraph.graph;
 
-    const allFiles = Object.values(astGraph.graph.filesMap);
-    const extFiles = allFiles.filter(f => f.isExternalFile);
-    console.log(`outputting json graph (${allFiles.length - extFiles.length} files + ${extFiles.length} external)`);
+    console.log(`outputting json graph (${stats.filesCount} files + ${stats.externalFilesCount} external, total LOC: ${stats.totalLoc})`);
+    console.log(program.getSymbolCount(), 'symbol count')
     writeFileSync(args.output + '/output.json', astGraph.toJSON());
   } catch (err) {
     console.error(err);

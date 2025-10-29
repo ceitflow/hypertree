@@ -25,7 +25,7 @@ export const ExportFactory = ({ node }: CacheExportItem, analyzer: Analyzer): De
       const n = node as Identifier;
       return {
         name: n.text,
-        loc: 0,
+        loc: calculateLoc(n),
         referencedImportTokens: [],
         token: {
           category: DeclarationEnum.Primitive,
@@ -37,7 +37,7 @@ export const ExportFactory = ({ node }: CacheExportItem, analyzer: Analyzer): De
       const n = node as ExportSpecifier;
       return {
         name: n.name.text,
-        loc: 0,
+        loc: calculateLoc(n),
         referencedImportTokens: [],
         token: {
           category: analyzer.evaluateType(node)?.type as any,
@@ -49,7 +49,7 @@ export const ExportFactory = ({ node }: CacheExportItem, analyzer: Analyzer): De
       const n = node as ObjectLiteralExpression;
       return {
         name: '_',
-        loc: 0,
+        loc: calculateLoc(n),
         referencedImportTokens: [],
         token: {
           category: DeclarationEnum.Object,
@@ -60,8 +60,8 @@ export const ExportFactory = ({ node }: CacheExportItem, analyzer: Analyzer): De
     case SyntaxKind.ClassDeclaration: {
       const n = node as ClassDeclaration;
       return {
-        name: n.name?.text!,
-        loc: 0,
+        name: n.name?.text as string,
+        loc: calculateLoc(n),
         referencedImportTokens: [],
         token: {
           category: DeclarationEnum.Class,
@@ -72,8 +72,8 @@ export const ExportFactory = ({ node }: CacheExportItem, analyzer: Analyzer): De
     case SyntaxKind.FunctionDeclaration: {
       const n = node as FunctionDeclaration;
       return {
-        name: n.name?.text!,
-        loc: 0,
+        name: n.name?.text as string,
+        loc: calculateLoc(n),
         referencedImportTokens: [],
         token: {
           category: DeclarationEnum.Function,
@@ -84,7 +84,7 @@ export const ExportFactory = ({ node }: CacheExportItem, analyzer: Analyzer): De
       const n = node as InterfaceDeclaration;
       return {
         name: n.name.text,
-        loc: 0,
+        loc: calculateLoc(n),
         referencedImportTokens: [],
         token: {
           category: DeclarationEnum.TsType,
@@ -96,7 +96,7 @@ export const ExportFactory = ({ node }: CacheExportItem, analyzer: Analyzer): De
       const n = node as EnumDeclaration;
       return {
         name: n.name.text,
-        loc: 0,
+        loc: calculateLoc(n),
         referencedImportTokens: [],
         token: {
           category: DeclarationEnum.TsType,
@@ -108,7 +108,7 @@ export const ExportFactory = ({ node }: CacheExportItem, analyzer: Analyzer): De
       const n = node as TypeAliasDeclaration;
       return {
         name: n.name.text,
-        loc: 0,
+        loc: calculateLoc(n),
         referencedImportTokens: [],
         token: {
           category: DeclarationEnum.TsType,
@@ -120,6 +120,13 @@ export const ExportFactory = ({ node }: CacheExportItem, analyzer: Analyzer): De
     default:
       console.error(`Unsupported declaration type: ${SyntaxKind[node['kind']]}`);
   }
+}
+
+const calculateLoc = (node: CacheExportItem['node']): number => {
+  const sourceFile = node.getSourceFile();
+  const { line: startLine } = sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile));
+  const { line: endLine } = sourceFile.getLineAndCharacterOfPosition(node.end);
+  return endLine - startLine + 1;
 }
 
 export const EmptyImportFactory = (node: ImportDeclaration, analyzer: Analyzer): FileEmptyImport => {
