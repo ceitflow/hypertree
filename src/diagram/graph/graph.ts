@@ -1,6 +1,6 @@
+import { Radius } from './layout/tidy-tree.ts';
 import { LayoutFactory } from './layout/layout-factory.ts';
 import { IdPath, NodeModel, ProgramGraph, RadialModel } from './types.ts';
-import { Radius } from './layout/tidy-tree.ts';
 
 type GraphModel = {
   rootRadialId: IdPath;
@@ -17,7 +17,7 @@ export class Graph {
   }
 
   initialize(program: ProgramGraph) {
-    const data = program.root.dirs!.find(c => c.name === 'src')!.dirs!.find(c => c.name === 'app')!; // todo for testing only
+    const data = program.root.dirs!.find(c => c.name === 'src')!//.dirs!.find(c => c.name === 'app')!; // todo for testing only
     this.model = {
       rootRadialId: data.path,
       radialsMap: new Map(),

@@ -104,10 +104,10 @@ export function TidyTree(root: NodeModel, opt: Options = {}) {
 
     nodes.forEach(node => {
       if (opt.mode === 'radial') {
-        if (node.parent) {
-          const center = node.parent.x;
-          node.angleAdjustment = ((node.x - center) / ratio + center - node.x) + node.parent.angleAdjustment;
-        }
+        // if (node.parent) {
+        //   const center = node.parent.x;
+        //   node.angleAdjustment = ((node.x - center) / ratio + center - node.x) + node.parent.angleAdjustment;
+        // }
         node.angle = (node.x + node.angleAdjustment + tx) * kx - Math.PI / 2; // radians
         node.polarX = node.y * Math.cos(node.angle);
         node.polarY = node.y * Math.sin(node.angle);

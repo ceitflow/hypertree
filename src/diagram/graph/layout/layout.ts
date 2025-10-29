@@ -35,7 +35,7 @@ export function Layout(graph: Graph) {
       newMaxDepth = Math.max(newMaxDepth, c.depth);
     });
     radial.depth = newMaxDepth;
-    radial.selfRadius = Radius(newMaxDepth);
+    radial.radius = radial.selfRadius = Radius(newMaxDepth);
     // todo here can compute auto radius for best layout look
     TidyTree(root, { mode: 'radial' });
   }

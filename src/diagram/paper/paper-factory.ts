@@ -26,7 +26,7 @@ export class PaperFactory {
   static createLabel({ polarX, polarY, angle, name, ref }: NodeModel) {
     const isDir = ref.type === 'directory';
     const bitmapFontText = new BitmapText({
-      text: `   ${name.substring(0)}     `,
+      text: `   ${name?.substring(0)}     `,
       style: {
         fontFamily: 'sans-serif',
         fontSize: isDir ? 12 : 9,

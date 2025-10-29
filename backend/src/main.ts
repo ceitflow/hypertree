@@ -8,6 +8,7 @@ import { createProgram, findConfigFile, parseJsonConfigFileContent, readConfigFi
   const args = {
     // /Users/ceitflow/WebstormProjects/koia-adminflow/adminflow
     // /Users/ceitflow/WebstormProjects/m3/coplan-visualizer
+    // /Users/ceitflow/WebstormProjects/prototypes/graphkit-test-repos/angular/packages
     src: '/Users/ceitflow/WebstormProjects/koia-adminflow/adminflow',
     output: '/Users/ceitflow/WebstormProjects/prototypes/graphkit/backend/dist',
     // depth: 2,

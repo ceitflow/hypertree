@@ -1,6 +1,4 @@
-import { Radius } from './tidy-tree.ts';
 import { RadialModel } from '../types.ts';
-import { EjectNodeDiameter } from './layout-factory.ts';
 
 export function RadialsLayout(root: RadialModel) {
   const list: RadialModel[] = [root];
@@ -31,19 +29,22 @@ export function RadialsLayout(root: RadialModel) {
     // sort to assign correct angles in order
     children.sort((a, b) => a.parentNode!.angle - b.parentNode!.angle);
 
+    console.log('\n');
     let tempLastAngle = 0;
-    console.log('\n ' + radial.rootId, 'totalRadiiSum:', radiiSum, 'est radius:', radiiSum / 2 / Math.PI);
+    const y = radiiSum * 2 / 2 / Math.PI;
     children.forEach(eject => {
+      // todo can replace it with arctan2 formula, same thing but working actually
       const angularRange = (eject.radius / radiiSum) * 2 * Math.PI;
       const a = tempLastAngle + angularRange / 2 - Math.PI / 2; // middle of angular range
-      const radius = largestChildRadius * 4 + radial.selfRadius;
-      const polarX = radius * Math.cos(a); // TODO this is the edge of eject, not the center (offset by eject.radius/2 ??)
+      const radius = Math.max(y, largestChildRadius + radial.selfRadius);
+      const polarX = radius * Math.cos(a);
       const polarY = radius * Math.sin(a);
       eject.x = polarX;
       eject.y = polarY;
-      tempLastAngle += angularRange;
       console.log(eject.parentNode!.name, 'angle:', (angularRange * 180) / Math.PI, 'radius:', eject.radius);
+      tempLastAngle += angularRange;
     });
-    radial.radius += largestChildRadius * 2;
+    radial.radius += y;//largestChildRadius * 2;
+    console.log(radial.rootId, 'radius', radial.radius, 'totalRadiiSum:', radiiSum, 'est radius:', radiiSum * 2 / 2 / Math.PI);
   }
 }
