@@ -1,42 +1,39 @@
 import { NodeModel } from '../graph/types.ts';
 import { BitmapText, Graphics } from 'pixi.js';
-import { Graph } from '../graph/graph.ts';
 
 export class PaperFactory {
-  static createCircle(model: NodeModel, graph: Graph) {
-    const { ref, polarX, polarY, name } = model;
+  static createCircle(node: NodeModel) {
+    const { ref, polarX, polarY, name } = node;
 
     let color: string;
     if (ref.type === 'directory') color = '0xafafaf';
     else if (ref.type === 'file') color = '0xe24c00';
     else color = '0x277DFF';
-    if (model.isEjected) color = '0x00FF00';
-    if (model.isVirtual) color = '0x00FF00'; // for debugging only, not going to be part of graph
+    if (node.isEjected) color = '0x00FF00';
+    if (node.isVirtual) color = '0x00FF00'; // for debugging only, not going to be part of graph
 
-    const radius = model.radialId === model.id ? model.diameter : model.diameter / 2;
+    const radius = node.isMainRoot ? 60 : (node.radialId === node.id ? node.diameter : node.diameter / 2);
     const circle = new Graphics().circle(0, 0, radius).fill(color);
     circle.x = polarX;
     circle.y = polarY;
     circle.label = name;
     circle.interactive = true;
-    circle.on('pointerdown', e => console.log(`w: ${model.totalWidth}`, model, graph.model!.radialsMap.get(model.radialId)));
     return circle;
   }
 
-  static createLabel({ polarX, polarY, angle, name, ref }: NodeModel) {
-    const isDir = ref.type === 'directory';
+  static createLabel(x: number, y: number, angle: number, text: string, highlight = false) {
     const bitmapFontText = new BitmapText({
-      text: `   ${name?.substring(0)}     `,
+      text,
       style: {
         fontFamily: 'sans-serif',
-        fontSize: isDir ? 12 : 9,
+        fontSize: highlight ? 12 : 9,
         fill: '#ffb976', // altColor ? '#ffb976' : '#f5f5f5',
       },
     });
     const adjAngle = angle + Math.PI / 2;
-    bitmapFontText.anchor = adjAngle < Math.PI === !isDir ? 0 : { x: 1, y: 0 }; // if d.angle less than half circle and no children
-    bitmapFontText.x = polarX;
-    bitmapFontText.y = polarY + (isDir ? -6 : -6);
+    bitmapFontText.anchor = adjAngle < Math.PI === !highlight ? 0 : { x: 1, y: 0 }; // if d.angle less than half circle and no children
+    bitmapFontText.x = x;
+    bitmapFontText.y = y + (highlight ? -6 : -6);
     bitmapFontText.angle = (adjAngle * 180) / Math.PI - 90 + (adjAngle >= Math.PI ? 180 : 0);
 
     return bitmapFontText;

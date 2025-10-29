@@ -1,4 +1,5 @@
 import {
+  CallExpression,
   createPrinter,
   createSourceFile,
   EmitHint,
@@ -139,12 +140,18 @@ export class Analyzer {
     }
 
     const resolvedSymbol = symbol.flags & SymbolFlags.Alias ? this.typeCheck.getAliasedSymbol(symbol) : symbol;
-    if (!resolvedSymbol.valueDeclaration) return;
-
+    if (!resolvedSymbol.valueDeclaration) {
+      return;
+    }
     const type = this.typeCheck.getTypeOfSymbolAtLocation(resolvedSymbol, resolvedSymbol.valueDeclaration);
     // if (!type.symbol)
     //   primitive case
     return this.typeAnalyzer.getTypeFlagCategory(type.flags);
+  }
+
+  getCallExpressionDeclaration(node: CallExpression) {
+    const signature = this.typeCheck.getResolvedSignature(node);
+    return signature?.declaration;
   }
 
   debugPrettyPrint(node: Node): string {

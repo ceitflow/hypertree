@@ -22,6 +22,8 @@ export class LayoutFactory {
       ref,
       i: parent ? parent.children.length : 0,
       diameter: NodeDiameter,
+
+      isMainRoot: false,
       isVirtual: false,
       isEjected: false,
 

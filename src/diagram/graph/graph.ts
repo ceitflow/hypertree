@@ -17,14 +17,16 @@ export class Graph {
   }
 
   initialize(program: ProgramGraph) {
-    const data = program.root.dirs!.find(c => c.name === 'src')!//.dirs!.find(c => c.name === 'app')!; // todo for testing only
+    const data = program.root //.dirs!.find(c => c.name === 'src')!//.dirs!.find(c => c.name === 'app')!; // todo for testing only
+    const n_m_idx = data.dirs?.findIndex(d => d.name === 'node_modules') || -1;
+    if (n_m_idx !== -1) data.dirs!.splice(n_m_idx, 1);
     this.model = {
       rootRadialId: data.path,
       radialsMap: new Map(),
       program,
     };
     const radialId = data.path;
-    const root: NodeModel = LayoutFactory.createNode({ type: 'directory', node: data }, data.path, radialId, null);
+    const root: NodeModel = LayoutFactory.createNode({ type: 'directory', node: data }, data.path, radialId, null, { isMainRoot: true });
     this.createRadialWithChildren(root, null);
   }
 

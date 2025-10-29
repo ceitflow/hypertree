@@ -1,4 +1,6 @@
 import {
+  AsExpression,
+  CallExpression,
   ClassDeclaration,
   EnumDeclaration,
   ExportAssignment,
@@ -19,31 +21,35 @@ import { Analyzer } from '../util';
 import { ExternalSourceFile, IdPath } from './file.type';
 
 export type CacheExportItem = {
-  node: Identifier // from VariableDeclaration
-      | ExportSpecifier
-      | ObjectLiteralExpression
-      | ClassDeclaration
-      | FunctionDeclaration
-      | InterfaceDeclaration
-      | EnumDeclaration
-      | TypeAliasDeclaration;
-}
+  node:
+    | Identifier // from VariableDeclaration
+    | ExportSpecifier
+    | ObjectLiteralExpression
+    | ClassDeclaration
+    | FunctionDeclaration
+    | InterfaceDeclaration
+    | EnumDeclaration
+    | TypeAliasDeclaration
+    | CallExpression
+    | AsExpression;
+};
 
 export type CacheReExportItem = {
   fromGraphNode: IdPath;
   isExternal?: true;
-  node: ExportSpecifier // { A }
-      | Identifier // (variable) const X = FromImport todo can be part of chain, resolve alias always
-      | NamespaceExport // * as X
-      | ExportDeclaration // * from '..'
-      | ExportAssignment; // export default X;
-}
+  node:
+    | ExportSpecifier // { A }
+    | Identifier // (variable) const X = FromImport todo can be part of chain, resolve alias always
+    | NamespaceExport // * as X
+    | ExportDeclaration // * from '..'
+    | ExportAssignment; // export default X;
+};
 
 type CacheImportItem = {
   isExternal?: true;
   resolvedPath: string;
   node: ImportDeclaration;
-}
+};
 
 export class FileCache {
   // using map to detect duplicates
@@ -52,8 +58,7 @@ export class FileCache {
   cachedReExports = new Map<CacheReExportItem['node'], CacheReExportItem>();
   externalReferencedFiles = new Set<ExternalSourceFile>();
 
-  constructor(private analyzer: Analyzer) {
-  }
+  constructor(private analyzer: Analyzer) {}
 
   getUniqueReExportedFiles(): IdPath[] {
     const set = new Set<IdPath>();
@@ -76,7 +81,7 @@ export class FileCache {
       isExternal,
       resolvedPath,
       node,
-    }
+    };
     if (this.cachedImports.has(item.node)) {
       // console.error(`Duplicate import cache item: ${this.analyzer.debugPrettyPrint(item.node)}`);
     }
@@ -84,10 +89,8 @@ export class FileCache {
 
     if (isExternal) {
       const src = this.analyzer.getSourceFileFromImport(node.moduleSpecifier);
-      if (src)
-        this.externalReferencedFiles.add({ file: src.file, packageName: resolvedPath });
-      else
-        console.warn(`Cannot locate file for external import: ${node.moduleSpecifier['text']}`);
+      if (src) this.externalReferencedFiles.add({ file: src.file, packageName: resolvedPath });
+      else console.warn(`Cannot locate file for external import: ${node.moduleSpecifier['text']}`);
     }
   }
 
@@ -103,8 +106,7 @@ export class FileCache {
     this.cachedReExports.set(item.node, item);
 
     // calculate external referenced files (if reexporting from external)
-    if (!isExternal)
-      return;
+    if (!isExternal) return;
 
     let file: SourceFile | undefined;
     switch (node.kind) {
@@ -130,9 +132,7 @@ export class FileCache {
         break;
       }
     }
-    if (file)
-      this.externalReferencedFiles.add({ file, packageName: fromGraphNode });
-    else
-      console.warn(`Cannot locate file for external reexport: ${fromGraphNode}}`);
+    if (file) this.externalReferencedFiles.add({ file, packageName: fromGraphNode });
+    else console.warn(`Cannot locate file for external reexport: ${fromGraphNode}}`);
   }
 }

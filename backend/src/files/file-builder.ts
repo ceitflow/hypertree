@@ -31,12 +31,12 @@ import {
   TypeAliasDeclaration,
   VariableDeclaration,
 } from 'typescript';
+import path from 'node:path';
 import { Analyzer } from '../util';
 import { FileCache } from './file-cache';
 import { DeclarationNode } from './declaration.type';
 import { ExportFactory } from './declaration-factory';
 import { FileEmptyImport, FileImportToken, File, FileReExportToken, IdPath } from './file.type';
-import path from 'node:path';
 
 export class FileBuilder {
   id: IdPath; // path relative to options.src
@@ -57,7 +57,7 @@ export class FileBuilder {
   constructor(file: SourceFile, analyzer: Analyzer) {
     this.id = analyzer.getRelativePath(file.fileName);
     const idPathSplit = this.id.split(path.sep);
-    this.name = idPathSplit.pop()!;
+    this.name = idPathSplit[idPathSplit.length - 1];
     this.depth = idPathSplit.length - 1;
     this.isExternalFile = analyzer.isExternalFile(file);
     this.cache = new FileCache(analyzer);
@@ -96,15 +96,15 @@ export class FileBuilder {
     }
 
     // build file exports (declarations)
-    this.cache.cachedExports.forEach(node => {
-      const ex = ExportFactory(node, analyzer);
-      if (!ex)
+    this.cache.cachedExports.forEach(exp => {
+      const declaration = ExportFactory(exp.node, analyzer);
+      if (!declaration)
         return;
 
       // ts overload, for now ignore todo
-      const isNameDuplicated = this.fileExports.find(e => e.name === ex.name);
+      const isNameDuplicated = this.fileExports.find(e => e.name === declaration.name);
       if (!isNameDuplicated)
-        this.fileExports.push(ex);
+        this.fileExports.push(declaration);
     });
     this.unprocessedReexportReferences.splice(0, this.unprocessedReexportReferences.length, ...this.cache.getUniqueReExportedFiles());
   }

@@ -1,4 +1,6 @@
 import {
+  CallExpression,
+  AsExpression,
   ClassDeclaration,
   EnumDeclaration,
   ExportSpecifier,
@@ -19,7 +21,7 @@ import { DeclarationEnum, DeclarationNode } from './declaration.type';
 import { FileEmptyImport, FileImportToken, FileReExportToken } from './file.type';
 
 // create Export, Import and Reexport types from TS Nodes
-export const ExportFactory = ({ node }: CacheExportItem, analyzer: Analyzer): DeclarationNode | undefined => {
+export const ExportFactory = (node: CacheExportItem['node'], analyzer: Analyzer): DeclarationNode | undefined => {
   switch (node.kind) {
     case SyntaxKind.Identifier: {
       const n = node as Identifier;
@@ -29,7 +31,7 @@ export const ExportFactory = ({ node }: CacheExportItem, analyzer: Analyzer): De
         referencedImportTokens: [],
         token: {
           category: DeclarationEnum.Primitive,
-          type: analyzer.evaluateType(node)?.type as any, // todo might not work without pointing to parent?
+          type: analyzer.evaluateType(node)?.astType as any, // todo might not work without pointing to parent?
         },
       }
     }
@@ -40,8 +42,8 @@ export const ExportFactory = ({ node }: CacheExportItem, analyzer: Analyzer): De
         loc: calculateLoc(n),
         referencedImportTokens: [],
         token: {
-          category: analyzer.evaluateType(node)?.type as any,
-          type: analyzer.evaluateType(n.name as Identifier)?.type as any,
+          category: analyzer.evaluateType(node)?.category as any,
+          type: analyzer.evaluateType(n.name as Identifier)?.category as any,
         },
       }
     }
@@ -115,6 +117,23 @@ export const ExportFactory = ({ node }: CacheExportItem, analyzer: Analyzer): De
           type: 'typeAlias',
         },
       }
+    }
+
+    // export default defineConfig()
+    case SyntaxKind.CallExpression: {
+      const n = node as CallExpression;
+      const declaration = analyzer.getCallExpressionDeclaration(n);
+      if (!declaration) {
+        console.error(`Unsupported declaration type: ${SyntaxKind[n['kind']]}`);
+        return;
+      }
+      return ExportFactory(declaration as any, analyzer); // feed back the return value of call expression
+    }
+
+    // export default {} as Something;
+    case SyntaxKind.AsExpression: {
+      const n = node as AsExpression;
+      return ExportFactory(n.expression as any, analyzer);
     }
 
     default:

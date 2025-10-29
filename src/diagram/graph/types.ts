@@ -30,6 +30,7 @@ export type NodeModel = {
 
   diameter: number;
 
+  isMainRoot: boolean;
   isVirtual: boolean;
   isEjected: boolean;
 

@@ -39,7 +39,7 @@ export class Paper {
         recursion(ejected, container);
       });
       return container;
-    }
+    };
     const rootContainer = recursion(root, null);
 
     // center in viewport
@@ -54,6 +54,7 @@ export class Paper {
   }
 
   private renderRadial(radial: RadialModel): Container {
+    const graph = this.graph.model!;
     const linksContainer = new Container({ label: 'links' });
     const textContainer = new Container({ label: 'text' });
     const nodesContainer = new Container({ label: 'nodes' });
@@ -63,8 +64,8 @@ export class Paper {
       x: radial.x,
       y: radial.y,
     });
-    container.addChild(new Graphics().circle(0, 0, radial.selfRadius).stroke(0xff8888)) // todo debug only
-    container.addChild(new Graphics().circle(0, 0, radial.radius).stroke(0xff0000)) // todo debug only
+    container.addChild(new Graphics().circle(0, 0, radial.selfRadius).stroke(0xff8888)); // todo debug only
+    container.addChild(new Graphics().circle(0, 0, radial.radius).stroke(0xff0000)); // todo debug only
     const stack = [radial.children.get(radial.rootId)!];
 
     while (stack.length) {
@@ -76,8 +77,19 @@ export class Paper {
           PaperFactory.createLink(link.source.polarX, link.source.polarY, link.target.polarX, link.target.polarY)
         )
       );
-      nodesContainer.addChild(PaperFactory.createCircle(node, this.graph));
-      textContainer.addChild(PaperFactory.createLabel(node));
+      const circle = PaperFactory.createCircle(node);
+      circle.on('pointerdown', e => console.log(`w: ${node.totalWidth}`, node, graph.radialsMap.get(node.radialId)));
+      nodesContainer.addChild(circle);
+      if (node.isMainRoot) {
+        const stats = graph.program.stats;
+        const label =
+          node.name + '\nfiles: ' + stats.filesCount + '\nexternal: ' + stats.externalFilesCount + '\nLOC: ' + stats.totalLoc;
+        textContainer.addChild(PaperFactory.createLabel(30, -15, 0, label, true));
+      } else {
+        textContainer.addChild(
+          PaperFactory.createLabel(node.polarX, node.polarY, node.angle, node.name, node.ref.type === 'directory')
+        );
+      }
 
       stack.push(...node.children);
     }
