@@ -2,8 +2,8 @@ import { NodeModel } from '../graph/types.ts';
 import { BitmapText, Graphics } from 'pixi.js';
 
 export class PaperFactory {
-  static createCircle(node: NodeModel) {
-    const { ref, polarX, polarY, name } = node;
+  static createNode(node: NodeModel) {
+    const { ref, polarX, polarY, name, angle } = node;
 
     let color: string;
     if (ref.type === 'directory') color = '0xafafaf';
@@ -13,13 +13,16 @@ export class PaperFactory {
     if (node.isEjected) color = '0x00FF00';
     if (node.isVirtual) color = '0x00FF00'; // for debugging only, not going to be part of graph
 
-    const radius = node.isMainRoot ? 60 : (node.radialId === node.id ? node.diameter : node.diameter / 2);
-    const circle = new Graphics().circle(0, 0, radius).fill(color);
-    circle.x = polarX;
-    circle.y = polarY;
-    circle.label = name;
-    circle.interactive = true;
-    return circle;
+    const radius = node.radialId === node.id ? node.diameter : node.diameter / 2;
+    let graphic: Graphics;
+    if (node.id === node.radialId) graphic = new Graphics().circle(0, 0, node.isMainRoot ? 60 : radius).fill(color);
+    else graphic = new Graphics().rect(0, 0, radius, radius * 3).fill(color);
+    graphic.x = polarX;
+    graphic.y = polarY;
+    graphic.rotation = angle;
+    graphic.label = name;
+    graphic.interactive = true;
+    return graphic;
   }
 
   static createLabel(x: number, y: number, angle: number, text: string, highlight = false) {
@@ -42,14 +45,14 @@ export class PaperFactory {
 
   static createLink(sourceX: number, sourceY: number, targetX: number, targetY: number): Graphics {
     const linkGraphic = new Graphics();
-    const ctx = this.context(linkGraphic);
+    const ctx = this.drawLink(linkGraphic);
 
     ctx.moveTo(sourceX, sourceY);
     ctx.lineTo(targetX, targetY);
     return linkGraphic;
   }
 
-  private static context(graphic: Graphics) {
+  private static drawLink(graphic: Graphics) {
     let _x0: number | null = null;
     let _y0: number | null = null; // start of current subpath
     let _x1: number | null = null;

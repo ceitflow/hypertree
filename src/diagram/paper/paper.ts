@@ -77,7 +77,7 @@ export class Paper {
           PaperFactory.createLink(link.source.polarX, link.source.polarY, link.target.polarX, link.target.polarY)
         )
       );
-      const circle = PaperFactory.createCircle(node);
+      const circle = PaperFactory.createNode(node);
       circle.on('pointerdown', e => console.log(`w: ${node.totalWidth}`, node, graph.radialsMap.get(node.radialId)));
       nodesContainer.addChild(circle);
       if (node.isMainRoot) {

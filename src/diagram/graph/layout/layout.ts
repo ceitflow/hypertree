@@ -25,6 +25,7 @@ export function Layout(graph: Graph) {
       const newRoot = LayoutFactory.createNode(eject.ref, eject.id, eject.id, eject, { depth: 0 });
       const newRadial = graph.createRadialWithChildren(newRoot, newRoot.parent);
       radial.ejectedRadials.set(newRadial.rootId, newRadial);
+      // if (newRadial.rootId.includes('src/app/api')) debugger
       stack.push(newRadial);
     });
 

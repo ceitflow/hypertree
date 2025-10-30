@@ -63,6 +63,12 @@ export class LayoutFactory {
       markAsEjected: () => {
         model.isEjected = true;
         model.diameter = EjectNodeDiameter;
+        let temp = model.parent;
+        while(temp) {
+          temp.totalWidth -= model.totalWidth;
+          temp = temp.parent;
+        }
+        model.totalWidth = 0;
       },
       ...opt,
     };

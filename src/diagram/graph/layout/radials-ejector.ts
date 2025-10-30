@@ -18,6 +18,7 @@ export function ProcessEjects(radial: RadialModel): NodeModel[] {
 
     if (widthToRemove) {
       pickNodesToEject(nodes, ejectedNodesMap, widthToRemove).forEach(eject => {
+        // if (eject.id.includes('src/app/api')) debugger // todo update parent totalWidth if ejecting deeper
         ejectedNodesMap.add(eject);
         eject.markAsEjected();
         // removes child from the old RadialModel and clear its layout data

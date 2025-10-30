@@ -11,7 +11,9 @@ export class IO {
 
     while (stack.length > 0) {
       const current = stack.pop()!;
-      if (current.replace(rootDir + path.sep, '').startsWith('.') || current.includes('node_modules')) {
+      if (current.replace(rootDir + path.sep, '').startsWith('.')
+        || current.includes('node_modules')
+        || current.includes('.DS_Store')) {
         continue;
       }
       const stat = statSync(current);

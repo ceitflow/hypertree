@@ -7,18 +7,18 @@ import { createProgram, findConfigFile, parseJsonConfigFileContent, readConfigFi
   // /Users/ceitflow/WebstormProjects/koia-adminflow/adminflow
   // /Users/ceitflow/WebstormProjects/m3/coplan-visualizer
   // /Users/ceitflow/WebstormProjects/prototypes/graphkit-test-repos/angular/packages
-  const srcPath = '/Users/ceitflow/WebstormProjects/koia-adminflow/adminflow';
+  const src = '/Users/ceitflow/WebstormProjects/m3/coplan-visualizer';
 
-  const configPath = findConfigFile(srcPath, sys.fileExists);
+  const configPath = findConfigFile(src, sys.fileExists);
   if (!configPath) { // todo create virtual tsconfig if not present
-    return console.warn(`Unable to find tsconfig in: ${srcPath}, aborting`);
+    return console.warn(`Unable to find tsconfig in: ${src}, aborting`);
   }
   const configFile = readConfigFile(configPath, sys.readFile);
-  const compilerOptions = parseJsonConfigFileContent(configFile.config, sys, srcPath);
+  const compilerOptions = parseJsonConfigFileContent(configFile.config, sys, src);
   const compiler = createProgram(compilerOptions.fileNames, compilerOptions.options);
-  const analyzer = new Analyzer(srcPath, compiler);
+  const analyzer = new Analyzer(src, compiler);
 
-  const allFilesPaths = IO.readAllFiles(srcPath);
+  const allFilesPaths = IO.readAllFiles(src);
   const codeFilePaths = new Set(compilerOptions.fileNames);
   const files = new Set<SourceFile | OtherFile>();
   allFilesPaths.forEach(filePath => {
