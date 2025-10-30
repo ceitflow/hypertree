@@ -4,7 +4,7 @@
   "author": "ceitflow",
   "scripts": {
     "test": "jest --silent --config=jest.config.js",
-    "build": "tsc --build",
+    "build": "tsc",
     "start": "ts-node src/main.ts"
   },
   "engines": {

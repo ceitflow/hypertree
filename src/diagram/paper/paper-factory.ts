@@ -7,7 +7,8 @@ export class PaperFactory {
 
     let color: string;
     if (ref.type === 'directory') color = '0xafafaf';
-    else if (ref.type === 'file') color = '0xe24c00';
+    else if (ref.type === 'codeFile') color = '0xe24c00';
+    else if (ref.type === 'otherFile') color = '0xFFFF00';
     else color = '0x277DFF';
     if (node.isEjected) color = '0x00FF00';
     if (node.isVirtual) color = '0x00FF00'; // for debugging only, not going to be part of graph

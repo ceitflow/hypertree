@@ -1,12 +1,19 @@
-import * as ast from '../../../backend/src/files/file.type';
-import { DeclarationNode } from '../../../backend/src/files/declaration.type.ts';
+import { Graph, Directory as Dir } from 'program/program.type';
+import { CodeFile as Code } from 'program/code-file/code-file.type';
+import { OtherFile as Other } from 'program/other-file/other-file.type';
+import { DeclarationNode as Decl } from 'program/code-file/declaration.type';
 
 // reexported types from backend
-export type Directory = ast.Directory;
-export type File = ast.File;
-export type Declaration = DeclarationNode;
-export type ProgramGraph = ast.ProgramGraph;
-export type IdPath = ast.IdPath;
+export type Directory = Dir;
+export type CodeFile = Code;
+export type OtherFile = Other;
+export type Declaration = Decl;
+export type ProgramGraph = Graph;
+export enum FileEnum {
+  Code = 0,
+  Other = 1
+}
+export type IdPath = string;
 
 // layout data is created in the frontend
 export type RadialModel = {
@@ -25,8 +32,11 @@ export type NodeModel = {
   id: IdPath;
   name: string;
   radialId: IdPath;
-  readonly ref: // underlying data that this layout represents
-  { type: 'directory'; node: Directory } | { type: 'file'; node: File } | { type: 'declaration'; node: Declaration };
+  readonly ref:
+    | { type: 'directory'; node: Directory }
+    | { type: 'codeFile'; node: CodeFile }
+    | { type: 'otherFile'; node: OtherFile }
+    | { type: 'declaration'; node: Declaration }; // ref is underlying data that this layout represents
 
   diameter: number;
 

@@ -1,8 +1,6 @@
 import {
   CallExpression,
-  createPrinter,
   createSourceFile,
-  EmitHint,
   ExportDeclaration,
   Expression,
   Identifier,
@@ -10,7 +8,6 @@ import {
   isIdentifier,
   isImportSpecifier,
   ModuleDeclaration,
-  NewLineKind,
   Node,
   Program,
   resolveModuleName,
@@ -21,17 +18,14 @@ import {
   SymbolFlags,
   sys,
   TypeChecker,
+  TypeFlags,
 } from 'typescript';
+import { IO } from './io';
 import path from 'node:path';
-import { readFileSync } from 'node:fs';
-import { TypeAnalyzer } from './type-analyzer';
+import { CategoryType, GroupedTypeFlags } from './analyzer.type';
 
-// 1. getPath
-// 2. getType
-// 3. getRealNodeFromAlias
 export class Analyzer {
   private typeCheck: TypeChecker;
-  private typeAnalyzer = new TypeAnalyzer();
 
   constructor(
     private srcPath: string,
@@ -47,13 +41,17 @@ export class Analyzer {
   }
 
   getSourceFileFromImport(moduleSpecifier?: Expression): { file: SourceFile; notPresentInProgram: boolean } | undefined {
-    if (!moduleSpecifier) return undefined;
+    if (!moduleSpecifier) {
+      return undefined;
+    }
     const literal = moduleSpecifier as StringLiteral;
     const result = this.typeCheck.getSymbolAtLocation(literal)?.valueDeclaration?.getSourceFile();
-    if (result) return { file: result, notPresentInProgram: false };
+    if (result) {
+      return { file: result, notPresentInProgram: false };
+    }
 
-    // create SourceFile manually as its not registered in Program for some reason
-    // - could be missing .d.ts definitions, and the file is .js
+    // else create SourceFile manually as its not registered in Program for some reason
+    // - could be missing .d.ts definitions, and/or the file is .js
     const resolvedFileName = resolveModuleName(
       literal.text,
       literal.getSourceFile().fileName,
@@ -62,9 +60,10 @@ export class Analyzer {
     ).resolvedModule?.resolvedFileName;
 
     if (resolvedFileName !== undefined) {
-      const file = createSourceFile(resolvedFileName, readFileSync(resolvedFileName, 'utf8'), ScriptTarget.Latest, true);
+      const file = createSourceFile(resolvedFileName, IO.readSourceFile(resolvedFileName), ScriptTarget.Latest, true);
       return { file, notPresentInProgram: true };
     }
+
     return undefined;
   }
 
@@ -146,7 +145,7 @@ export class Analyzer {
     const type = this.typeCheck.getTypeOfSymbolAtLocation(resolvedSymbol, resolvedSymbol.valueDeclaration);
     // if (!type.symbol)
     //   primitive case
-    return this.typeAnalyzer.getTypeFlagCategory(type.flags);
+    return this.getTypeFlagCategory(type.flags);
   }
 
   getCallExpressionDeclaration(node: CallExpression) {
@@ -154,14 +153,13 @@ export class Analyzer {
     return signature?.declaration;
   }
 
-  debugPrettyPrint(node: Node): string {
-    return createPrinter({
-      newLine: NewLineKind.LineFeed,
-      removeComments: true,
-      noEmitHelpers: true,
-      omitTrailingSemicolon: true,
-    })
-      .printNode(EmitHint.Unspecified, node, node.getSourceFile())
-      .split('\n')[0];
+  getTypeFlagCategory(itemFlags: TypeFlags): { astType: string; category: CategoryType } {
+    for (const [category, flags] of Object.entries(GroupedTypeFlags)) {
+      const match = flags.find(f => f === itemFlags);
+      if (match) {
+        return { astType: TypeFlags[match], category: category as CategoryType };
+      }
+    }
+    return { astType: 'Unknown', category: 'Unknown' };
   }
 }

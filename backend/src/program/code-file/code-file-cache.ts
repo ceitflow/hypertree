@@ -17,8 +17,8 @@ import {
   SyntaxKind,
   TypeAliasDeclaration,
 } from 'typescript';
-import { Analyzer } from '../util';
-import { ExternalSourceFile, IdPath } from './file.type';
+import { IdPath } from '../../analyzer/analyzer.type';
+import { Analyzer } from '../../analyzer/analyzer';
 
 export type CacheExportItem = {
   node:
@@ -51,12 +51,13 @@ type CacheImportItem = {
   node: ImportDeclaration;
 };
 
-export class FileCache {
+export class CodeFileCache {
   // using map to detect duplicates
   cachedImports = new Map<ImportDeclaration, CacheImportItem>();
   cachedExports = new Map<CacheExportItem['node'], CacheExportItem>();
   cachedReExports = new Map<CacheReExportItem['node'], CacheReExportItem>();
-  externalReferencedFiles = new Set<ExternalSourceFile>();
+  // packageName is referenced name for this external file, like @angular/core where filePath is /node_modules/@angular/...
+  externalReferencedFiles = new Set<{ file: SourceFile, packageName: IdPath }>();
 
   constructor(private analyzer: Analyzer) {}
 

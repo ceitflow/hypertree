@@ -1,6 +1,6 @@
 import { Radius } from './layout/tidy-tree.ts';
 import { LayoutFactory } from './layout/layout-factory.ts';
-import { IdPath, NodeModel, ProgramGraph, RadialModel } from './types.ts';
+import { FileEnum, IdPath, NodeModel, ProgramGraph, RadialModel } from './types.ts';
 
 type GraphModel = {
   rootRadialId: IdPath;
@@ -26,7 +26,9 @@ export class Graph {
       program,
     };
     const radialId = data.path;
-    const root: NodeModel = LayoutFactory.createNode({ type: 'directory', node: data }, data.path, radialId, null, { isMainRoot: true });
+    const root: NodeModel = LayoutFactory.createNode({ type: 'directory', node: data }, data.path, radialId, null, {
+      isMainRoot: true,
+    });
     this.createRadialWithChildren(root, null);
   }
 
@@ -34,12 +36,13 @@ export class Graph {
     const radial = LayoutFactory.createRadial(root, parentNode, { x: root.polarX, y: root.polarY });
 
     let totalDepth = 0;
+
     const stack = [root];
     while (stack.length) {
       const node = stack.pop()!;
 
       // helper function
-      const addChild = (ref: NodeModel['ref'], id: IdPath) => {
+      const addChildModel = (ref: NodeModel['ref'], id: IdPath) => {
         const child = LayoutFactory.createNode(ref, id, node.radialId, node);
         node.children.push(child);
         stack.push(child);
@@ -49,13 +52,16 @@ export class Graph {
 
       switch (node.ref.type) {
         case 'directory':
-          node.ref.node.dirs?.forEach(dir => addChild({ type: 'directory', node: dir }, dir.path));
-          node.ref.node.files?.forEach(file => addChild({ type: 'file', node: file }, file.id));
+          node.ref.node.dirs?.forEach(dir => addChildModel({ type: 'directory', node: dir }, dir.path));
+          node.ref.node.files?.forEach(file => {
+            if (file.type === FileEnum.Code) addChildModel({ type: 'codeFile', node: file }, file.id);
+            else addChildModel({ type: 'otherFile', node: file }, file.id);
+          });
           break;
-        case 'file':
+        case 'codeFile':
           node.ref.node.exports.forEach(declaration => {
             const id = node.id + '-' + declaration.name;
-            addChild({ type: 'declaration', node: declaration }, id);
+            addChildModel({ type: 'declaration', node: declaration }, id);
           });
           break;
       }

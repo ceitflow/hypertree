@@ -12,11 +12,10 @@
     "isolatedModules": true,
     "moduleDetection": "force",
     "noEmit": true,
-
     /* Linting */
     "strict": true,
     "noImplicitAny": false,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src", "astgen/src/files/file.type.ts", "astgen/src/files/declaration.type.ts"]
+  "include": ["src", "backend/dist/output.d.ts"]
 }

@@ -1,13 +1,14 @@
-export type DeclarationNode = { // this is what is declared in FileNode
+// export of SourceFile
+export type DeclarationNode = {
   name: string;
   loc: number;
   referencedImportTokens: string[];
   token: DeclarationClass
-      | DeclarationFunction
-      | DeclarationPrimitive
-      | DeclarationTSType
-      | DeclarationObject
-      | DeclarationUnknown;
+    | DeclarationFunction
+    | DeclarationPrimitive
+    | DeclarationTSType
+    | DeclarationObject
+    | DeclarationUnknown;
 }
 
 export type DeclarationClass = {

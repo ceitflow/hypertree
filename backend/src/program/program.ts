@@ -1,24 +1,15 @@
-import {
-  Directory,
-  EmptyImportFactory,
-  ExternalSourceFile,
-  FileBuilder,
-  File,
-  IdPath,
-  ImportFactory,
-  ProgramGraph,
-  ReexportFactory,
-} from './files';
-import path from 'node:path';
-import { Analyzer } from './util';
 import { SourceFile } from 'typescript';
+import { OtherFile } from './other-file';
+import { Directory, File, Graph } from './program.type';
+import { Analyzer, FileEnum, IdPath, IO } from '../analyzer';
+import { CodeFileBuilder, EmptyImportFactory, ImportFactory, ReexportFactory } from './code-file';
 
-export class AstGraph {
-  graph: ProgramGraph;
+export class Program {
+  graph: Graph;
 
-  constructor(files: SourceFile[], analyzer: Analyzer) {
+  constructor(files: Set<SourceFile | OtherFile>, analyzer: Analyzer) {
     const srcPath = analyzer.getProgramSrcPath();
-    const srcName = srcPath.split(path.sep).pop()!;
+    const srcName = srcPath.split(IO.separator).pop()!;
     this.graph = {
       name: srcName,
       root: {
@@ -29,22 +20,26 @@ export class AstGraph {
         path: srcPath,
       },
       stats: {
-        filesCount: files.length,
+        filesCount: files.size,
         externalFilesCount: 0,
         totalLoc: 0,
-      }
+      },
     };
-    const filesBuilder = new Map<IdPath, FileBuilder>();
-    const externalFiles = new Map<IdPath, ExternalSourceFile>();
+    const filesBuilder = new Map<IdPath, CodeFileBuilder>();
+    const externalFiles = new Map<IdPath, SourceFile>();
 
-    console.log(`1. build files ${files.length}`);
+    console.log(`1. build files ${files.size}`);
     for (const sourceFile of files) {
-      const file = new FileBuilder(sourceFile, analyzer);
+      if ('type' in sourceFile) {
+        this.addToDirectoryGraph(sourceFile);
+        continue;
+      }
+      const file = new CodeFileBuilder(sourceFile, analyzer);
       filesBuilder.set(file.id, file);
       this.graph.stats.totalLoc += file.loc;
       for (const extFile of file.cache.externalReferencedFiles) {
         if (!externalFiles.has(extFile.file.fileName)) {
-          externalFiles.set(extFile.file.fileName, extFile);
+          externalFiles.set(extFile.packageName, extFile.file);
           this.graph.stats.externalFilesCount++;
         }
       }
@@ -52,12 +47,10 @@ export class AstGraph {
     }
 
     console.log(`2. build external files (${externalFiles.size})`);
-    // TODO call graphs / flow analysis
-    for (const extFile of externalFiles.values()) {
-      const file = new FileBuilder(extFile.file, analyzer);
-      file.id = extFile.packageName;
-      filesBuilder.set(file.id, file);
-      console.log(`Converting External AST graph node: ${file.id}`);
+    for (const [packageName, file] of externalFiles) {
+      const extBuildFile = new CodeFileBuilder(file, analyzer);
+      filesBuilder.set(packageName, extBuildFile);
+      console.log(`Converting External AST graph node: ${packageName} (${file.fileName})`);
     }
 
     console.log('3. calculate reexports from other files \n \n');
@@ -78,8 +71,7 @@ export class AstGraph {
         const fromNode = filesBuilder.get(resolvedPath);
         if (!fromNode) {
           console.error(`Attempt to import file that's not registered: ${resolvedPath} from: ${file.id}`);
-        }
-        else file.fileImports.push(...ImportFactory(node, analyzer, fromNode));
+        } else file.fileImports.push(...ImportFactory(node, analyzer, fromNode));
       });
     }
 
@@ -91,7 +83,7 @@ export class AstGraph {
     }
   }
 
-  private buildReExports(node: FileBuilder, graph: Map<IdPath, FileBuilder>, analyzer: Analyzer): void {
+  private buildReExports(node: CodeFileBuilder, graph: Map<IdPath, CodeFileBuilder>, analyzer: Analyzer): void {
     if (node.recalculateAgain) {
       node.unprocessedReexportReferences = node.cache.getUniqueReExportedFiles();
       node.recalculateAgain = false;
@@ -140,11 +132,11 @@ export class AstGraph {
   }
 
   private addToDirectoryGraph(file: File): void {
-    const osSeparator = path.sep;
+    const osSeparator = IO.separator;
     const segments = file.id.split(osSeparator); // unix or windows paths
     let temp: Directory = this.graph.root;
 
-    if (file.isExternalFile) {
+    if (file.type === FileEnum.Code && file.isExternalFile) {
       // gets reference to node_modules, create one if doesn't exist
       const nodemodules = this.graph.root.dirs?.find(c => c.name === 'node_modules');
       if (!nodemodules) {
@@ -174,6 +166,8 @@ export class AstGraph {
   }
 
   toJSON(): string {
+    const { filesCount, externalFilesCount, totalLoc } = this.graph.stats;
+    console.log(`outputting json graph (${filesCount} files + ${externalFilesCount} external, total LOC: ${totalLoc})`);
     return JSON.stringify(this.graph, undefined, 2);
   }
 }

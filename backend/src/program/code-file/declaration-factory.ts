@@ -14,11 +14,11 @@ import {
   SyntaxKind,
   TypeAliasDeclaration,
 } from 'typescript';
-import { Analyzer } from '../util';
-import { FileBuilder } from './file-builder';
-import { CacheExportItem, CacheReExportItem } from './file-cache';
+import { Analyzer } from '../../analyzer/analyzer';
+import { CodeFileBuilder } from './code-file-builder';
+import { CacheExportItem, CacheReExportItem } from './code-file-cache';
 import { DeclarationEnum, DeclarationNode } from './declaration.type';
-import { FileEmptyImport, FileImportToken, FileReExportToken } from './file.type';
+import { CodeFileEmptyImport, CodeFileImport, CodeFileReExport } from './code-file.type';
 
 // create Export, Import and Reexport types from TS Nodes
 export const ExportFactory = (node: CacheExportItem['node'], analyzer: Analyzer): DeclarationNode | undefined => {
@@ -148,7 +148,7 @@ const calculateLoc = (node: CacheExportItem['node']): number => {
   return endLine - startLine + 1;
 }
 
-export const EmptyImportFactory = (node: ImportDeclaration, analyzer: Analyzer): FileEmptyImport => {
+export const EmptyImportFactory = (node: ImportDeclaration, analyzer: Analyzer): CodeFileEmptyImport => {
   const { resolvedPath, isExternal } = analyzer.getResolvedImportPath(node);
   // (!node.importClause) No import clause case (e.g., import './side-effects')
   return {
@@ -158,8 +158,8 @@ export const EmptyImportFactory = (node: ImportDeclaration, analyzer: Analyzer):
   }
 }
 
-export const ImportFactory = (node: ImportDeclaration, analyzer: Analyzer, fromNode: FileBuilder): FileImportToken[] => {
-  const result: FileImportToken[] = [];
+export const ImportFactory = (node: ImportDeclaration, analyzer: Analyzer, fromNode: CodeFileBuilder): CodeFileImport[] => {
+  const result: CodeFileImport[] = [];
   const importClause = node.importClause;
   const namedBindings = importClause?.namedBindings;
   const { resolvedPath, isExternal } = analyzer.getResolvedImportPath(node);
@@ -220,9 +220,9 @@ export const ImportFactory = (node: ImportDeclaration, analyzer: Analyzer, fromN
   return result;
 }
 
-export const ReexportFactory = (cached: CacheReExportItem, analyzer: Analyzer, fromNode: FileBuilder): FileReExportToken[] => {
+export const ReexportFactory = (cached: CacheReExportItem, analyzer: Analyzer, fromNode: CodeFileBuilder): CodeFileReExport[] => {
   const { node, fromGraphNode } = cached;
-  const result: FileReExportToken[] = [];
+  const result: CodeFileReExport[] = [];
 
   switch (node.kind) {
     case SyntaxKind.ExportSpecifier: {
