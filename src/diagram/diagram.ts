@@ -1,21 +1,22 @@
-import { Screen } from './screen';
-import { dia } from '@joint/core';
-import { DeviceController, Mouse, Touch } from './devices';
+import { Mouse } from './devices';
+import { Paper } from './paper/paper.ts';
+import { Layout } from './graph/layout/layout.ts';
+import { ProgramGraph } from './graph/types.ts';
 
-export function Diagram(graph: dia.Graph, paper: dia.Paper, container: HTMLElement) {
-  // graph // <- graph controlled by the consumer
-  // let paper; // <- comes with its own graph. It will be used and virtualized
-  const screen = Screen(paper, container);
-  const devices = DeviceController(screen);
-  devices.add(Mouse);
-  devices.add(Touch);
-
-  // screen <- svg,webgl render API, paper
-  // model? graph listeners? selection wont work that way,
+export async function Diagram(host: HTMLElement) {
+  const paper = await Paper.Create(host);
+  const mouse = Mouse(paper.scroller.controller);
+  paper.background.on('mousedown', mouse.mousedown);
+  paper.background.on('mousemove', mouse.mousemove);
+  paper.background.on('mouseup', mouse.mouseup);
+  paper.background.on('wheel', mouse.wheel);
 
   return {
-    screen,
-    paper,
-    originalGraph: graph,
+    load: (json: ProgramGraph) => {
+      paper.graph.initialize(json);
+      Layout(paper.graph);
+      paper.reload();
+      paper.scroller.controller.zoom.zoomToFit();
+    },
   };
 }
