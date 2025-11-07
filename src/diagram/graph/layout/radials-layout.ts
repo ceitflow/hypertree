@@ -27,13 +27,12 @@ export function RadialsLayout(root: RadialModel) {
       continue;
     }
     // sort to assign correct angles in order
-    children.sort((a, b) => a.parentNode!.angle - b.parentNode!.angle);
+    // children.sort((a, b) => a.parentNode!.angle - b.parentNode!.angle);
 
     console.log('\n');
     let tempLastAngle = 0;
     const y = radiiSum * 2 / 2 / Math.PI;
     children.forEach(eject => {
-      // todo can replace it with arctan2 formula, same thing but working actually
       const angularRange = (eject.radius / radiiSum) * 2 * Math.PI;
       const a = tempLastAngle + angularRange / 2 - Math.PI / 2; // middle of angular range
       const radius = Math.max(y, largestChildRadius + radial.selfRadius);

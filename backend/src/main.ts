@@ -7,7 +7,8 @@ import { createProgram, findConfigFile, parseJsonConfigFileContent, readConfigFi
   // /Users/ceitflow/WebstormProjects/koia-adminflow/adminflow
   // /Users/ceitflow/WebstormProjects/m3/coplan-visualizer
   // /Users/ceitflow/WebstormProjects/prototypes/graphkit-test-repos/angular/packages
-  const src = '/Users/ceitflow/WebstormProjects/m3/coplan-visualizer';
+  // /Users/ceitflow/WebstormProjects/medusa/my-medusa-store-storefront
+  const src = '/Users/ceitflow/WebstormProjects/prototypes/graphkit-test-repos/angular/packages';
 
   const configPath = findConfigFile(src, sys.fileExists);
   if (!configPath) { // todo create virtual tsconfig if not present
@@ -31,6 +32,10 @@ import { createProgram, findConfigFile, parseJsonConfigFileContent, readConfigFi
       files.add(CreateOtherFile(filePath, analyzer));
     }
   });
-
-  IO.writeOutput(new Program(files, analyzer).toJSON());
+  const sorted = Array.from(files).sort((a, b) => {
+    const aName = 'type' in a ? a.id : a.fileName;
+    const bName = 'type' in b ? b.id : b.fileName;
+    return aName.localeCompare(bName);
+  });
+  IO.writeOutput(new Program(sorted, analyzer).toJSON());
 })();

@@ -20,7 +20,7 @@ export class Paper {
     const { width, height } = host.getBoundingClientRect();
     const background = new Graphics({ interactive: true, eventMode: 'dynamic', parent: engine.stage })
       .rect(0, 0, width, height)
-      .fill('0x333');
+      .fill('0x444');
     const paper = new Container({ parent: engine.stage });
     const viewport = CreateViewport(engine, paper); // todo Observe scale change (for LOD controller)
     return new Paper(graph, engine, paper, background, viewport);
@@ -34,7 +34,7 @@ export class Paper {
       const container = this.renderRadial(data);
       parentContainer?.addChild(container);
       data.ejectedRadials.forEach(ejected => {
-        // const regex = /^src\/app\/(altinn|shared(?:\/.*)?)$/; // todo for selectively rendering child radials
+        // const regex = /^src\/app\/(visualizer|shared\/styles\/primeng-theme)$/; // todo for selectively rendering child radials
         // if (regex.test(ejected.rootId)) recursion(ejected, container);
         recursion(ejected, container);
       });
@@ -65,7 +65,7 @@ export class Paper {
       y: radial.y,
     });
     container.addChild(new Graphics().circle(0, 0, radial.selfRadius).stroke(0xff8888)); // todo debug only
-    container.addChild(new Graphics().circle(0, 0, radial.radius).stroke(0xff0000)); // todo debug only
+    // container.addChild(new Graphics().circle(0, 0, radial.radius).stroke(0xff0000)); // todo debug only
     const stack = [radial.children.get(radial.rootId)!];
 
     while (stack.length) {
@@ -78,7 +78,7 @@ export class Paper {
         )
       );
       const circle = PaperFactory.createNode(node);
-      circle.on('pointerdown', e => console.log(`w: ${node.totalWidth}`, node, graph.radialsMap.get(node.radialId)));
+      circle.on('pointerdown', e => console.log(`w: ${node.totalWidth}, a: ${node.angle}`, node, graph.radialsMap.get(node.radialId)));
       nodesContainer.addChild(circle);
       if (node.isMainRoot) {
         const stats = graph.program.stats;

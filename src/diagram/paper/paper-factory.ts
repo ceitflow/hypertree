@@ -6,7 +6,7 @@ export class PaperFactory {
     const { ref, polarX, polarY, name, angle } = node;
 
     let color: string;
-    if (ref.type === 'directory') color = '0xafafaf';
+    if (ref.type === 'directory') color = '0xfefefe';
     else if (ref.type === 'codeFile') color = '0xe24c00';
     else if (ref.type === 'otherFile') color = '0xFFFF00';
     else color = '0x277DFF';
@@ -16,7 +16,7 @@ export class PaperFactory {
     const radius = node.radialId === node.id ? node.diameter : node.diameter / 2;
     let graphic: Graphics;
     if (node.id === node.radialId) graphic = new Graphics().circle(0, 0, node.isMainRoot ? 60 : radius).fill(color);
-    else graphic = new Graphics().rect(0, 0, radius, radius * 3).fill(color);
+    else graphic = new Graphics().rect(-radius, -radius, radius * 2, radius * 2).fill(color);
     graphic.x = polarX;
     graphic.y = polarY;
     graphic.rotation = angle;
@@ -34,11 +34,11 @@ export class PaperFactory {
         fill: '#ffb976', // altColor ? '#ffb976' : '#f5f5f5',
       },
     });
-    const adjAngle = angle + Math.PI / 2;
+    const adjAngle = 0//angle + Math.PI / 2;
     bitmapFontText.anchor = adjAngle < Math.PI === !highlight ? 0 : { x: 1, y: 0 }; // if d.angle less than half circle and no children
     bitmapFontText.x = x;
     bitmapFontText.y = y + (highlight ? -6 : -6);
-    bitmapFontText.angle = (adjAngle * 180) / Math.PI - 90 + (adjAngle >= Math.PI ? 180 : 0);
+    bitmapFontText.rotation = adjAngle - Math.PI / 2 + (adjAngle >= Math.PI ? Math.PI : 0);
 
     return bitmapFontText;
   }
@@ -72,7 +72,7 @@ export class PaperFactory {
       // console.log(`C${x1},${y1},${x2},${y2},${_x1},${_y1}`);
     };
     const lineTo = (x: number, y: number) => {
-      graphic.lineTo(x, y).stroke({ width: 2, color: 0x524035 });
+      graphic.lineTo(x, y).stroke({ width: 2, color: 0x724035 });
     };
     return { moveTo, bezierCurveTo, lineTo };
   }

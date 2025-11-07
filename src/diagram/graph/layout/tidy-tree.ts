@@ -4,8 +4,8 @@ import { EjectNodeDiameter, LayoutFactory, NodeDiameter } from './layout-factory
 // Tree diagram using the Reingold-Tilford "tidy" algorithm
 // Computes the layout using Buchheim et al.'s algorithm.
 // Later on create a radial tree layout. The layout’s first dimension (x) is the angle, while the second (y) is the radius.
-const RADIUS_STEP = 200;
-const RADIUS_OFFSET = 100;
+const MAX_RADIUS_STEP = 300;
+const MIN_RADIUS_OFFSET = 200;
 
 export function Separation(a: NodeModel, b: NodeModel) {
   const aSep = a.isEjected ? EjectNodeDiameter / 2 : NodeDiameter / 2;
@@ -14,13 +14,16 @@ export function Separation(a: NodeModel, b: NodeModel) {
 }
 
 export function Radius(depth: number): number {
-  if (depth < 0) throw new Error('depth must be a positive integer');
-  if (depth === 0) return 0;
-
+  if (depth === 0) {
+    return 0;
+  }
+  if (!depth || depth < 0) throw new Error('depth must be a positive integer');
   const MinDepthDistance = 24;
 
-  let result = RADIUS_OFFSET;
-  for (let i = 0; i < depth; i++) result += Math.floor(Math.max(RADIUS_STEP * Math.pow(2 / 3, i), MinDepthDistance));
+  let result = MIN_RADIUS_OFFSET;
+  for (let i = 0; i < depth; i++) {
+    result += Math.max(Math.floor(MAX_RADIUS_STEP * Math.pow(9 / 10, i)), MinDepthDistance);
+  }
   return result;
 }
 
@@ -55,11 +58,11 @@ export function TidyTree(root: NodeModel, opt: Options = {}) {
     }
 
     if (v.parent) v.parent!.Ancestor = apportion(v, leftSibling, v.parent!.Ancestor || siblings[0]);
-    v.totalWidth =
-      children.length && !children[0].isVirtual ? children.reduce((acc, curr) => acc + curr.totalWidth, 0) : v.diameter;
-  });
 
-  // root.parent!.mod = -root.prelim; // edge case for root node to move it upward
+    if (children.length && !children[0].isVirtual) {
+      v.totalWidth = children.reduce((acc, curr) => acc + curr.totalWidth, 0)
+    } else v.totalWidth = v.diameter;
+  });
 
   // Computes all real x-coordinates by summing up the modifiers recursively.
   // second walk
@@ -91,26 +94,22 @@ export function TidyTree(root: NodeModel, opt: Options = {}) {
   const fullWidth = right.x - left.x + sep;
   // console.log(`${root.name} leftmost: ${left.name}, rightmost: ${right.name}, fullWidth: ${fullWidth}`, map);
 
-  const fullCircle = 2 * Math.PI;
-  const tx = sep - left.x;
-  const kx = fullCircle / fullWidth;
   const minRequiredRadius = fullWidth / Math.PI / 2;
   console.log(`TidyTree run, minRadius: ${minRequiredRadius}`);
 
   map.forEach((nodes, depth) => {
     const radius = Radius(depth);
     const ratio = radius / minRequiredRadius || 1; // >1
-    console.log(`${depth}. radius: ${radius}, ratio: ${ratio}, width: ${nodes[nodes.length - 1].x - nodes[0].x}`);
+    const w = nodes[nodes.length - 1].x - nodes[0].x;
+    console.log(`${depth}. radius: ${radius}, ratio: ${ratio}, width: ${w} (radius: ${w / 2 / Math.PI})`);
 
     nodes.forEach(node => {
       if (opt.mode === 'radial') {
-        // if (node.parent) {
-        //   const center = node.parent.x;
-        //   node.angleAdjustment = ((node.x - center) / ratio + center - node.x) + node.parent.angleAdjustment;
-        // }
-        node.angle = (node.x + node.angleAdjustment + tx) * kx - Math.PI / 2; // radians
-        node.polarX = node.y * Math.cos(node.angle);
-        node.polarY = node.y * Math.sin(node.angle);
+        if (node.parent) {
+          const center = node.parent.x;
+          node.angleAdjustment = ((node.x - center) / ratio + center - node.x) + node.parent.angleAdjustment;
+        }
+        node.calculatePolar(fullWidth, sep);
       } else {
         node.polarX = node.x;
         node.polarY = node.y;

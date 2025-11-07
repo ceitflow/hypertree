@@ -4,7 +4,7 @@ type NodeFactoryOpt = Partial<Omit<NodeModel, 'id' | 'radialId' | 'ref' | 'paren
 type RadialFactoryOpt = Partial<Omit<RadialModel, 'rootId' | 'parentNode'>>;
 
 export const NodeDiameter = 12;
-export const EjectNodeDiameter = 24;
+export const EjectNodeDiameter = 6;
 
 export class LayoutFactory {
   static createNode(
@@ -64,11 +64,18 @@ export class LayoutFactory {
         model.isEjected = true;
         model.diameter = EjectNodeDiameter;
         let temp = model.parent;
-        while(temp) {
+        while (temp) {
           temp.totalWidth -= model.totalWidth;
           temp = temp.parent;
         }
         model.totalWidth = 0;
+      },
+      calculatePolar: (fullWidth, sep) => {
+        const fullCircle = 2 * Math.PI;
+        const kx = fullCircle / fullWidth;
+        model.angle = ((model.x + model.angleAdjustment - sep) * kx - Math.PI / 2) % fullCircle; // radians
+        model.polarX = model.y * Math.cos(model.angle);
+        model.polarY = model.y * Math.sin(model.angle);
       },
       ...opt,
     };

@@ -23,7 +23,8 @@ export type RadialModel = {
   ejectedRadials: Map<IdPath, RadialModel>;
   x: number; // relative to parent
   y: number; // relative to parent
-  depth: number; // total depth
+  depth: number; // this radius depth
+  // ejectsDepth: number; // depth of deepest eject
   radius: number; // including ejectedRadials
   selfRadius: number;
 };
@@ -62,10 +63,11 @@ export type NodeModel = {
   angleAdjustment: number;
   polarX: number;
   polarY: number;
-  totalWidth: number;
+  totalWidth: number; // TODO replace with [minX, maxX]
 
   resetLayout: () => void;
   markAsEjected: () => void;
+  calculatePolar: (fullWidth: number, sep: number) => void;
 };
 
 export type LinkModel = {

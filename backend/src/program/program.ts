@@ -7,7 +7,7 @@ import { CodeFileBuilder, EmptyImportFactory, ImportFactory, ReexportFactory } f
 export class Program {
   graph: Graph;
 
-  constructor(files: Set<SourceFile | OtherFile>, analyzer: Analyzer) {
+  constructor(files: (SourceFile | OtherFile)[], analyzer: Analyzer) {
     const srcPath = analyzer.getProgramSrcPath();
     const srcName = srcPath.split(IO.separator).pop()!;
     this.graph = {
@@ -20,7 +20,7 @@ export class Program {
         path: srcPath,
       },
       stats: {
-        filesCount: files.size,
+        filesCount: files.length,
         externalFilesCount: 0,
         totalLoc: 0,
       },
@@ -28,7 +28,7 @@ export class Program {
     const filesBuilder = new Map<IdPath, CodeFileBuilder>();
     const externalFiles = new Map<IdPath, SourceFile>();
 
-    console.log(`1. build files ${files.size}`);
+    console.log(`1. build files ${files.length}`);
     for (const sourceFile of files) {
       if ('type' in sourceFile) {
         this.addToDirectoryGraph(sourceFile);
