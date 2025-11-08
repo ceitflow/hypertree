@@ -64,21 +64,25 @@ export class Paper {
       x: radial.x,
       y: radial.y,
     });
-    container.addChild(new Graphics().circle(0, 0, radial.selfRadius).stroke(0xff8888)); // todo debug only
+    // container.addChild(new Graphics().circle(0, 0, radial.selfRadius).stroke(0xff8888)); // todo debug only
     // container.addChild(new Graphics().circle(0, 0, radial.radius).stroke(0xff0000)); // todo debug only
     const stack = [radial.children.get(radial.rootId)!];
 
     while (stack.length) {
       const node = stack.pop()!;
-      const structuralLinks = node.children.map(c => ({ source: node, target: c }));
 
-      structuralLinks.forEach(link =>
-        linksContainer.addChild(
-          PaperFactory.createLink(link.source.polarX, link.source.polarY, link.target.polarX, link.target.polarY)
+      node.children.forEach(c => {
+        const l = { source: node, target: c };
+        linksContainer.addChild(PaperFactory.createLink(l.source.polarX, l.source.polarY, l.target.polarX, l.target.polarY));
+      });
+      const circle = PaperFactory.createNode(node);
+      circle.on('pointerdown', e =>
+        console.log(
+          `a: ${node.angle < 0 ? node.angle + 2 * Math.PI : node.angle}, d: ${node.depth} x:${node.polarX} y: ${node.polarY}`,
+          node,
+          graph.radialsMap.get(node.radialId)
         )
       );
-      const circle = PaperFactory.createNode(node);
-      circle.on('pointerdown', e => console.log(`w: ${node.totalWidth}, a: ${node.angle}`, node, graph.radialsMap.get(node.radialId)));
       nodesContainer.addChild(circle);
       if (node.isMainRoot) {
         const stats = graph.program.stats;

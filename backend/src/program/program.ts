@@ -7,7 +7,7 @@ import { CodeFileBuilder, EmptyImportFactory, ImportFactory, ReexportFactory } f
 export class Program {
   graph: Graph;
 
-  constructor(files: (SourceFile | OtherFile)[], analyzer: Analyzer) {
+  constructor(files: Set<(SourceFile | OtherFile)>, analyzer: Analyzer) {
     const srcPath = analyzer.getProgramSrcPath();
     const srcName = srcPath.split(IO.separator).pop()!;
     this.graph = {
@@ -20,7 +20,7 @@ export class Program {
         path: srcPath,
       },
       stats: {
-        filesCount: files.length,
+        filesCount: files.size,
         externalFilesCount: 0,
         totalLoc: 0,
       },
@@ -28,7 +28,7 @@ export class Program {
     const filesBuilder = new Map<IdPath, CodeFileBuilder>();
     const externalFiles = new Map<IdPath, SourceFile>();
 
-    console.log(`1. build files ${files.length}`);
+    console.log(`1. build files ${files.size}`);
     for (const sourceFile of files) {
       if ('type' in sourceFile) {
         this.addToDirectoryGraph(sourceFile);
@@ -168,6 +168,16 @@ export class Program {
   toJSON(): string {
     const { filesCount, externalFilesCount, totalLoc } = this.graph.stats;
     console.log(`outputting json graph (${filesCount} files + ${externalFilesCount} external, total LOC: ${totalLoc})`);
+    // sort
+    const temp = [this.graph.root];
+    while (temp.length) {
+      const item = temp.pop()!;
+      if (item.files) item.files.sort((a, b) => a.name.localeCompare(b.name));
+      if (item.dirs) {
+        item.dirs.sort((a, b) => a.name.localeCompare(b.name));
+        temp.push(...item.dirs)
+      }
+    }
     return JSON.stringify(this.graph, undefined, 2);
   }
 }

@@ -31,7 +31,7 @@ export function Screen(updateTransform: UpdateTransform) {
       },
       zoom: {
         inputEaseFn: Ease.inLog,
-        min: 0.03,
+        min: 0.05,
         max: 5,
         limitToViewport: false,
         animDurationMs: 500,
@@ -43,7 +43,7 @@ export function Screen(updateTransform: UpdateTransform) {
         durationMultiplier: 1,
         turboVelocityThreshold: 14,
         minVelocity: 1,
-        limitToViewport: true,
+        limitToViewport: false,
         animEaseFn: Ease.outQuint,
       },
     },

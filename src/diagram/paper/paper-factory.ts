@@ -1,5 +1,6 @@
 import { NodeModel } from '../graph/types.ts';
 import { BitmapText, Graphics } from 'pixi.js';
+import { NodeDiameter } from '../graph/layout/layout-factory.ts';
 
 export class PaperFactory {
   static createNode(node: NodeModel) {
@@ -16,7 +17,8 @@ export class PaperFactory {
     const radius = node.radialId === node.id ? node.diameter : node.diameter / 2;
     let graphic: Graphics;
     if (node.id === node.radialId) graphic = new Graphics().circle(0, 0, node.isMainRoot ? 60 : radius).fill(color);
-    else graphic = new Graphics().rect(-radius, -radius, radius * 2, radius * 2).fill(color);
+    // else graphic = new Graphics().rect(-radius, -radius, radius * 2, radius * 2).fill(color);
+    else graphic = new Graphics().circle(0, 0, radius).fill(color);
     graphic.x = polarX;
     graphic.y = polarY;
     graphic.rotation = angle;
@@ -34,11 +36,12 @@ export class PaperFactory {
         fill: '#ffb976', // altColor ? '#ffb976' : '#f5f5f5',
       },
     });
-    const adjAngle = 0//angle + Math.PI / 2;
-    bitmapFontText.anchor = adjAngle < Math.PI === !highlight ? 0 : { x: 1, y: 0 }; // if d.angle less than half circle and no children
-    bitmapFontText.x = x;
-    bitmapFontText.y = y + (highlight ? -6 : -6);
-    bitmapFontText.rotation = adjAngle - Math.PI / 2 + (adjAngle >= Math.PI ? Math.PI : 0);
+    const a = angle < 0 ? 2 * Math.PI + angle : angle;
+    const doRotate = a > Math.PI / 2 && a < (3 / 2) * Math.PI;
+    bitmapFontText.anchor = doRotate ? { x: 0, y: 0.5 } : { x: 1, y: 0.5 };
+    bitmapFontText.x = x + (NodeDiameter / 2) * Math.cos(angle);
+    bitmapFontText.y = y + (NodeDiameter / 2) * Math.sin(angle);
+    bitmapFontText.rotation = a + (doRotate ? Math.PI : 0);
 
     return bitmapFontText;
   }

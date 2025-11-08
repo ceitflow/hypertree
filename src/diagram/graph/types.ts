@@ -49,6 +49,7 @@ export type NodeModel = {
   children: NodeModel[]; // todo in paper check if child.radialId is from different radial
   depth: number; // dynamically changed depth
   i: number; // index of child in parent.children
+  spiralDy: number;
 
   x: number;
   y: number;

@@ -4,8 +4,8 @@ import { EjectNodeDiameter, LayoutFactory, NodeDiameter } from './layout-factory
 // Tree diagram using the Reingold-Tilford "tidy" algorithm
 // Computes the layout using Buchheim et al.'s algorithm.
 // Later on create a radial tree layout. The layout’s first dimension (x) is the angle, while the second (y) is the radius.
-const MAX_RADIUS_STEP = 300;
-const MIN_RADIUS_OFFSET = 200;
+const MAX_RADIUS_STEP = 100;
+const MIN_RADIUS_OFFSET = 0;
 
 export function Separation(a: NodeModel, b: NodeModel) {
   const aSep = a.isEjected ? EjectNodeDiameter / 2 : NodeDiameter / 2;
@@ -105,10 +105,10 @@ export function TidyTree(root: NodeModel, opt: Options = {}) {
 
     nodes.forEach(node => {
       if (opt.mode === 'radial') {
-        if (node.parent) {
-          const center = node.parent.x;
-          node.angleAdjustment = ((node.x - center) / ratio + center - node.x) + node.parent.angleAdjustment;
-        }
+        // if (node.parent) {
+        //   const center = node.parent.x;
+        //   node.angleAdjustment = ((node.x - center) / ratio + center - node.x) + node.parent.angleAdjustment;
+        // }
         node.calculatePolar(fullWidth, sep);
       } else {
         node.polarX = node.x;
@@ -117,6 +117,7 @@ export function TidyTree(root: NodeModel, opt: Options = {}) {
     });
   });
   console.log('\n');
+  return bottom;
 }
 
 // adds 'virtual' nodes to leftmost and rightmost leaves of each parent to prevent subtrees from overlapping
@@ -130,13 +131,17 @@ function addVirtualWallNodes(root: NodeModel) {
     if (!node.children.length) {
       leafs.push(node);
       totalDepth = Math.max(totalDepth, node.depth);
-    } else for (let i = 0; i < node.children.length; i++) temp.push(node.children[i]);
+    } else {
+      for (let i = 0; i < node.children.length; i++) {
+        temp.push(node.children[i]);
+      }
+    }
   }
 
   while (leafs.length) {
     const n = leafs.pop()!;
-    const isLeftOrRight = n.i === 0 || n.i === n.parent!.children.length - 1;
-    if (!isLeftOrRight) continue;
+    // const isLeftOrRight = n.i === 0 || n.i === n.parent!.children.length - 1;
+    // if (!isLeftOrRight) continue;
 
     let tempVirtualNode!: NodeModel;
     // add virtual nodes all the way to the bottom
@@ -218,7 +223,7 @@ function apportion(currentNode: NodeModel, leftSibling: NodeModel | null, defaul
   return defaultAncestor;
 }
 
-function eachAfter(root: NodeModel, callback: (node: NodeModel) => void): void {
+export function eachAfter(root: NodeModel, callback: (node: NodeModel) => void): void {
   const nodes: NodeModel[] = [root];
   const next: NodeModel[] = [];
   let node: NodeModel | undefined;

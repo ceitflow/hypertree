@@ -30,6 +30,7 @@ export class LayoutFactory {
       parent,
       children: [],
       depth: parent ? parent.depth + 1 : 0,
+      spiralDy: 0,
 
       x: 0, // tidy tree produces x positions only
       y: 0,
