@@ -1,6 +1,5 @@
 import { Graph } from '../graph.ts';
 import { NodeModel } from '../types.ts';
-import { NodeDiameter } from './layout-factory.ts';
 import { eachAfter, TidyTree } from './tidy-tree.ts';
 
 export function SpiralLayout(graph: Graph) {
@@ -15,33 +14,31 @@ export function SpiralLayout(graph: Graph) {
 }
 
 function Spiral(root: NodeModel, bottomNode: NodeModel) {
-  let tempArcAngle = -Math.PI * 2;
-  let tempArcY = -Math.PI * 2;
-  const arcdxWidth = 50;
-  const estArmWidth = arcdxWidth * 6; // ?
-  let prev: NodeModel;
+  const offset = 600 * Math.PI;
+  const width = 12 * Math.PI;
+  const armWidth = width * 2 * Math.PI; // distance between spiral arms divided by 2𝜋
+  const totalDepth = bottomNode.depth;
+
+  // todo need extent for each node (minX maxX)
   eachAfter(root, v => {
-    const c = v.children;
-    if (c.length) {
-      const middle = c.length % 2 === 1 ? c[Math.floor(c.length / 2)] : c[Math.floor(c.length / 2)];
-      const widthDx = estArmWidth / bottomNode.depth;
-      v.spiralDy = (bottomNode.depth - v.depth) * widthDx;
-      const dy = v.spiralDy - middle.spiralDy;
-      v.angle = middle.angle;
-      v.polarX = middle.polarX + dy * Math.cos(middle.angle);
-      v.polarY = middle.polarY + dy * Math.sin(middle.angle);
+    const L = v.x + offset;
+    if (L === 0) {
+      v.polarX = 0;
+      v.polarY = 0;
+      return;
     }
-    // leaf node
-    else {
-      const padding = prev && prev.parent !== v.parent ? NodeDiameter / 2 : 0;
-      const step = (NodeDiameter + padding) / Math.sqrt(tempArcY * tempArcY + arcdxWidth * arcdxWidth); // dx / arcLength  <- sinus?
-      tempArcAngle -= step;
-      tempArcY = arcdxWidth * tempArcAngle;
-      v.angle = tempArcAngle % (2 * Math.PI);
-      v.polarX = tempArcY * Math.cos(tempArcAngle);
-      v.polarY = tempArcY * Math.sin(tempArcAngle);
+    // Step 1: Calculate the angle θ from the arc length L ≈ (a/2) * θ^2  =>  θ = sqrt(2L / a)
+    const theta = Math.sqrt((2 * L) / width);
+    // Step 2: Calculate the radius r = a * θ with offset
+    let radius = width * theta;
+    if (v.children.length) {
+      radius = Math.max(0, radius - (totalDepth - v.depth) / totalDepth * armWidth);
     }
-    prev = v;
+    const x = radius * Math.cos(theta);
+    const y = radius * Math.sin(theta);
+    v.angle = theta % (2 * Math.PI);
+    v.polarX = x;
+    v.polarY = y;
   });
   root.polarX = 0;
   root.polarY = 0;
