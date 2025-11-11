@@ -1,3 +1,4 @@
+import { SpiralLayout } from './layout/spiral-layout.ts';
 import { LayoutFactory } from './layout/layout-factory.ts';
 import { FileEnum, IdPath, NodeModel, ProgramGraph } from './types.ts';
 
@@ -8,9 +9,10 @@ type GraphModel = {
 
 export class Graph {
   model: GraphModel | null = null;
+  layout = new SpiralLayout();
 
   initialize(program: ProgramGraph) {
-    const data = program.root //.dirs!.find(c => c.name === 'src')!//.dirs!.find(c => c.name === 'app')!; // todo for testing only
+    const data = program.root; //.dirs!.find(c => c.name === 'src')!//.dirs!.find(c => c.name === 'app')!; // todo for testing only
     const n_m_idx = data.dirs?.findIndex(d => d.name === 'node_modules') || -1;
     if (n_m_idx !== -1) data.dirs!.splice(n_m_idx, 1);
     this.model = {
@@ -48,6 +50,12 @@ export class Graph {
           });
           break;
       }
+    }
+  }
+
+  runLayout() {
+    if (this.model?.root) {
+      this.layout.layout(this.model?.root);
     }
   }
 }

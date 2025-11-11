@@ -10,9 +10,11 @@ export class LayoutFactory {
       ref,
       parent,
       children: [],
+      childrenDepth: 0,
       diameter: NodeDiameter,
       depth: parent ? parent.depth + 1 : 0,
       angle: 0,
+      spiralLength: 0,
       x: 0,
       y: 0,
       range: [] as any,
@@ -52,7 +54,6 @@ export class LayoutFactory {
     const stack = [result];
     while (stack.length) {
       const node = stack.pop()!;
-      if (node.ref.id.startsWith('BUILD.bazel')) console.log(node.ref.id);
       node.ref.children.forEach(c => {
         const child = this.createTidyNode(c, node);
         node.children.push(child);

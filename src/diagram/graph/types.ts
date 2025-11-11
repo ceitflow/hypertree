@@ -12,7 +12,7 @@ export type ProgramGraph = Graph;
 
 export enum FileEnum {
   Code = 0,
-  Other = 1
+  Other = 1,
 }
 export type IdPath = string;
 
@@ -23,18 +23,20 @@ export type NodeModel = {
     | { type: 'directory'; node: Directory }
     | { type: 'codeFile'; node: CodeFile }
     | { type: 'otherFile'; node: OtherFile }
-    | { type: 'declaration'; node: Declaration }; // ref is underlying data that this layout represents
+    | { type: 'declaration'; node: Declaration }; // ref is underlying data that this node represents
   parent: NodeModel | null;
   children: NodeModel[];
+  childrenDepth: number; // depth of children relative to this node
   diameter: number;
-  depth: number; // dynamically changed depth
+  depth: number;
   angle: number;
+  spiralLength: number;
   x: number;
   y: number;
-  range: [NodeModel, NodeModel]
+  range: [NodeModel, NodeModel];
 };
 
-// node for tidy tree algorithm
+// for tidy tree algorithm
 export type TidyNode = {
   readonly ref: NodeModel;
   parent: TidyNode | null;
@@ -52,8 +54,8 @@ export type TidyNode = {
   change: number;
   shift: number;
   thread: TidyNode | null;
-  range: [TidyNode, TidyNode],
-}
+  range: [TidyNode, TidyNode];
+};
 
 export type LinkModel = {
   // GroupLink and Link

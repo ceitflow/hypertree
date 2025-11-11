@@ -1,48 +1,56 @@
-import { Graph } from '../graph.ts';
 import { NodeModel } from '../types.ts';
 import { YPosition, TidyTree, eachAfter } from './tidy-tree.ts';
 
-export function SpiralLayout(graph: Graph) {
-  const root = graph.model?.root;
-  if (!root) {
-    return;
+export class SpiralLayout {
+  layout(root: NodeModel) {
+    console.log(root);
+    TidyTree(root);
+    this.spiral(root);
   }
-  console.log(root);
-  const bottomNode = TidyTree(root);
-  Spiral(root, bottomNode.ref);
-}
 
-function Spiral(root: NodeModel, bottomNode: NodeModel) {
-  const totalDepth = bottomNode.depth;
-  const armWidth = YPosition(totalDepth) / 2; // distance between spiral arms divided by 2𝜋
-  const width = armWidth / 2 / Math.PI;
-  const startOffset = 600 * Math.PI;
-  let prev!: NodeModel;
-  let padding = 0;
-  console.log(`armWidth: ${armWidth}, depth: ${totalDepth}, increment: ${armWidth / totalDepth}`)
+  private spiral(root: NodeModel) {
+    const startOffset = 600 * Math.PI;
+    let prev!: NodeModel;
+    let padding = 0;
+    const out: [number, number, number] = [0, 0, 0]; // array to pass data (for performance)
 
-  eachAfter(root, v => {
-    padding += prev && !v.children.length && prev.parent !== v.parent ? 12 : 0;
-    const L = v.x + startOffset + padding;
-    if (L === 0) {
-      v.x = 0;
-      v.y = 0;
-      return;
-    }
+    eachAfter(root, v => {
+      padding += prev && !v.children.length && prev.parent !== v.parent ? 12 : 0;
+      v.spiralLength = v.x + startOffset + padding; // v.x is distance from 0 set by tidy tree
+      if (v.spiralLength === 0) {
+        v.x = 0;
+        v.y = 0;
+        return;
+      }
+      this.getCartesianFromSpiralLength(root.childrenDepth, v.spiralLength, v.children.length ? v.depth : 0, out);
+      v.angle = out[2] % (2 * Math.PI);
+      v.x = out[0];
+      v.y = out[1];
+      prev = v;
+    });
+    root.x = 0;
+    root.y = 0;
+  }
+
+  getArmWidth(totalDepth: number) {
+    return YPosition(totalDepth) / 2;
+  }
+
+  // out: [x, y, angle]
+  getCartesianFromSpiralLength(totalDepth: number, length: number, offsetByDepth: number, out: [number, number, number]) {
+    const armWidth = this.getArmWidth(totalDepth);
+    const width = armWidth / 2 / Math.PI; // distance between spiral arms
+
     // Step 1: Calculate the angle θ from the arc length L ≈ (a/2) * θ^2  =>  θ = sqrt(2L / a)
-    const theta = Math.sqrt((2 * L) / width);
+    const angle = Math.sqrt((2 * length) / width);
+
     // Step 2: Calculate the radius r = a * θ with offset
-    let radius = width * theta;
-    if (v.children.length) {
-      radius = Math.max(0, radius - (totalDepth - v.depth) / totalDepth * armWidth);
+    let radius = width * angle;
+    if (offsetByDepth) {
+      radius = Math.max(0, radius - ((totalDepth - offsetByDepth) / totalDepth) * armWidth);
     }
-    const x = radius * Math.cos(theta);
-    const y = radius * Math.sin(theta);
-    v.angle = theta % (2 * Math.PI);
-    v.x = x;
-    v.y = y;
-    prev = v;
-  });
-  root.x = 0;
-  root.y = 0;
+    out[0] = radius * Math.cos(angle);
+    out[1] = radius * Math.sin(angle);
+    out[2] = angle;
+  }
 }

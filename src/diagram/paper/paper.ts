@@ -59,32 +59,35 @@ export class Paper {
     const stack = [root];
 
     while (stack.length) {
-      const node = stack.pop()!;
+      const n = stack.pop()!;
+      const isRoot = n === root;
 
-      node.children.forEach(c => {
-        const l = { source: node, target: c };
+      // create links
+      n.children.forEach(c => {
+        const l = { source: n, target: c };
         linksContainer.addChild(PaperFactory.createLink(l.source.x, l.source.y, l.target.x, l.target.y));
       });
-      const circle = PaperFactory.createNode(node);
-      circle.on('pointerdown', e =>
+
+      // create node with label
+      const nodeGraphic = !isRoot && n.ref.type === 'directory' ? PaperFactory.createDirectoryNode(n, this.graph) : PaperFactory.createNode(n);
+      nodeGraphic.on('pointerdown', e =>
         console.log(
-          `a: ${node.angle < 0 ? node.angle + 2 * Math.PI : node.angle}, d: ${node.depth} x:${node.x} y: ${node.y}`,
-          node
+          `a: ${n.angle}, d: ${n.depth} x:${n.x} y: ${n.y} L: ${n.spiralLength} 
+          range: ${n.range[0].spiralLength}-${n.range[1].spiralLength}`,
+          n
         )
       );
-      nodesContainer.addChild(circle);
-      if (node === root) {
+      nodesContainer.addChild(nodeGraphic);
+      if (n === root) {
         const stats = graph.program.stats;
         const label =
-          node.name + '\nfiles: ' + stats.filesCount + '\nexternal: ' + stats.externalFilesCount + '\nLOC: ' + stats.totalLoc;
+          n.name + '\nfiles: ' + stats.filesCount + '\nexternal: ' + stats.externalFilesCount + '\nLOC: ' + stats.totalLoc;
         textContainer.addChild(PaperFactory.createLabel(30, -15, 0, label, true));
       } else {
-        textContainer.addChild(
-          PaperFactory.createLabel(node.x, node.y, node.angle, node.name, node.ref.type === 'directory')
-        );
+        textContainer.addChild(PaperFactory.createLabel(n.x, n.y, n.angle, n.name, n.ref.type === 'directory'));
       }
 
-      stack.push(...node.children);
+      stack.push(...n.children);
     }
 
     return container;

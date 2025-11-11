@@ -79,15 +79,14 @@ export function TidyTree(data: NodeModel) {
     v.ref.x = v.x;
     v.ref.y = v.y;
     v.children.forEach(child => {
-      if (child.range[0].x < v.range[0].x) v.range[0] = child;
-      if (child.range[1].x > v.range[1].x) v.range[1] = child;
+      if (child.range[0].x < v.range[0].x) v.range[0] = child.range[0];
+      if (child.range[1].x > v.range[1].x) v.range[1] = child.range[1];
     });
     v.ref.range[0] = v.range[0].ref;
     v.ref.range[1] = v.range[1].ref;
+    v.ref.childrenDepth = v.children.reduce((acc, curr) => Math.max(acc, curr.ref.childrenDepth + 1), 0);
   })
   console.log(`${root.ref.name} leftmost: ${left.ref.name}, rightmost: ${right.ref.name}, fullWidth: ${right.x - left.x}`);
-
-  return bottom;
 }
 
 // adds 'virtual' nodes to leftmost and rightmost leaves of each parent to prevent subtrees from overlapping

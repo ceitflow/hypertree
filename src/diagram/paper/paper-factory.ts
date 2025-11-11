@@ -1,10 +1,11 @@
 import { NodeModel } from '../graph/types.ts';
 import { BitmapText, Graphics } from 'pixi.js';
 import { NodeDiameter } from '../graph/layout/layout-factory.ts';
+import { Graph } from '../graph/graph.ts';
 
 export class PaperFactory {
   static createNode(node: NodeModel) {
-    const { ref, x, y, name, angle } = node;
+    const { ref, x, y, name } = node;
 
     let color: string;
     if (ref.type === 'directory') color = '0xfefefe';
@@ -14,15 +15,51 @@ export class PaperFactory {
 
     const radius = node.diameter / 2;
     let graphic: Graphics;
-    if (!node.parent) graphic = new Graphics().circle(0, 0, 60).fill(color);
+    if (!node.parent) graphic = new Graphics().circle(0, 0, 60).stroke('#333').fill('#444');
     // else graphic = new Graphics().rect(-radius, -radius, radius * 2, radius * 2).fill(color);
     else graphic = new Graphics().circle(0, 0, radius).fill(color);
     graphic.x = x;
     graphic.y = y;
-    graphic.rotation = angle;
     graphic.label = name;
     graphic.interactive = true;
     return graphic;
+  }
+
+  static createDirectoryNode(node: NodeModel, graph: Graph) {
+    const { x, y, name, range } = node;
+    const graphDepth = graph.model!.root!.childrenDepth;
+    const color = '#eaeaea';
+    const width = Math.floor(graph.layout.getArmWidth(graphDepth) / graphDepth) - 8;
+    let minX = range[0].spiralLength;
+    let maxX = range[1].spiralLength;
+    if (node.children.length <= 1) {
+      minX = node.spiralLength - NodeDiameter / 2;
+      maxX = node.spiralLength + NodeDiameter;
+    }
+    const points: [number, number][] = [];
+    const out: [number, number, number] = [0, 0, 0];
+    for (let L = minX; L < maxX; L += NodeDiameter) {
+      graph.layout.getCartesianFromSpiralLength(graphDepth, L, node.depth, out);
+      points.push([out[0], out[1]]);
+    }
+
+    const g = new Graphics();
+    g.moveTo(points[0][0], points[0][1]);
+
+    // Draw smooth curve using quadratic interpolation
+    for (let i = 1; i < points.length - 1; i++) {
+      const xc = (points[i][0] + points[i + 1][0]) / 2;
+      const yc = (points[i][1] + points[i + 1][1]) / 2;
+      g.quadraticCurveTo(points[i][0], points[i][1], xc, yc).stroke({ width, color, cap: 'square' });
+    }
+
+    // Draw final segment
+    const last = points[points.length - 1];
+    g.lineTo(last[0], last[1]).stroke({ width, color, cap: 'square' });
+
+    g.label = name;
+    g.interactive = true;
+    return g;
   }
 
   static createLabel(x: number, y: number, angle: number, text: string, highlight = false) {
@@ -46,35 +83,9 @@ export class PaperFactory {
 
   static createLink(sourceX: number, sourceY: number, targetX: number, targetY: number): Graphics {
     const linkGraphic = new Graphics();
-    const ctx = this.drawLink(linkGraphic);
 
-    ctx.moveTo(sourceX, sourceY);
-    ctx.lineTo(targetX, targetY);
+    linkGraphic.moveTo(sourceX, sourceY);
+    linkGraphic.lineTo(targetX, targetY).stroke({ width: 2, color: 0x724035 });
     return linkGraphic;
-  }
-
-  private static drawLink(graphic: Graphics) {
-    let _x0: number | null = null;
-    let _y0: number | null = null; // start of current subpath
-    let _x1: number | null = null;
-    let _y1: number | null = null; // end of current subpath
-
-    const moveTo = (x: number, y: number) => {
-      _x0 = _x1 = x;
-      _y0 = _y1 = y;
-      graphic.moveTo(_x1, _y1);
-      // console.log(`M${_x1},${_y1}`);
-    };
-    const bezierCurveTo = (x1: number, y1: number, x2: number, y2: number, x: number, y: number) => {
-      // PixiJS uses bezierCurveTo method for cubic Bézier curves
-      graphic.bezierCurveTo(x1, y1, x2, y2, x, y).stroke({ width: 2, color: 0xfc8a17 });
-      _x1 = x;
-      _y1 = y;
-      // console.log(`C${x1},${y1},${x2},${y2},${_x1},${_y1}`);
-    };
-    const lineTo = (x: number, y: number) => {
-      graphic.lineTo(x, y).stroke({ width: 2, color: 0x724035 });
-    };
-    return { moveTo, bezierCurveTo, lineTo };
   }
 }

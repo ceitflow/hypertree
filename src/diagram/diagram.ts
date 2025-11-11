@@ -1,7 +1,6 @@
 import { Mouse } from './devices';
 import { Paper } from './paper/paper.ts';
 import { ProgramGraph } from './graph/types.ts';
-import { SpiralLayout } from './graph/layout/spiral-layout.ts';
 
 export async function Diagram(host: HTMLElement) {
   const paper = await Paper.Create(host);
@@ -14,7 +13,7 @@ export async function Diagram(host: HTMLElement) {
   return {
     load: (json: ProgramGraph) => {
       paper.graph.initialize(json);
-      SpiralLayout(paper.graph);
+      paper.graph.runLayout();
       paper.reload();
       paper.scroller.controller.zoom.zoomToFit();
     },
