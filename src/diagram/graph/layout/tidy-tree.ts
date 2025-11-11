@@ -1,46 +1,37 @@
-import { NodeModel } from '../types.ts';
-import { EjectNodeDiameter, LayoutFactory, NodeDiameter } from './layout-factory.ts';
+import { NodeModel, TidyNode } from '../types.ts';
+import { LayoutFactory } from './layout-factory.ts';
 
 // Tree diagram using the Reingold-Tilford "tidy" algorithm
 // Computes the layout using Buchheim et al.'s algorithm.
-// Later on create a radial tree layout. The layout’s first dimension (x) is the angle, while the second (y) is the radius.
-const MAX_RADIUS_STEP = 100;
-const MIN_RADIUS_OFFSET = 0;
 
-export function Separation(a: NodeModel, b: NodeModel) {
-  const aSep = a.isEjected ? EjectNodeDiameter / 2 : NodeDiameter / 2;
-  const bSep = b.isEjected ? EjectNodeDiameter / 2 : NodeDiameter / 2;
-  return aSep + bSep;
+export function Separation(a: TidyNode, b: TidyNode) {
+  return a.diameter / 2 + b.diameter / 2;
 }
 
-export function Radius(depth: number): number {
+export function YPosition(depth: number): number {
   if (depth === 0) {
     return 0;
   }
   if (!depth || depth < 0) throw new Error('depth must be a positive integer');
   const MinDepthDistance = 24;
+  const Y_POS_STEP = 100;
 
-  let result = MIN_RADIUS_OFFSET;
+  let result = 0;
   for (let i = 0; i < depth; i++) {
-    result += Math.max(Math.floor(MAX_RADIUS_STEP * Math.pow(9 / 10, i)), MinDepthDistance);
+    result += Math.max(Math.floor(Y_POS_STEP * Math.pow(9 / 10, i)), MinDepthDistance);
   }
   return result;
 }
 
-type Options = {
-  mode?: 'horizontal' | 'radial';
-};
-
-export function TidyTree(root: NodeModel, opt: Options = {}) {
+export function TidyTree(data: NodeModel) {
+  const root = LayoutFactory.buildTidyTreeNodes(data);
   addVirtualWallNodes(root);
-  const map = new Map<number, NodeModel[]>();
-
   // Computes a preliminary x-coordinate for v. Before that, FIRST WALK is
   // applied recursively to the children of v, as well as the function
   // APPORTION. After spacing out the children by calling EXECUTE SHIFTS, the
   // node v is placed to the midpoint of its outermost children.
   // first walk
-  eachAfter(root, (v: NodeModel) => {
+  eachAfter(root, (v: TidyNode) => {
     const children = v.children;
     const siblings = v.parent?.children || [];
     const leftSibling = v.i ? siblings[v.i - 1] : null;
@@ -56,12 +47,9 @@ export function TidyTree(root: NodeModel, opt: Options = {}) {
     } else if (leftSibling) {
       v.prelim = leftSibling.prelim + Separation(v, leftSibling);
     }
-
-    if (v.parent) v.parent!.Ancestor = apportion(v, leftSibling, v.parent!.Ancestor || siblings[0]);
-
-    if (children.length && !children[0].isVirtual) {
-      v.totalWidth = children.reduce((acc, curr) => acc + curr.totalWidth, 0)
-    } else v.totalWidth = v.diameter;
+    if (v.parent) {
+      v.parent!.Ancestor = apportion(v, leftSibling, v.parent!.Ancestor || siblings[0]);
+    }
   });
 
   // Computes all real x-coordinates by summing up the modifiers recursively.
@@ -70,62 +58,44 @@ export function TidyTree(root: NodeModel, opt: Options = {}) {
   let right = root;
   let bottom = root;
 
-  eachBefore(root, (v: NodeModel) => {
+  eachBefore(root, (v: TidyNode) => {
+    if (v.parent && v.isVirtual) {
+      v.parent.children = []; // remove virtual wall nodes
+      return;
+    }
     const parentMod = v.parent?.mod || 0;
     v.x = v.prelim + parentMod;
-    v.angle = v.x;
     v.mod += parentMod;
-    v.y = Radius(v.depth);
+    v.y = YPosition(v.depth);
 
     // Compute the left-most, right-most, and depth-most nodes for extents.
     if (v.x < left.x) left = v;
     if (v.x > right.x) right = v;
     if (v.depth > bottom.depth) bottom = v;
-    if (v.parent && v.isVirtual)
-      v.parent.children = []; // remove virtual wall nodes
-    else {
-      if (map.get(v.depth)) map.get(v.depth)!.push(v);
-      else map.set(v.depth, [v]);
-    }
   });
 
-  // final positions calculation
-  const sep = left === right ? 1 : Separation(left, right); // extra separation to prevent overlaps on same levels (start and end nodes)
-  const fullWidth = right.x - left.x + sep;
-  // console.log(`${root.name} leftmost: ${left.name}, rightmost: ${right.name}, fullWidth: ${fullWidth}`, map);
-
-  const minRequiredRadius = fullWidth / Math.PI / 2;
-  console.log(`TidyTree run, minRadius: ${minRequiredRadius}`);
-
-  map.forEach((nodes, depth) => {
-    const radius = Radius(depth);
-    const ratio = radius / minRequiredRadius || 1; // >1
-    const w = nodes[nodes.length - 1].x - nodes[0].x;
-    console.log(`${depth}. radius: ${radius}, ratio: ${ratio}, width: ${w} (radius: ${w / 2 / Math.PI})`);
-
-    nodes.forEach(node => {
-      if (opt.mode === 'radial') {
-        // if (node.parent) {
-        //   const center = node.parent.x;
-        //   node.angleAdjustment = ((node.x - center) / ratio + center - node.x) + node.parent.angleAdjustment;
-        // }
-        node.calculatePolar(fullWidth, sep);
-      } else {
-        node.polarX = node.x;
-        node.polarY = node.y;
-      }
+  // calculate final positions
+  eachAfter(root, (v: TidyNode) => {
+    v.ref.x = v.x;
+    v.ref.y = v.y;
+    v.children.forEach(child => {
+      if (child.range[0].x < v.range[0].x) v.range[0] = child;
+      if (child.range[1].x > v.range[1].x) v.range[1] = child;
     });
-  });
-  console.log('\n');
+    v.ref.range[0] = v.range[0].ref;
+    v.ref.range[1] = v.range[1].ref;
+  })
+  console.log(`${root.ref.name} leftmost: ${left.ref.name}, rightmost: ${right.ref.name}, fullWidth: ${right.x - left.x}`);
+
   return bottom;
 }
 
 // adds 'virtual' nodes to leftmost and rightmost leaves of each parent to prevent subtrees from overlapping
-function addVirtualWallNodes(root: NodeModel) {
-  const leafs: NodeModel[] = [];
-  const temp: NodeModel[] = [root];
+function addVirtualWallNodes(root: TidyNode) {
+  const leafs: TidyNode[] = [];
+  const temp: TidyNode[] = [root];
   let totalDepth = 0;
-
+  // eachAfter
   while (temp.length) {
     const node = temp.pop()!;
     if (!node.children.length) {
@@ -137,21 +107,17 @@ function addVirtualWallNodes(root: NodeModel) {
       }
     }
   }
-
   while (leafs.length) {
     const n = leafs.pop()!;
-    // const isLeftOrRight = n.i === 0 || n.i === n.parent!.children.length - 1;
-    // if (!isLeftOrRight) continue;
-
-    let tempVirtualNode!: NodeModel;
+    let tempVirtualNode!: TidyNode;
     // add virtual nodes all the way to the bottom
     for (let i = n.depth + 1; i <= totalDepth; i++) {
       if (!tempVirtualNode) {
-        tempVirtualNode = LayoutFactory.createNode(n.ref, '', n.radialId, n, { isVirtual: true });
+        tempVirtualNode = LayoutFactory.createTidyNode(n.ref, n, true);
         n.children.push(tempVirtualNode);
         continue;
       }
-      const c = LayoutFactory.createNode(n.ref, '', n.radialId, tempVirtualNode, { isVirtual: true });
+      const c = LayoutFactory.createTidyNode(n.ref, tempVirtualNode, true);
       c.depth = i;
       tempVirtualNode.children.push(c);
       tempVirtualNode = c;
@@ -171,7 +137,7 @@ function addVirtualWallNodes(root: NodeModel) {
 // greatest uncommon ancestors using the function ANCESTOR and call MOVE
 // SUBTREE to shift the subtree and prepare the shifts of smaller subtrees.
 // Finally, we add a new thread (if necessary).
-function apportion(currentNode: NodeModel, leftSibling: NodeModel | null, defaultAncestor: NodeModel): NodeModel {
+function apportion(currentNode: TidyNode, leftSibling: TidyNode | null, defaultAncestor: TidyNode): TidyNode {
   if (leftSibling) {
     let insideRightNode = currentNode;
     let outsideRightNode = currentNode;
@@ -223,10 +189,10 @@ function apportion(currentNode: NodeModel, leftSibling: NodeModel | null, defaul
   return defaultAncestor;
 }
 
-export function eachAfter(root: NodeModel, callback: (node: NodeModel) => void): void {
-  const nodes: NodeModel[] = [root];
-  const next: NodeModel[] = [];
-  let node: NodeModel | undefined;
+export function eachAfter<T extends { children: T[] }>(root: T, callback: (node: T) => void): void {
+  const nodes: T[] = [root];
+  const next: T[] = [];
+  let node: T | undefined;
 
   while (nodes.length) {
     node = nodes.pop()!;
@@ -236,9 +202,9 @@ export function eachAfter(root: NodeModel, callback: (node: NodeModel) => void):
   while (next.length) callback(next.pop()!);
 }
 
-export function eachBefore(root: NodeModel | NodeModel[], callback: (node: NodeModel) => void): void {
-  const nodes: NodeModel[] = Array.isArray(root) ? [...root] : [root];
-  let node: NodeModel | undefined;
+function eachBefore<T extends { children: T[] }>(root: T, callback: (node: T) => void): void {
+  const nodes: T[] = [root];
+  let node: T | undefined;
 
   while (nodes.length) {
     node = nodes.pop()!;
@@ -251,20 +217,20 @@ export function eachBefore(root: NodeModel | NodeModel[], callback: (node: NodeM
    subforest). It returns the successor of v on this contour. This successor is
    either given by the leftmost child of v or by the thread of v. The function
    returns null if and only if v is on the highest level of its subtree. */
-function nextLeft(v: NodeModel): NodeModel | null {
+function nextLeft(v: TidyNode): TidyNode | null {
   const children = v.children;
   return children.length ? children[0] : v.thread;
 }
 
 // This function works analogously to nextLeft.
-function nextRight(v: NodeModel): NodeModel | null {
+function nextRight(v: TidyNode): TidyNode | null {
   const children = v.children;
   return children.length ? children[children.length - 1] : v.thread;
 }
 
 // Shifts the current subtree rooted at w+. This is done by increasing
 // prelim(w+) and mod(w+) by shift.
-function moveSubtree(wm: NodeModel, wp: NodeModel, shift: number): void {
+function moveSubtree(wm: TidyNode, wp: TidyNode, shift: number): void {
   const change = shift / (wp.i - wm.i);
   wp.change -= change;
   wp.shift += shift;
@@ -276,14 +242,14 @@ function moveSubtree(wm: NodeModel, wp: NodeModel, shift: number): void {
 // All other shifts, applied to the smaller subtrees between w- and w+, are
 // performed by this function. To prepare the shifts, we have to adjust
 // change(w+), shift(w+), and change(w-).
-function executeShifts(v: NodeModel): void {
+function executeShifts(v: TidyNode): void {
   let shift = 0;
   let change = 0;
   const children = v.children;
   if (!children.length) return;
 
   let i = children.length;
-  let w: NodeModel;
+  let w: TidyNode;
   while (--i >= 0) {
     w = children[i];
     w.prelim += shift;
@@ -294,6 +260,6 @@ function executeShifts(v: NodeModel): void {
 
 // If vi-'s ancestor is a sibling of v, returns vi-'s ancestor. Otherwise,
 // returns the specified (default) ancestor.
-function nextAncestor(vim: NodeModel, v: NodeModel, ancestor: NodeModel): NodeModel {
+function nextAncestor(vim: TidyNode, v: TidyNode, ancestor: TidyNode): TidyNode {
   return vim.ancestor.parent === v.parent ? vim.ancestor : ancestor;
 }

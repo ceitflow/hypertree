@@ -16,61 +16,44 @@ export enum FileEnum {
 }
 export type IdPath = string;
 
-// layout data is created in the frontend
-export type RadialModel = {
-  rootId: IdPath; // id of root LayoutModel
-  parentNode: NodeModel | null;
-  children: Map<IdPath, NodeModel>;
-  ejectedRadials: Map<IdPath, RadialModel>;
-  x: number; // relative to parent
-  y: number; // relative to parent
-  depth: number; // this radius depth
-  // ejectsDepth: number; // depth of deepest eject
-  radius: number; // including ejectedRadials
-  selfRadius: number;
-};
-
 export type NodeModel = {
   id: IdPath;
   name: string;
-  radialId: IdPath;
-  readonly ref:
+  ref:
     | { type: 'directory'; node: Directory }
     | { type: 'codeFile'; node: CodeFile }
     | { type: 'otherFile'; node: OtherFile }
     | { type: 'declaration'; node: Declaration }; // ref is underlying data that this layout represents
-
-  diameter: number;
-
-  isMainRoot: boolean;
-  isVirtual: boolean;
-  isEjected: boolean;
-
   parent: NodeModel | null;
   children: NodeModel[];
+  diameter: number;
   depth: number; // dynamically changed depth
-  i: number; // index of child in parent.children
-
-
+  angle: number;
   x: number;
   y: number;
-  Ancestor: NodeModel | null; // default ancestor
-  ancestor: NodeModel; // ancestor
+  range: [NodeModel, NodeModel]
+};
+
+// node for tidy tree algorithm
+export type TidyNode = {
+  readonly ref: NodeModel;
+  parent: TidyNode | null;
+  children: TidyNode[];
+  diameter: number;
+  isVirtual: boolean;
+  depth: number;
+  i: number; // index of child in its parent
+  x: number;
+  y: number;
+  Ancestor: TidyNode | null; // default ancestor
+  ancestor: TidyNode; // ancestor
   prelim: number;
   mod: number;
   change: number;
   shift: number;
-  thread: NodeModel | null;
-  angle: number;
-  angleAdjustment: number;
-  polarX: number;
-  polarY: number;
-  totalWidth: number; // TODO replace with [minX, maxX]
-
-  resetLayout: () => void;
-  markAsEjected: () => void;
-  calculatePolar: (fullWidth: number, sep: number) => void;
-};
+  thread: TidyNode | null;
+  range: [TidyNode, TidyNode],
+}
 
 export type LinkModel = {
   // GroupLink and Link

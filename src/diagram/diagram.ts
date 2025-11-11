@@ -1,6 +1,5 @@
 import { Mouse } from './devices';
 import { Paper } from './paper/paper.ts';
-import { Layout } from './graph/layout/layout.ts';
 import { ProgramGraph } from './graph/types.ts';
 import { SpiralLayout } from './graph/layout/spiral-layout.ts';
 

@@ -4,23 +4,21 @@ import { NodeDiameter } from '../graph/layout/layout-factory.ts';
 
 export class PaperFactory {
   static createNode(node: NodeModel) {
-    const { ref, polarX, polarY, name, angle } = node;
+    const { ref, x, y, name, angle } = node;
 
     let color: string;
     if (ref.type === 'directory') color = '0xfefefe';
     else if (ref.type === 'codeFile') color = '0xe24c00';
     else if (ref.type === 'otherFile') color = '0xFFFF00';
     else color = '0x277DFF';
-    if (node.isEjected) color = '0x00FF00';
-    if (node.isVirtual) color = '0x00FF00'; // for debugging only, not going to be part of graph
 
-    const radius = node.radialId === node.id ? node.diameter : node.diameter / 2;
+    const radius = node.diameter / 2;
     let graphic: Graphics;
-    if (node.id === node.radialId) graphic = new Graphics().circle(0, 0, node.isMainRoot ? 60 : radius).fill(color);
+    if (!node.parent) graphic = new Graphics().circle(0, 0, 60).fill(color);
     // else graphic = new Graphics().rect(-radius, -radius, radius * 2, radius * 2).fill(color);
     else graphic = new Graphics().circle(0, 0, radius).fill(color);
-    graphic.x = polarX;
-    graphic.y = polarY;
+    graphic.x = x;
+    graphic.y = y;
     graphic.rotation = angle;
     graphic.label = name;
     graphic.interactive = true;
