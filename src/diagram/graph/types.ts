@@ -9,6 +9,7 @@ export type CodeFile = Code;
 export type OtherFile = Other;
 export type Declaration = Decl;
 export type ProgramGraph = Graph;
+
 export enum FileEnum {
   Code = 0,
   Other = 1
@@ -46,10 +47,10 @@ export type NodeModel = {
   isEjected: boolean;
 
   parent: NodeModel | null;
-  children: NodeModel[]; // todo in paper check if child.radialId is from different radial
+  children: NodeModel[];
   depth: number; // dynamically changed depth
   i: number; // index of child in parent.children
-  spiralDy: number;
+
 
   x: number;
   y: number;

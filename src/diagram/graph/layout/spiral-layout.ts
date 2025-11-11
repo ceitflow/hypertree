@@ -1,6 +1,6 @@
 import { Graph } from '../graph.ts';
 import { NodeModel } from '../types.ts';
-import { eachAfter, TidyTree } from './tidy-tree.ts';
+import { eachAfter, Radius, TidyTree } from './tidy-tree.ts';
 
 export function SpiralLayout(graph: Graph) {
   const radial = graph.getRootRadial();
@@ -14,14 +14,18 @@ export function SpiralLayout(graph: Graph) {
 }
 
 function Spiral(root: NodeModel, bottomNode: NodeModel) {
-  const offset = 600 * Math.PI;
-  const width = 12 * Math.PI;
-  const armWidth = width * 2 * Math.PI; // distance between spiral arms divided by 2𝜋
   const totalDepth = bottomNode.depth;
+  const armWidth = Radius(totalDepth) / 2; // distance between spiral arms divided by 2𝜋
+  const width = armWidth / 2 / Math.PI;
+  const startOffset = 600 * Math.PI;
+  let prev!: NodeModel;
+  let padding = 0;
+  console.log(`armWidth: ${armWidth}, depth: ${totalDepth}, increment: ${armWidth / totalDepth}`)
 
   // todo need extent for each node (minX maxX)
   eachAfter(root, v => {
-    const L = v.x + offset;
+    padding += prev && !v.children.length && prev.parent !== v.parent ? 12 : 0;
+    const L = v.x + startOffset + padding;
     if (L === 0) {
       v.polarX = 0;
       v.polarY = 0;
@@ -39,6 +43,7 @@ function Spiral(root: NodeModel, bottomNode: NodeModel) {
     v.angle = theta % (2 * Math.PI);
     v.polarX = x;
     v.polarY = y;
+    prev = v;
   });
   root.polarX = 0;
   root.polarY = 0;

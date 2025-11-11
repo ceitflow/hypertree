@@ -52,11 +52,11 @@ export class Graph {
 
       switch (node.ref.type) {
         case 'directory':
-          node.ref.node.dirs?.forEach(dir => addChildModel({ type: 'directory', node: dir }, dir.path));
           node.ref.node.files?.forEach(file => {
             if (file.type === FileEnum.Code) addChildModel({ type: 'codeFile', node: file }, file.id);
             else addChildModel({ type: 'otherFile', node: file }, file.id);
           });
+          node.ref.node.dirs?.forEach(dir => addChildModel({ type: 'directory', node: dir }, dir.path));
           break;
         case 'codeFile':
           node.ref.node.exports.forEach(declaration => {

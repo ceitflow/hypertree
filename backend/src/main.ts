@@ -9,7 +9,7 @@ import { createProgram, findConfigFile, parseJsonConfigFileContent, readConfigFi
   // /Users/ceitflow/WebstormProjects/prototypes/graphkit-test-repos/angular/packages
   // /Users/ceitflow/WebstormProjects/prototypes/graphkit-test-repos/vscode/src
   // /Users/ceitflow/WebstormProjects/medusa/my-medusa-store-storefront
-  const src = '/Users/ceitflow/WebstormProjects/m3/coplan-visualizer';
+  const src = '/Users/ceitflow/WebstormProjects/prototypes/graphkit-test-repos/angular/packages';
 
   const configPath = findConfigFile(src, sys.fileExists);
   if (!configPath) { // todo create virtual tsconfig if not present
