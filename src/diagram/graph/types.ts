@@ -16,6 +16,10 @@ export enum FileEnum {
 }
 export type IdPath = string;
 
+// todo distinguish ContainerModel from NodeModel
+// directory and codeFile are containers
+// declaration and OtherFile is NodeModel
+// todo or 4 different models for each ref type
 export type NodeModel = {
   id: IdPath;
   name: string;
@@ -27,12 +31,15 @@ export type NodeModel = {
   parent: NodeModel | null;
   children: NodeModel[];
   childrenDepth: number; // depth of children relative to this node
-  diameter: number;
+  width: number;
   depth: number;
   angle: number;
-  spiralLength: number;
   x: number;
   y: number;
+  spiralLength: number;
+  outerArc: [number, number][]; // x,y
+  innerArc: [number, number][]; // x,y
+  labelArcPoints: [number, number, number][]; // x,y,angle
   range: [NodeModel, NodeModel];
 };
 
@@ -41,7 +48,7 @@ export type TidyNode = {
   readonly ref: NodeModel;
   parent: TidyNode | null;
   children: TidyNode[];
-  diameter: number;
+  width: number;
   isVirtual: boolean;
   depth: number;
   i: number; // index of child in its parent
@@ -54,11 +61,4 @@ export type TidyNode = {
   change: number;
   shift: number;
   thread: TidyNode | null;
-  range: [TidyNode, TidyNode];
-};
-
-export type LinkModel = {
-  // GroupLink and Link
-  source: NodeModel;
-  target: NodeModel;
 };

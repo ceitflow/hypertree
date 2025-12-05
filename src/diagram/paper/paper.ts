@@ -61,32 +61,32 @@ export class Paper {
     while (stack.length) {
       const n = stack.pop()!;
       const isRoot = n === root;
+      let nodeGraphic: Graphics;
 
-      // create links
-      n.children.forEach(c => {
-        const l = { source: n, target: c };
-        linksContainer.addChild(PaperFactory.createLink(l.source.x, l.source.y, l.target.x, l.target.y));
-      });
+      if (isRoot) {
+        nodeGraphic = PaperFactory.createRootNode(n);
+        const stats = graph.program.stats;
+        const label =
+          n.name + '\nfiles: ' + stats.filesCount + '\nexternal: ' + stats.externalFilesCount + '\nLOC: ' + stats.totalLoc;
+        textContainer.addChild(PaperFactory.createLabel(30, -15, 0, label, true));
+      } else if (n.ref.type === 'directory' ) {
+        const result = PaperFactory.createDirArcNode(n.name, n.outerArc, n.innerArc, n.labelArcPoints, PaperFactory.getColor(n));
+        nodeGraphic = result.arc;
+        if (n.ref.type === 'directory') textContainer.addChild(result.arc, ...result.labels);
+      } else {
+        nodeGraphic = PaperFactory.createNode(n);
+        // textContainer.addChild(PaperFactory.createLabel(n.x, n.y, n.angle, n.name, false));
+      }
 
-      // create node with label
-      const nodeGraphic = !isRoot && n.ref.type === 'directory' ? PaperFactory.createDirectoryNode(n, this.graph) : PaperFactory.createNode(n);
       nodeGraphic.on('pointerdown', e =>
         console.log(
           `a: ${n.angle}, d: ${n.depth} x:${n.x} y: ${n.y} L: ${n.spiralLength} 
+          loc: ${n.ref.node['loc']} diameter: ${n.width}
           range: ${n.range[0].spiralLength}-${n.range[1].spiralLength}`,
           n
         )
       );
       nodesContainer.addChild(nodeGraphic);
-      if (n === root) {
-        const stats = graph.program.stats;
-        const label =
-          n.name + '\nfiles: ' + stats.filesCount + '\nexternal: ' + stats.externalFilesCount + '\nLOC: ' + stats.totalLoc;
-        textContainer.addChild(PaperFactory.createLabel(30, -15, 0, label, true));
-      } else {
-        textContainer.addChild(PaperFactory.createLabel(n.x, n.y, n.angle, n.name, n.ref.type === 'directory'));
-      }
-
       stack.push(...n.children);
     }
 

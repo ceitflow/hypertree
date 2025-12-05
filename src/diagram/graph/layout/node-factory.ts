@@ -1,8 +1,9 @@
 import { NodeModel, IdPath, TidyNode } from '../types.ts';
 
-export const NodeDiameter = 12;
+export const NodeWidth = 10;
+export const SpiralArmWidth = 60;
 
-export class LayoutFactory {
+export class NodeFactory {
   static createNode(ref: NodeModel['ref'], id: IdPath, parent: NodeModel | null): NodeModel {
     const model: NodeModel = {
       id,
@@ -11,12 +12,15 @@ export class LayoutFactory {
       parent,
       children: [],
       childrenDepth: 0,
-      diameter: NodeDiameter,
+      width: ref.type === 'declaration' ? Math.max(Math.round(ref.node.loc / 2), 10) : NodeWidth, // default width
       depth: parent ? parent.depth + 1 : 0,
       angle: 0,
-      spiralLength: 0,
       x: 0,
       y: 0,
+      spiralLength: 0,
+      outerArc: [],
+      innerArc: [],
+      labelArcPoints: [],
       range: [] as any,
     };
     model.range = [model, model];
@@ -28,7 +32,7 @@ export class LayoutFactory {
       ref,
       parent,
       children: [],
-      diameter: ref.diameter,
+      width: ref.width,
       i: parent ? parent.children.length : 0,
       isVirtual,
       depth: ref.depth,
@@ -42,10 +46,8 @@ export class LayoutFactory {
       change: 0,
       shift: 0,
       thread: null,
-      range: null as any,
     }
     result.ancestor = result;
-    result.range = [result, result]
     return result;
   }
 

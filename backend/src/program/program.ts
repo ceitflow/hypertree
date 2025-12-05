@@ -172,6 +172,11 @@ export class Program {
     const temp = [this.graph.root];
     while (temp.length) {
       const item = temp.pop()!;
+      if (item.name === 'node_modules') {
+        item.dirs = [];
+        item.files = [];
+        continue;
+      }
       if (item.files) item.files.sort((a, b) => a.name.localeCompare(b.name));
       if (item.dirs) {
         item.dirs.sort((a, b) => a.name.localeCompare(b.name));

@@ -1,30 +1,31 @@
 import { NodeModel, TidyNode } from '../types.ts';
-import { LayoutFactory } from './layout-factory.ts';
+import { NodeFactory, SpiralArmWidth } from './node-factory.ts';
 
 // Tree diagram using the Reingold-Tilford "tidy" algorithm
 // Computes the layout using Buchheim et al.'s algorithm.
 
-export function Separation(a: TidyNode, b: TidyNode) {
-  return a.diameter / 2 + b.diameter / 2;
+function Separation(left: TidyNode, right: TidyNode) {
+  return left.width // / 2 + right.width / 2;
 }
 
 export function YPosition(depth: number): number {
-  if (depth === 0) {
-    return 0;
-  }
-  if (!depth || depth < 0) throw new Error('depth must be a positive integer');
-  const MinDepthDistance = 24;
-  const Y_POS_STEP = 100;
-
-  let result = 0;
-  for (let i = 0; i < depth; i++) {
-    result += Math.max(Math.floor(Y_POS_STEP * Math.pow(9 / 10, i)), MinDepthDistance);
-  }
-  return result;
+  return depth * SpiralArmWidth;
+  // if (depth === 0) {
+  //   return 0;
+  // }
+  // if (!depth || depth < 0) throw new Error('depth must be a positive integer');
+  // const MinDepthDistance = 24;
+  // const Y_POS_STEP = 100;
+  //
+  // let result = 0;
+  // for (let i = 0; i < depth; i++) {
+  //   result += Math.max(Math.floor(Y_POS_STEP * Math.pow(5 / 10, i)), MinDepthDistance);
+  // }
+  // return result;
 }
 
 export function TidyTree(data: NodeModel) {
-  const root = LayoutFactory.buildTidyTreeNodes(data);
+  const root = NodeFactory.buildTidyTreeNodes(data);
   addVirtualWallNodes(root);
   // Computes a preliminary x-coordinate for v. Before that, FIRST WALK is
   // applied recursively to the children of v, as well as the function
@@ -39,13 +40,13 @@ export function TidyTree(data: NodeModel) {
       executeShifts(v);
       const midpoint = (children[0].prelim + children[children.length - 1].prelim) / 2;
       if (leftSibling) {
-        v.prelim = leftSibling.prelim + Separation(v, leftSibling);
+        v.prelim = leftSibling.prelim + Separation(leftSibling, v);
         v.mod = v.prelim - midpoint;
       } else {
         v.prelim = midpoint;
       }
     } else if (leftSibling) {
-      v.prelim = leftSibling.prelim + Separation(v, leftSibling);
+      v.prelim = leftSibling.prelim + Separation(leftSibling, v);
     }
     if (v.parent) {
       v.parent!.Ancestor = apportion(v, leftSibling, v.parent!.Ancestor || siblings[0]);
@@ -79,14 +80,21 @@ export function TidyTree(data: NodeModel) {
     v.ref.x = v.x;
     v.ref.y = v.y;
     v.children.forEach(child => {
-      if (child.range[0].x < v.range[0].x) v.range[0] = child.range[0];
-      if (child.range[1].x > v.range[1].x) v.range[1] = child.range[1];
+      if (child.ref.range[0].x < v.ref.range[0].x) v.ref.range[0] = child.ref.range[0];
+      if (child.ref.range[1].x > v.ref.range[1].x) v.ref.range[1] = child.ref.range[1];
     });
-    v.ref.range[0] = v.range[0].ref;
-    v.ref.range[1] = v.range[1].ref;
+    if (v.children.length === 1) {
+      v.ref.x = v.ref.children[0].x;
+      v.ref.width = v.ref.children[0].width;
+    } else if (v.children.length) {
+      v.ref.x = v.ref.range[0].x;
+      v.ref.width = v.ref.range[1].x + v.ref.range[1].width - v.ref.range[0].x;
+    }
     v.ref.childrenDepth = v.children.reduce((acc, curr) => Math.max(acc, curr.ref.childrenDepth + 1), 0);
-  })
-  console.log(`${root.ref.name} leftmost: ${left.ref.name}, rightmost: ${right.ref.name}, fullWidth: ${right.x - left.x}`);
+  });
+  console.log(
+    `${root.ref.name} leftmost: ${left.ref.name}, rightmost: ${right.ref.name}, fullWidth: ${right.x - left.x} depth: ${root.ref.childrenDepth}`
+  );
 }
 
 // adds 'virtual' nodes to leftmost and rightmost leaves of each parent to prevent subtrees from overlapping
@@ -112,11 +120,11 @@ function addVirtualWallNodes(root: TidyNode) {
     // add virtual nodes all the way to the bottom
     for (let i = n.depth + 1; i <= totalDepth; i++) {
       if (!tempVirtualNode) {
-        tempVirtualNode = LayoutFactory.createTidyNode(n.ref, n, true);
+        tempVirtualNode = NodeFactory.createTidyNode(n.ref, n, true);
         n.children.push(tempVirtualNode);
         continue;
       }
-      const c = LayoutFactory.createTidyNode(n.ref, tempVirtualNode, true);
+      const c = NodeFactory.createTidyNode(n.ref, tempVirtualNode, true);
       c.depth = i;
       tempVirtualNode.children.push(c);
       tempVirtualNode = c;
