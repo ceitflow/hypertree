@@ -1,13 +1,15 @@
 import { NodeModel } from '../graph/types.ts';
 import { BitmapText, Graphics } from 'pixi.js';
-import { NodeWidth } from '../graph/layout/node-factory.ts';
+import { NodeSize } from '../graph/layout/node-factory.ts';
 
 export class PaperFactory {
   static getColor({ ref }: NodeModel) {
     let color: string;
     if (ref.type === 'directory') color = '#4f4f4f';
     else if (ref.type === 'codeFile') color = '#e24c00';
-    else if (ref.type === 'otherFile') color = '#FFFF00';
+    else if (ref.type === 'otherFile') {
+      color = ref.node.bigFile ? '#adad30' : '#FFFF00';
+    }
     else color = '#277DFF';
     return color;
   }
@@ -34,8 +36,8 @@ export class PaperFactory {
     const a = angle < 0 ? 2 * Math.PI + angle : angle;
     const doRotate = a > Math.PI / 2 && a < (3 / 2) * Math.PI;
     label.anchor = doRotate ? { x: 0, y: 0.5 } : { x: 1, y: 0.5 };
-    label.x = x + (NodeWidth / 2) * Math.cos(angle);
-    label.y = y + (NodeWidth / 2) * Math.sin(angle);
+    label.x = x + (NodeSize / 2) * Math.cos(angle);
+    label.y = y + (NodeSize / 2) * Math.sin(angle);
     label.rotation = a + (doRotate ? Math.PI : 0);
 
     return label;

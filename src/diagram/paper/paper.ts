@@ -4,6 +4,7 @@ import { NodeModel } from '../graph/types.ts';
 import { PaperFactory } from './paper-factory.ts';
 import { CreateViewport, ScreenType } from './screen';
 import { Application, Container, Graphics } from 'pixi.js';
+import { NodeSize } from '../graph/layout/node-factory.ts';
 
 export class Paper {
   private constructor(
@@ -75,7 +76,7 @@ export class Paper {
         if (n.ref.type === 'directory') textContainer.addChild(result.arc, ...result.labels);
       }*/ else {
         nodeGraphic = PaperFactory.createNode(n);
-        // textContainer.addChild(PaperFactory.createLabel(n.x, n.y, n.angle, n.name, false));
+        textContainer.addChild(PaperFactory.createLabel(n.x, n.y + NodeSize, n.angle, n.name, false));
       }
 
       nodeGraphic.on('pointerdown', e =>

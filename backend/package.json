@@ -4,8 +4,8 @@
   "author": "ceitflow",
   "scripts": {
     "test": "jest --silent --config=jest.config.js",
-    "build": "tsc",
-    "start": "ts-node src/main.ts"
+    "start": "ts-node src/main.ts",
+    "restart": "tsc && ts-node src/main.ts"
   },
   "engines": {
     "node": ">=18.0.0"
@@ -17,5 +17,8 @@
     "ts-jest": "^29.3.4",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "ignore": "^7.0.5"
   }
 }

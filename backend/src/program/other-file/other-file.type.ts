@@ -4,5 +4,6 @@ export type OtherFile = {
   type: FileEnum.Other,
   id: IdPath;
   name: string;
-  // loc: number; // invalid for binary files
+  loc: number; // invalid for binary files
+  bigFile: boolean;
 }

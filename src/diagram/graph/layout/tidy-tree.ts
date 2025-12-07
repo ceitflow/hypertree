@@ -1,5 +1,5 @@
 import { NodeModel, TidyNode } from '../types.ts';
-import { DirPadding, NodeFactory, SpiralArmWidth } from './node-factory.ts';
+import { DirPadding, NodeFactory, NodeSize, SpiralArmWidth } from './node-factory.ts';
 
 // Tree diagram using the Reingold-Tilford "tidy" algorithm
 // Computes the layout using Buchheim et al.'s algorithm.
@@ -76,14 +76,14 @@ function TidyTree(data: NodeModel) {
   // add padding
   function addPadding(v: TidyNode, globalShift: number) {
     v.ref.x += globalShift;
-    if (!v.children.length) {
-      return 0;
-    }
     let localShift = DirPadding;
+    if (!v.children.length) {
+      return localShift;
+    }
     for (const child of v.children) {
       if (child.ref.ref.type === 'directory') {
         localShift += DirPadding;
-        child.margin = DirPadding;
+        child.margin = DirPadding; // todo * depth?
       }
       localShift += addPadding(child, globalShift + localShift); // returns only added padding
     }
@@ -99,7 +99,7 @@ function TidyTree(data: NodeModel) {
     if (!v.children.length) {
       // leaf node
       const sx = v.ref.range[1].x + v.ref.range[1].width - v.ref.x;
-      const sy = v.ref.width;
+      const sy = NodeSize;
       v.ref.shapePoints.top = [
         [sx, 0],
         [0, 0],
@@ -112,8 +112,9 @@ function TidyTree(data: NodeModel) {
     }
 
     let height = -Infinity;
-    const lookForShortestDir = v.children[0].ref.ref.type === 'directory'; // if only directories then look for shortest one
-    if (lookForShortestDir) {
+    const onlyDirs = v.children[0].ref.ref.type === 'directory';
+    if (onlyDirs) {
+      // if only directories then look for the shortest one
       v.children.forEach(c => {
         height = Math.max(height, c.ref.shapePoints.bottom[0][1]);
       })

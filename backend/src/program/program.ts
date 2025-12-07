@@ -30,7 +30,7 @@ export class Program {
 
     console.log(`1. build files ${files.size}`);
     for (const sourceFile of files) {
-      if ('type' in sourceFile) {
+      if ('type' in sourceFile) { // other file
         this.addToDirectoryGraph(sourceFile);
         continue;
       }

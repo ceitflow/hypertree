@@ -45,10 +45,11 @@ export class Graph {
           break;
 
         case 'codeFile':
-          node.ref.node.exports.forEach(declaration => {
-            const id = node.id + '-' + declaration.name;
-            addChildToNode({ type: 'declaration', node: declaration }, id);
-          });
+          // todo include these in file data somewhere
+          // node.ref.node.exports.forEach(declaration => {
+          //   const id = node.id + '-' + declaration.name;
+          //   addChildToNode({ type: 'declaration', node: declaration }, id);
+          // });
           break;
       }
     }
@@ -56,7 +57,7 @@ export class Graph {
 
   runLayout() {
     if (this.model?.root) {
-      this.layout.spiralLayout(this.model.root, true);
+      this.layout.spiralLayout(this.model.root);
     }
   }
 }

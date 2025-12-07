@@ -1,5 +1,5 @@
 import { DeclarationNode } from './declaration.type';
-import { FileEnum, IdPath } from '../../analyzer/analyzer.type';
+import { FileEnum, IdPath } from '../../analyzer';
 
 export type CodeFile = {
   type: FileEnum.Code,

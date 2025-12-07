@@ -1,9 +1,9 @@
 import { NodeModel } from '../types.ts';
-import { NodeWidth } from './node-factory.ts';
+import { NodeSize } from './node-factory.ts';
 import TidyTree, { eachAfter, YPosition } from './tidy-tree.ts';
 
 export class Layout {
-  spiralLayout(root: NodeModel, overrideLinear = false) {
+  spiralLayout(root: NodeModel, overrideLinear = true) {
     console.log(root);
     TidyTree(root); // todo layout declaration nodes into column (so it reads like real code file)
     if (overrideLinear) {
@@ -48,7 +48,7 @@ export class Layout {
       const out: [number, number, number] = [0, 0, 0]; // data container (for performance)
       let lastLabelSpiralLength!: number;
 
-      for (let L = minX; L <= maxX; L += NodeWidth / 2) {
+      for (let L = minX; L <= maxX; L += NodeSize / 2) {
         this.getCartesianFromSpiralLength(root.childrenDepth, L, v.depth, out);
         // v.shapePoints.push([out[0], out[1]]);
         // if first point
