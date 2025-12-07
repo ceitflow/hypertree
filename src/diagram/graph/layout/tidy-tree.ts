@@ -1,30 +1,18 @@
 import { NodeModel, TidyNode } from '../types.ts';
-import { NodeFactory, SpiralArmWidth } from './node-factory.ts';
+import { DirPadding, NodeFactory, SpiralArmWidth } from './node-factory.ts';
 
 // Tree diagram using the Reingold-Tilford "tidy" algorithm
 // Computes the layout using Buchheim et al.'s algorithm.
 
 function Separation(left: TidyNode, right: TidyNode) {
-  return left.width // / 2 + right.width / 2;
+  return left.width; // todo manually write eachBefore function that recognizes when finished processing last child and exiting parent
 }
 
 export function YPosition(depth: number): number {
   return depth * SpiralArmWidth;
-  // if (depth === 0) {
-  //   return 0;
-  // }
-  // if (!depth || depth < 0) throw new Error('depth must be a positive integer');
-  // const MinDepthDistance = 24;
-  // const Y_POS_STEP = 100;
-  //
-  // let result = 0;
-  // for (let i = 0; i < depth; i++) {
-  //   result += Math.max(Math.floor(Y_POS_STEP * Math.pow(5 / 10, i)), MinDepthDistance);
-  // }
-  // return result;
 }
 
-export function TidyTree(data: NodeModel) {
+function TidyTree(data: NodeModel) {
   const root = NodeFactory.buildTidyTreeNodes(data);
   addVirtualWallNodes(root);
   // Computes a preliminary x-coordinate for v. Before that, FIRST WALK is
@@ -58,46 +46,108 @@ export function TidyTree(data: NodeModel) {
   let left = root;
   let right = root;
   let bottom = root;
-
   eachBefore(root, (v: TidyNode) => {
     if (v.parent && v.isVirtual) {
       v.parent.children = []; // remove virtual wall nodes
       return;
     }
     const parentMod = v.parent?.mod || 0;
-    v.x = v.prelim + parentMod;
+    v.ref.x = v.prelim + parentMod;
     v.mod += parentMod;
-    v.y = YPosition(v.depth);
+    v.ref.y = YPosition(v.depth);
 
     // Compute the left-most, right-most, and depth-most nodes for extents.
-    if (v.x < left.x) left = v;
-    if (v.x > right.x) right = v;
+    if (v.ref.x < left.ref.x) left = v;
+    if (v.ref.x > right.ref.x) right = v;
     if (v.depth > bottom.depth) bottom = v;
   });
 
-  // calculate final positions
+  // update ranges
   eachAfter(root, (v: TidyNode) => {
-    v.ref.x = v.x;
-    v.ref.y = v.y;
     v.children.forEach(child => {
-      if (child.ref.range[0].x < v.ref.range[0].x) v.ref.range[0] = child.ref.range[0];
-      if (child.ref.range[1].x > v.ref.range[1].x) v.ref.range[1] = child.ref.range[1];
+      if (child.ref.range[0].x <= v.ref.range[0].x) v.ref.range[0] = child.ref.range[0];
+      if (child.ref.range[1].x >= v.ref.range[1].x) v.ref.range[1] = child.ref.range[1];
+      v.ref.childrenDepth = Math.max(v.ref.childrenDepth, child.ref.childrenDepth + 1);
     });
-    if (v.children.length === 1) {
-      v.ref.x = v.ref.children[0].x;
-      v.ref.width = v.ref.children[0].width;
-    } else if (v.children.length) {
-      v.ref.x = v.ref.range[0].x;
-      v.ref.width = v.ref.range[1].x + v.ref.range[1].width - v.ref.range[0].x;
-    }
-    v.ref.childrenDepth = v.children.reduce((acc, curr) => Math.max(acc, curr.ref.childrenDepth + 1), 0);
+    // moves parent to the left/first child pos
+    v.ref.x = v.ref.range[0].x;
   });
+
+  // add padding
+  function addPadding(v: TidyNode, globalShift: number) {
+    v.ref.x += globalShift;
+    if (!v.children.length) {
+      return 0;
+    }
+    let localShift = DirPadding;
+    for (const child of v.children) {
+      if (child.ref.ref.type === 'directory') {
+        localShift += DirPadding;
+        child.margin = DirPadding;
+      }
+      localShift += addPadding(child, globalShift + localShift); // returns only added padding
+    }
+    localShift += DirPadding;
+    v.padding = DirPadding;
+
+    return localShift;
+  }
+  addPadding(root, 0);
+
+  // update shape points
+  eachAfter(root, (v: TidyNode) => {
+    if (!v.children.length) {
+      // leaf node
+      const sx = v.ref.range[1].x + v.ref.range[1].width - v.ref.x;
+      const sy = v.ref.width;
+      v.ref.shapePoints.top = [
+        [sx, 0],
+        [0, 0],
+      ];
+      v.ref.shapePoints.bottom = [
+        [0, sy],
+        [sx, sy],
+      ];
+      return;
+    }
+
+    let height = -Infinity;
+    const lookForShortestDir = v.children[0].ref.ref.type === 'directory'; // if only directories then look for shortest one
+    if (lookForShortestDir) {
+      v.children.forEach(c => {
+        height = Math.max(height, c.ref.shapePoints.bottom[0][1]);
+      })
+    } else {
+      v.children.find(c => {
+        const isDir = c.ref.ref.type === 'directory';
+        if (!isDir) {
+          c.ref.shapePoints.bottom.forEach(point => (height = Math.max(height, point[1])));
+        }
+        return isDir;
+      });
+    }
+    const lastChild = v.children[v.children.length - 1];
+    const lastPoint = lastChild.ref.shapePoints.bottom[lastChild.ref.shapePoints.bottom.length - 1];
+    const y = height + (lastChild.ref.y - v.ref.y)
+    v.ref.shapePoints.bottom = [
+      [0, y],
+      [lastPoint[0] + lastChild.ref.x - v.ref.x + v.padding, y]
+    ];
+    v.ref.shapePoints.top = [
+      [v.ref.shapePoints.bottom[v.ref.shapePoints.bottom.length - 1][0], 0],
+      [0, 0],
+    ];
+  });
+
   console.log(
-    `${root.ref.name} leftmost: ${left.ref.name}, rightmost: ${right.ref.name}, fullWidth: ${right.x - left.x} depth: ${root.ref.childrenDepth}`
+    `${root.ref.name} leftmost: ${left.ref.name}, rightmost: ${right.ref.name}`,
+    `fullWidth: ${right.ref.x - left.ref.x} depth: ${root.ref.childrenDepth}`
   );
 }
 
-// adds 'virtual' nodes to leftmost and rightmost leaves of each parent to prevent subtrees from overlapping
+export default TidyTree;
+
+// adds virtual nodes to leftmost and rightmost leaves of each parent to prevent subtrees from overlapping
 function addVirtualWallNodes(root: TidyNode) {
   const leafs: TidyNode[] = [];
   const temp: TidyNode[] = [root];
@@ -145,53 +195,53 @@ function addVirtualWallNodes(root: TidyNode) {
 // SUBTREE to shift the subtree and prepare the shifts of smaller subtrees.
 // Finally, we add a new thread (if necessary).
 function apportion(currentNode: TidyNode, leftSibling: TidyNode | null, defaultAncestor: TidyNode): TidyNode {
-  if (leftSibling) {
-    let insideRightNode = currentNode;
-    let outsideRightNode = currentNode;
-    let insideLeftNode = leftSibling;
-    let outsideLeftNode = insideRightNode.parent!.children[0];
+  if (!leftSibling) {
+    return defaultAncestor;
+  }
+  let insideRightNode = currentNode;
+  let outsideRightNode = currentNode;
+  let insideLeftNode = leftSibling;
+  let outsideLeftNode = insideRightNode.parent!.children[0];
 
-    let insideRightModSum = insideRightNode.mod;
-    let outsideRightModSum = outsideRightNode.mod;
-    let insideLeftModSum = insideLeftNode.mod;
-    let outsideLeftModSum = outsideLeftNode.mod;
-    let shift: number;
+  let insideRightModSum = insideRightNode.mod;
+  let outsideRightModSum = outsideRightNode.mod;
+  let insideLeftModSum = insideLeftNode.mod;
+  let outsideLeftModSum = outsideLeftNode.mod;
+  let shift: number;
 
-    while (
-      ((insideLeftNode = nextRight(insideLeftNode)!),
-      (insideRightNode = nextLeft(insideRightNode)!),
-      insideLeftNode && insideRightNode)
-    ) {
-      outsideLeftNode = nextLeft(outsideLeftNode)!;
-      outsideRightNode = nextRight(outsideRightNode)!;
-      outsideRightNode.ancestor = currentNode;
-      shift =
-        insideLeftNode.prelim +
-        insideLeftModSum -
-        insideRightNode.prelim -
-        insideRightModSum +
-        Separation(insideLeftNode, insideRightNode);
-      if (shift > 0) {
-        moveSubtree(nextAncestor(insideLeftNode, currentNode, defaultAncestor), currentNode, shift);
-        insideRightModSum += shift;
-        outsideRightModSum += shift;
-      }
-      insideLeftModSum += insideLeftNode.mod;
-      insideRightModSum += insideRightNode.mod;
-      outsideLeftModSum += outsideLeftNode.mod;
-      outsideRightModSum += outsideRightNode.mod;
+  while (
+    ((insideLeftNode = nextRight(insideLeftNode)!),
+    (insideRightNode = nextLeft(insideRightNode)!),
+    insideLeftNode && insideRightNode)
+  ) {
+    outsideLeftNode = nextLeft(outsideLeftNode)!;
+    outsideRightNode = nextRight(outsideRightNode)!;
+    outsideRightNode.ancestor = currentNode;
+    shift =
+      insideLeftNode.prelim +
+      insideLeftModSum -
+      insideRightNode.prelim -
+      insideRightModSum +
+      Separation(insideLeftNode, insideRightNode);
+    if (shift > 0) {
+      moveSubtree(nextAncestor(insideLeftNode, currentNode, defaultAncestor), currentNode, shift);
+      insideRightModSum += shift;
+      outsideRightModSum += shift;
     }
+    insideLeftModSum += insideLeftNode.mod;
+    insideRightModSum += insideRightNode.mod;
+    outsideLeftModSum += outsideLeftNode.mod;
+    outsideRightModSum += outsideRightNode.mod;
+  }
 
-    if (insideLeftNode && !nextRight(outsideRightNode)) {
-      outsideRightNode.thread = insideLeftNode;
-      outsideRightNode.mod += insideLeftModSum - outsideRightModSum;
-    }
-
-    if (insideRightNode && !nextLeft(outsideLeftNode)) {
-      outsideLeftNode.thread = insideRightNode;
-      outsideLeftNode.mod += insideRightModSum - outsideLeftModSum;
-      defaultAncestor = currentNode;
-    }
+  if (insideLeftNode && !nextRight(outsideRightNode)) {
+    outsideRightNode.thread = insideLeftNode;
+    outsideRightNode.mod += insideLeftModSum - outsideRightModSum;
+  }
+  if (insideRightNode && !nextLeft(outsideLeftNode)) {
+    outsideLeftNode.thread = insideRightNode;
+    outsideLeftNode.mod += insideRightModSum - outsideLeftModSum;
+    defaultAncestor = currentNode;
   }
   return defaultAncestor;
 }

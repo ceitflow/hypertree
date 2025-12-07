@@ -69,11 +69,11 @@ export class Paper {
         const label =
           n.name + '\nfiles: ' + stats.filesCount + '\nexternal: ' + stats.externalFilesCount + '\nLOC: ' + stats.totalLoc;
         textContainer.addChild(PaperFactory.createLabel(30, -15, 0, label, true));
-      } else if (n.ref.type === 'directory' ) {
+      } /*else if (n.ref.type === 'directory' ) {
         const result = PaperFactory.createDirArcNode(n.name, n.outerArc, n.innerArc, n.labelArcPoints, PaperFactory.getColor(n));
         nodeGraphic = result.arc;
         if (n.ref.type === 'directory') textContainer.addChild(result.arc, ...result.labels);
-      } else {
+      }*/ else {
         nodeGraphic = PaperFactory.createNode(n);
         // textContainer.addChild(PaperFactory.createLabel(n.x, n.y, n.angle, n.name, false));
       }

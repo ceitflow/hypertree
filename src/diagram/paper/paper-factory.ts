@@ -42,62 +42,53 @@ export class PaperFactory {
   }
 
   static createNode(node: NodeModel) {
-    const { x, y, name, width, angle } = node;
+    const {
+      x,
+      y,
+      name,
+      angle,
+      shapePoints: { top, bottom },
+    } = node;
     const color = this.getColor(node);
-    const graphic = new Graphics().roundRect(0, 0, width, width, 4).fill(color);
+    const graphic = new Graphics();
+
+    // bottom edge
+    for (let i = 0; i < bottom.length; i++) {
+      const point = bottom[i];
+      const next = bottom[i + 1];
+      if (i === 0) graphic.moveTo(point[0], point[1]);
+      else if (i === bottom.length - 1) graphic.lineTo(point[0], point[1]);
+      else {
+        // const xc = (point[0] + next[0]) / 2;
+        // const yc = (point[1] + next[1]) / 2;
+        // graphic.quadraticCurveTo(point[0], point[1], xc, yc);
+        graphic.lineTo(point[0], point[1]);
+      }
+    }
+
+    // top edge
+    for (let i = 0; i < top.length; i++) {
+      const point = top[i];
+      const next = top[i + 1];
+      if (i === 0) graphic.lineTo(point[0], point[1]);
+      if (i === top.length - 1) {
+        graphic.lineTo(point[0], point[1]);
+        graphic.lineTo(bottom[0][0], bottom[0][1]); // close off shape
+      }
+      else {
+        // const xc = (point[0] + next[0]) / 2;
+        // const yc = (point[1] + next[1]) / 2;
+        // graphic.quadraticCurveTo(point[0], point[1], xc, yc);
+        graphic.lineTo(point[0], point[1]);
+      }
+    }
+    graphic.fill(color).stroke({ width: 0.5, alignment: 1, color: 'black', cap: 'butt' });
+
     graphic.x = x;
     graphic.y = y;
     graphic.rotation = angle;
     graphic.label = name;
     graphic.interactive = true;
     return graphic;
-  }
-
-  static createDirArcNode(
-    name: string,
-    outerArc: [number, number][],
-    innerArc: [number, number][],
-    labelOrigins: [number, number, number][],
-    color: string,
-  ) {
-    const arc = new Graphics();
-    arc.moveTo(outerArc[0][0], outerArc[0][1]);
-
-    // Draw smooth curve using quadratic interpolation
-    // outer edge
-    for (let i = 1; i <= outerArc.length - 2; i++) {
-      const point = outerArc[i];
-      const next = outerArc[i + 1];
-      const xc = (point[0] + next[0]) / 2;
-      const yc = (point[1] + next[1]) / 2;
-      arc.quadraticCurveTo(point[0], point[1], xc, yc);
-    }
-    arc.lineTo(outerArc[outerArc.length - 1][0], outerArc[outerArc.length - 1][1]);
-    // arc.lineTo(innerArc[innerArc.length - 1][0], innerArc[innerArc.length - 1][1]);
-
-    // inner edge
-    // arc.moveTo(outerArc[0][0], outerArc[0][1]);
-    // arc.lineTo(innerArc[0][0], innerArc[0][1]);
-    // for (let i = 1; i <= innerArc.length - 2; i++) {
-    //   const point = innerArc[i];
-    //   const next = innerArc[i + 1];
-    //   const xc = (point[0] + next[0]) / 2;
-    //   const yc = (point[1] + next[1]) / 2;
-    //   arc.quadraticCurveTo(point[0], point[1], xc, yc);
-    // }
-    // arc.lineTo(innerArc[innerArc.length - 1][0], innerArc[innerArc.length - 1][1]);
-
-    arc.stroke({ width: 1, alignment: 1, color, cap: 'butt' });
-
-    arc.label = name;
-    arc.interactive = true;
-
-    // render continuous labels
-    const labels: BitmapText[] = [];
-    labelOrigins.forEach(pos => {
-      labels.push(this.createLabel(pos[0], pos[1], pos[2], name, true));
-    });
-
-    return { arc, labels };
   }
 }

@@ -56,7 +56,7 @@ export class Graph {
 
   runLayout() {
     if (this.model?.root) {
-      this.layout.linearLayout(this.model.root);
+      this.layout.spiralLayout(this.model.root, true);
     }
   }
 }

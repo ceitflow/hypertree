@@ -37,10 +37,12 @@ export type NodeModel = {
   x: number;
   y: number;
   spiralLength: number;
-  outerArc: [number, number][]; // x,y
-  innerArc: [number, number][]; // x,y
+  shapePoints: {
+    top: [number, number][]; // right to left
+    bottom: [number, number][]; // left to right
+  }; // points relative to x,y
   labelArcPoints: [number, number, number][]; // x,y,angle
-  range: [NodeModel, NodeModel];
+  range: [NodeModel, NodeModel]; // by default it points to [self, self]
 };
 
 // for tidy tree algorithm
@@ -52,8 +54,6 @@ export type TidyNode = {
   isVirtual: boolean;
   depth: number;
   i: number; // index of child in its parent
-  x: number;
-  y: number;
   Ancestor: TidyNode | null; // default ancestor
   ancestor: TidyNode; // ancestor
   prelim: number;
@@ -61,4 +61,6 @@ export type TidyNode = {
   change: number;
   shift: number;
   thread: TidyNode | null;
+  padding: number; // right
+  margin: number; // left
 };

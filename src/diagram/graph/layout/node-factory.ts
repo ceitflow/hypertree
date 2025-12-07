@@ -2,6 +2,7 @@ import { NodeModel, IdPath, TidyNode } from '../types.ts';
 
 export const NodeWidth = 10;
 export const SpiralArmWidth = 60;
+export const DirPadding = 10;
 
 export class NodeFactory {
   static createNode(ref: NodeModel['ref'], id: IdPath, parent: NodeModel | null): NodeModel {
@@ -18,8 +19,10 @@ export class NodeFactory {
       x: 0,
       y: 0,
       spiralLength: 0,
-      outerArc: [],
-      innerArc: [],
+      shapePoints: {
+        top: [],
+        bottom: [],
+      },
       labelArcPoints: [],
       range: [] as any,
     };
@@ -33,12 +36,9 @@ export class NodeFactory {
       parent,
       children: [],
       width: ref.width,
-      i: parent ? parent.children.length : 0,
       isVirtual,
       depth: ref.depth,
-
-      x: 0, // tidy tree produces x positions only
-      y: 0,
+      i: parent ? parent.children.length : 0,
       Ancestor: null,
       ancestor: null as unknown as TidyNode,
       prelim: 0,
@@ -46,6 +46,8 @@ export class NodeFactory {
       change: 0,
       shift: 0,
       thread: null,
+      padding: 0,
+      margin: 0,
     }
     result.ancestor = result;
     return result;

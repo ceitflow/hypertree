@@ -1,36 +1,37 @@
 import { NodeModel } from '../types.ts';
 import { NodeWidth } from './node-factory.ts';
-import { eachAfter, TidyTree, YPosition } from './tidy-tree.ts';
+import TidyTree, { eachAfter, YPosition } from './tidy-tree.ts';
 
 export class Layout {
-  spiralLayout(root: NodeModel) {
+  spiralLayout(root: NodeModel, overrideLinear = false) {
     console.log(root);
-    TidyTree(root);
+    TidyTree(root); // todo layout declaration nodes into column (so it reads like real code file)
+    if (overrideLinear) {
+      return;
+    }
     this.spiral(root);
+    this.generateArcs(root);
   }
 
-  // for debugging
-  linearLayout(root: NodeModel) {
-    console.log(root);
-    TidyTree(root);
+  private generateArcs(root: NodeModel) {
     eachAfter(root, v => {
-      const armWidth = Math.floor(this.getSpiralWidth(v.depth + v.childrenDepth));
-      v.outerArc = [[v.range[0].x, v.y], [v.range[1].x + v.range[1].width, v.y]];
-      v.innerArc = [[v.range[0].x, v.y + armWidth], [v.range[1].x + v.range[1].width, v.y + armWidth]];
+      if (!v.children.length) {
+        return;
+      }
     });
   }
 
   private spiral(root: NodeModel) {
+    // todo assign x,y points
+    // todo modify shapePoints in place
     const startOffset = 600 * Math.PI;
-    let prev: NodeModel;
-    let padding = 0;
 
     // calculate arc points for each node
     eachAfter(root, v => {
-      if (!v.children.length && prev) {
-        padding += this.calculatePadding(v, prev, root.childrenDepth);
-      }
-      v.spiralLength = v.x + startOffset + padding; // v.x is distance from 0 set by tidy tree
+      // if (!v.children.length && prev) {
+      //  margin += this.calculateMargin(v, prev, root.childrenDepth);
+      // }
+      v.spiralLength = v.x + startOffset; // v.x is distance from 0 set by tidy tree
       // if is root node
       if (v.spiralLength === 0) {
         v.x = 0;
@@ -41,15 +42,15 @@ export class Layout {
       const minLabelDistance = 300;
       const minX = v.range[0].spiralLength;
       const maxX = v.range[1].spiralLength + v.range[1].width;
-      v.outerArc = [];
-      v.innerArc = [];
+      v.shapePoints.top = [];
+      v.shapePoints.bottom = [];
       v.labelArcPoints = [];
       const out: [number, number, number] = [0, 0, 0]; // data container (for performance)
       let lastLabelSpiralLength!: number;
 
       for (let L = minX; L <= maxX; L += NodeWidth / 2) {
         this.getCartesianFromSpiralLength(root.childrenDepth, L, v.depth, out);
-        v.outerArc.push([out[0], out[1]]);
+        // v.shapePoints.push([out[0], out[1]]);
         // if first point
         if (L === minX) {
           v.x = out[0];
@@ -61,40 +62,28 @@ export class Layout {
           v.labelArcPoints.push([out[0], out[1], (out[2] - Math.PI / 2) % (2 * Math.PI)]);
           lastLabelSpiralLength = L;
         }
-        // inner arc
-        this.getCartesianFromSpiralLength(root.childrenDepth, L, v.depth + v.childrenDepth, out);
-        v.innerArc.push([out[0], out[1]]);
-
-        // last point
-        if (L + NodeWidth / 2 > maxX) {
-          this.getCartesianFromSpiralLength(root.childrenDepth, maxX, v.depth, out);
-          v.outerArc.push([out[0], out[1]]);
-          this.getCartesianFromSpiralLength(root.childrenDepth, maxX, v.depth + v.childrenDepth, out);
-          v.innerArc.push([out[0], out[1]]);
-        }
       }
-      prev = v;
     });
     root.x = 0;
     root.y = 0;
   }
 
-  private calculatePadding(v: NodeModel, prev: NodeModel, totalDepth: number): number {
-    const prevId = prev.id.split('/');
-    const id = v.id.split('/');
-    let commonParentDepth = -1;
-    for (let i = 0; i < Math.min(prevId.length, id.length); i++) {
-      if (prevId[i] === id[i]) {
-        commonParentDepth = i + 1;
-      } else {
-        break;
-      }
-    }
-    if (v.depth - commonParentDepth > 2) {
-      return Math.pow(totalDepth - commonParentDepth, 2);
-    }
-    return 0;
-  }
+  // private calculateMargin(v: NodeModel, prev: NodeModel, totalDepth: number): number {
+  //   const prevId = prev.id.split('/');
+  //   const id = v.id.split('/');
+  //   let commonParentDepth = -1;
+  //   for (let i = 0; i < Math.min(prevId.length, id.length); i++) {
+  //     if (prevId[i] === id[i]) {
+  //       commonParentDepth = i + 1;
+  //     } else {
+  //       break;
+  //     }
+  //   }
+  //   if (v.depth - commonParentDepth > 2) {
+  //     return Math.pow(totalDepth - commonParentDepth, 2);
+  //   }
+  //   return 0;
+  // }
 
   getSpiralWidth(totalDepth: number) {
     return YPosition(totalDepth);
