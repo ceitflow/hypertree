@@ -1,6 +1,6 @@
 import { Layout } from './layout/layout.ts';
 import { NodeFactory } from './layout/node-factory.ts';
-import { FileEnum, IdPath, NodeModel, ProgramGraph } from './types.ts';
+import { Directory, FileEnum, NodeModel, ProgramGraph } from './types.ts';
 
 type GraphModel = {
   root: NodeModel | null;
@@ -16,41 +16,39 @@ export class Graph {
     this.model = {
       root: null,
       program,
+      // todo keep reference to leaf nodes, so virtual nodes can be added fast
     };
-    const root = NodeFactory.createNode({ type: 'directory', node: data }, data.path, null);
-    this.model.root = root;
 
-    const stack = [root];
-    let totalDepth = 0;
+    this.model.root = NodeFactory.createNode({ type: 'directory', node: data }, data.path, null);
+    const stack: NodeModel[] = [this.model.root];
 
     while (stack.length) {
-      const node = stack.pop()!;
+      const dirNode = stack.pop()!;
+      const ref = dirNode.ref.node as Directory;
 
-      const addChildToNode = (ref: NodeModel['ref'], id: IdPath) => {
-        // helper function
-        const child = NodeFactory.createNode(ref, id, node);
-        node.children.push(child);
-        stack.push(child);
-        if (child.depth > totalDepth) totalDepth = child.depth;
-        return child;
-      };
+      if (ref.files?.length) {
+        for (let i = 0; i < ref.files.length; i++) {
+          const childRef = ref.files[i];
+          const child = NodeFactory.createNode(
+            childRef.type === FileEnum.Code ? { type: 'codeFile', node: childRef } : { type: 'otherFile', node: childRef },
+            childRef.id,
+            dirNode
+          );
+          dirNode.children.push(child);
 
-      switch (node.ref.type) {
-        case 'directory':
-          node.ref.node.files?.forEach(file => {
-            if (file.type === FileEnum.Code) addChildToNode({ type: 'codeFile', node: file }, file.id);
-            else addChildToNode({ type: 'otherFile', node: file }, file.id);
-          });
-          node.ref.node.dirs?.forEach(dir => addChildToNode({ type: 'directory', node: dir }, dir.path));
-          break;
-
-        case 'codeFile':
-          // todo include these in file data somewhere
-          // node.ref.node.exports.forEach(declaration => {
+          // node.ref.node.exports.forEach(declaration => { // todo include these in file data somewhere
           //   const id = node.id + '-' + declaration.name;
           //   addChildToNode({ type: 'declaration', node: declaration }, id);
           // });
-          break;
+        }
+      }
+      if (ref.dirs?.length) {
+        for (let i = 0; i < ref.dirs.length; i++) {
+          const childRef = ref.dirs[i];
+          const child = NodeFactory.createNode({ type: 'directory', node: childRef }, childRef.path, dirNode);
+          dirNode.children.push(child);
+          stack.push(child);
+        }
       }
     }
   }

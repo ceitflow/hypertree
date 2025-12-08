@@ -5,14 +5,15 @@ import { DirPadding, NodeFactory, NodeSize, SpiralArmWidth } from './node-factor
 // Computes the layout using Buchheim et al.'s algorithm.
 
 function Separation(left: TidyNode, right: TidyNode) {
-  return left.width; // todo manually write eachBefore function that recognizes when finished processing last child and exiting parent
+  return left.width;
 }
 
-export function YPosition(depth: number): number {
+function YPosition(depth: number): number {
   return depth * SpiralArmWidth;
 }
 
 function TidyTree(data: NodeModel) {
+  // TODO assign correct width to directories!
   const root = NodeFactory.buildTidyTreeNodes(data);
   addVirtualWallNodes(root);
   // Computes a preliminary x-coordinate for v. Before that, FIRST WALK is
@@ -62,7 +63,7 @@ function TidyTree(data: NodeModel) {
     if (v.depth > bottom.depth) bottom = v;
   });
 
-  // update ranges
+  // update ranges and widths
   eachAfter(root, (v: TidyNode) => {
     v.children.forEach(child => {
       if (child.ref.range[0].x <= v.ref.range[0].x) v.ref.range[0] = child.ref.range[0];
@@ -81,10 +82,10 @@ function TidyTree(data: NodeModel) {
       return localShift;
     }
     for (const child of v.children) {
-      if (child.ref.ref.type === 'directory') {
-        localShift += DirPadding;
-        child.margin = DirPadding; // todo * depth?
-      }
+      // if (child.ref.ref.type === 'directory' && child.i > 0) {
+      //   localShift += DirPadding;
+      //   child.margin = DirPadding; // todo * depth?
+      // }
       localShift += addPadding(child, globalShift + localShift); // returns only added padding
     }
     localShift += DirPadding;
@@ -94,30 +95,35 @@ function TidyTree(data: NodeModel) {
   }
   addPadding(root, 0);
 
-  // update shape points
+  // update shape points and dir widths
   eachAfter(root, (v: TidyNode) => {
+    if (v.ref.ref.type === 'directory') {
+      v.ref.width = v.ref.range[1].x + v.ref.range[1].width - v.ref.range[0].x || v.ref.width;
+    }
+    // if leaf node
     if (!v.children.length) {
-      // leaf node
-      const sx = v.ref.range[1].x + v.ref.range[1].width - v.ref.x;
-      const sy = NodeSize;
       v.ref.shapePoints.top = [
-        [sx, 0],
         [0, 0],
+        [v.ref.width, 0]
       ];
       v.ref.shapePoints.bottom = [
-        [0, sy],
-        [sx, sy],
+        [0, NodeSize],
+        [v.ref.width, NodeSize]
       ];
+      v.ref.labelPoints = [
+        [v.ref.x, v.ref.y + DirPadding, Math.PI / 2]
+      ]
       return;
     }
 
+    // if has children then find the min height to fit them
     let height = -Infinity;
     const onlyDirs = v.children[0].ref.ref.type === 'directory';
     if (onlyDirs) {
       // if only directories then look for the shortest one
       v.children.forEach(c => {
         height = Math.max(height, c.ref.shapePoints.bottom[0][1]);
-      })
+      });
     } else {
       v.children.find(c => {
         const isDir = c.ref.ref.type === 'directory';
@@ -127,16 +133,17 @@ function TidyTree(data: NodeModel) {
         return isDir;
       });
     }
+
     const lastChild = v.children[v.children.length - 1];
     const lastPoint = lastChild.ref.shapePoints.bottom[lastChild.ref.shapePoints.bottom.length - 1];
-    const y = height + (lastChild.ref.y - v.ref.y)
+    const y = height + (lastChild.ref.y - v.ref.y);
     v.ref.shapePoints.bottom = [
       [0, y],
-      [lastPoint[0] + lastChild.ref.x - v.ref.x + v.padding, y]
+      [lastPoint[0] + lastChild.ref.x - v.ref.x + v.padding, y],
     ];
     v.ref.shapePoints.top = [
-      [v.ref.shapePoints.bottom[v.ref.shapePoints.bottom.length - 1][0], 0],
       [0, 0],
+      [v.ref.shapePoints.bottom[v.ref.shapePoints.bottom.length - 1][0], 0],
     ];
   });
 
@@ -260,7 +267,7 @@ export function eachAfter<T extends { children: T[] }>(root: T, callback: (node:
   while (next.length) callback(next.pop()!);
 }
 
-function eachBefore<T extends { children: T[] }>(root: T, callback: (node: T) => void): void {
+export function eachBefore<T extends { children: T[] }>(root: T, callback: (node: T) => void): void {
   const nodes: T[] = [root];
   let node: T | undefined;
 

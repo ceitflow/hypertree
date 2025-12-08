@@ -48,11 +48,7 @@ export class Paper {
 
   private renderTree(root: NodeModel): Container {
     const graph = this.graph.model!;
-    const linksContainer = new Container({ label: 'links' });
-    const textContainer = new Container({ label: 'text' });
-    const nodesContainer = new Container({ label: 'nodes' });
     const container = new Container({
-      children: [linksContainer, nodesContainer, textContainer],
       label: root.name,
       x: 0,
       y: 0,
@@ -61,6 +57,7 @@ export class Paper {
 
     while (stack.length) {
       const n = stack.pop()!;
+      stack.push(...n.children);
       const isRoot = n === root;
       let nodeGraphic: Graphics;
 
@@ -69,26 +66,24 @@ export class Paper {
         const stats = graph.program.stats;
         const label =
           n.name + '\nfiles: ' + stats.filesCount + '\nexternal: ' + stats.externalFilesCount + '\nLOC: ' + stats.totalLoc;
-        textContainer.addChild(PaperFactory.createLabel(30, -15, 0, label, true));
-      } /*else if (n.ref.type === 'directory' ) {
-        const result = PaperFactory.createDirArcNode(n.name, n.outerArc, n.innerArc, n.labelArcPoints, PaperFactory.getColor(n));
-        nodeGraphic = result.arc;
-        if (n.ref.type === 'directory') textContainer.addChild(result.arc, ...result.labels);
-      }*/ else {
+        container.addChild(PaperFactory.createLabel(30, -15, 0, label, true));
+      } else {
         nodeGraphic = PaperFactory.createNode(n);
-        textContainer.addChild(PaperFactory.createLabel(n.x, n.y + NodeSize, n.angle, n.name, false));
+        n.labelPoints.forEach(p => {
+          container.addChild(PaperFactory.createLabel(p[0], p[1], p[2], n.name, false));
+        });
       }
 
       nodeGraphic.on('pointerdown', e =>
         console.log(
-          `a: ${n.angle}, d: ${n.depth} x:${n.x} y: ${n.y} L: ${n.spiralLength} 
-          loc: ${n.ref.node['loc']} diameter: ${n.width}
+          `depth: ${n.depth} x:${n.x} y: ${n.y} L: ${n.spiralLength} 
+          loc: ${n.ref.node['loc']} width: ${n.width}
           range: ${n.range[0].spiralLength}-${n.range[1].spiralLength}`,
+          n.ref.node['exports'],
           n
         )
       );
-      nodesContainer.addChild(nodeGraphic);
-      stack.push(...n.children);
+      container.addChild(nodeGraphic);
     }
 
     return container;

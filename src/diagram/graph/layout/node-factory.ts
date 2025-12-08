@@ -9,13 +9,13 @@ export class NodeFactory {
     let width: number;
     switch (ref.type) {
       case 'codeFile':
-        width = ref.node.loc;
-        break;
       case 'otherFile':
-        width = ref.node.loc;
+      case 'declaration':
+        width = Math.max(ref.node.loc, DirPadding);
         break;
-      default:
-        width = NodeSize;
+      case 'directory': // calculated later
+        width = 2 * DirPadding;
+        break;
     }
 
     const model: NodeModel = {
@@ -35,7 +35,7 @@ export class NodeFactory {
         top: [],
         bottom: [],
       },
-      labelArcPoints: [],
+      labelPoints: [],
       range: [] as any,
     };
     model.range = [model, model];

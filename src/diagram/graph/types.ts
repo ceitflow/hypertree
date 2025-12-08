@@ -41,7 +41,7 @@ export type NodeModel = {
     top: [number, number][]; // right to left
     bottom: [number, number][]; // left to right
   }; // points relative to x,y
-  labelArcPoints: [number, number, number][]; // x,y,angle
+  labelPoints: [number, number, number][]; // x,y,angle
   range: [NodeModel, NodeModel]; // by default it points to [self, self]
 };
 
