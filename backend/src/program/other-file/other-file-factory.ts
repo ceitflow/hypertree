@@ -9,7 +9,7 @@ export const CreateOtherFile = (path: IdPath, analyzer: Analyzer): OtherFile => 
     id,
     name: id.split(IO.separator).pop()!,
     type: FileEnum.Other,
-    loc: loc > limit ? 10 : loc,
+    loc,
     bigFile: loc > limit,
   }
 };

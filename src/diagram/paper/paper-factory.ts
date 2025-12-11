@@ -1,5 +1,6 @@
 import { NodeModel } from '../graph/types.ts';
 import { BitmapText, Graphics } from 'pixi.js';
+import { DirBorderWidth } from '../graph/layout/node-factory.ts';
 
 export class PaperFactory {
   static getColor({ ref }: NodeModel) {
@@ -13,16 +14,6 @@ export class PaperFactory {
     return color;
   }
 
-  static createRootNode(node: NodeModel) {
-    const { x, y, name } = node;
-    const graphic = new Graphics().circle(0, 0, 60).stroke({ color: '#724035', width: 40 }).fill('#444');
-    graphic.x = x;
-    graphic.y = y;
-    graphic.label = name;
-    graphic.interactive = true;
-    return graphic;
-  }
-
   static createLabel(x: number, y: number, angle: number, text: string, highlight = false) {
     const label = new BitmapText({
       label: text,
@@ -31,8 +22,8 @@ export class PaperFactory {
       style: {
         fontFamily: 'sans-serif',
         fontWeight: 'bold',
-        fontSize: highlight ? 12 : 9,
-        fill: highlight ? '#ffb976' : '#f5f5f5',
+        fontSize: highlight ? 12 : 5,
+        fill: '#ffb976',
       },
     });
     let radians = angle < 0 ? 2 * Math.PI + angle : angle;
@@ -49,7 +40,7 @@ export class PaperFactory {
     return label;
   }
 
-  static createNode(node: NodeModel) {
+  static createFileGraphics(node: NodeModel) {
     const {
       x,
       y,
@@ -60,28 +51,38 @@ export class PaperFactory {
     const color = this.getColor(node);
     const graphic = new Graphics();
 
-    // bottom edge
-    for (let i = 0; i < bottom.length; i++) {
-      const point = bottom[i];
-      const next = bottom[i + 1];
-      if (i === 0) graphic.moveTo(point[0], point[1]);
-      else if (i === bottom.length - 1) graphic.lineTo(point[0], point[1]);
-      else {
-        // const xc = (point[0] + next[0]) / 2;
-        // const yc = (point[1] + next[1]) / 2;
-        // graphic.quadraticCurveTo(point[0], point[1], xc, yc);
-        graphic.lineTo(point[0], point[1]);
+    /*if (!node.parent) {
+      graphic.moveTo(0, 0);
+      graphic.lineTo(0, node.height);
+      graphic.moveTo(node.width, 0);
+      graphic.lineTo(node.width, node.height / 2);
+      graphic.stroke({ width: DirBorderWidth, alignment: 1, color: '#333', cap: 'butt' });
+    } else*/ {
+      // bottom edge
+      for (let i = 0; i < bottom.length; i++) {
+        const point = bottom[i];
+        const next = bottom[i + 1];
+        if (i === 0) graphic.moveTo(point[0], point[1]);
+        else if (i === bottom.length - 1) graphic.lineTo(point[0], point[1]);
+        else {
+          // const xc = (point[0] + next[0]) / 2;
+          // const yc = (point[1] + next[1]) / 2;
+          // graphic.quadraticCurveTo(point[0], point[1], xc, yc);
+          graphic.lineTo(point[0], point[1]);
+        }
       }
-    }
 
-    // top edge
-    for (let i = top.length - 1; i >= 0; i--) {
-      const point = top[i];
-      graphic.lineTo(point[0], point[1]);
-      if (i === 0 && bottom.length) graphic.lineTo(bottom[0][0], bottom[0][1]); // close off shape
-    }
+      // top edge
+      for (let i = top.length - 1; i >= 0; i--) {
+        const point = top[i];
+        graphic.lineTo(point[0], point[1]);
+        if (i === 0 && bottom.length) graphic.lineTo(bottom[0][0], bottom[0][1]); // close off shape
+      }
 
-    graphic.fill(color).stroke({ width: 0.5, alignment: 1, color: 'black', cap: 'butt' });
+      graphic.fill(color);
+      if (node.ref.type === 'directory')
+        graphic.stroke({ width: 0.5, alignment: 1, color: 'black', cap: 'butt' });
+    }
 
     graphic.x = x;
     graphic.y = y;

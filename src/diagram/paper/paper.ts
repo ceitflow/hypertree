@@ -4,7 +4,6 @@ import { NodeModel } from '../graph/types.ts';
 import { PaperFactory } from './paper-factory.ts';
 import { CreateViewport, ScreenType } from './screen';
 import { Application, Container, Graphics } from 'pixi.js';
-import { NodeSize } from '../graph/layout/node-factory.ts';
 
 export class Paper {
   private constructor(
@@ -60,17 +59,18 @@ export class Paper {
       stack.push(...n.children);
       const isRoot = n === root;
       let nodeGraphic: Graphics;
+      // if (!isRoot && n.ref.type === 'directory' && n.childrenDepth !== 1) continue;
 
       if (isRoot) {
-        nodeGraphic = PaperFactory.createRootNode(n);
+        nodeGraphic = PaperFactory.createFileGraphics(n);
         const stats = graph.program.stats;
         const label =
-          n.name + '\nfiles: ' + stats.filesCount + '\nexternal: ' + stats.externalFilesCount + '\nLOC: ' + stats.totalLoc;
-        container.addChild(PaperFactory.createLabel(30, -15, 0, label, true));
+          n.name + ' files: ' + stats.filesCount + ' external: ' + stats.externalFilesCount + ' LOC: ' + stats.totalLoc;
+        container.addChild(PaperFactory.createLabel(0, 0, 0, label, true));
       } else {
-        nodeGraphic = PaperFactory.createNode(n);
+        nodeGraphic = PaperFactory.createFileGraphics(n);
         n.labelPoints.forEach(p => {
-          container.addChild(PaperFactory.createLabel(p[0], p[1], p[2], n.name, false));
+          container.addChild(PaperFactory.createLabel(p[0], p[1], p[2], n.ref.type === 'directory' ? n.id : n.name, false));
         });
       }
 

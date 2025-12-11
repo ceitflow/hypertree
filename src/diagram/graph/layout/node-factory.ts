@@ -1,20 +1,28 @@
 import { NodeModel, IdPath, TidyNode } from '../types.ts';
 
-export const NodeSize = 80;
-export const DirPadding = 10;
-export const SpiralArmWidth = NodeSize + DirPadding;
+export const NodeSize = 50;
+export const NodePadding = 6;
+export const DirBorderWidth = 10;
+export const DirPadding = 20;
+export const SpiralArmWidth = NodePadding;
 
 export class NodeFactory {
   static createNode(ref: NodeModel['ref'], id: IdPath, parent: NodeModel | null): NodeModel {
     let width: number;
+    let height = NodeSize;
     switch (ref.type) {
       case 'codeFile':
-      case 'otherFile':
-      case 'declaration':
         width = Math.max(ref.node.loc, DirPadding);
         break;
+      case 'otherFile':
+        width = ref.node.bigFile ? DirPadding : ref.node.loc;
+        break;
+      case 'declaration':
+        width = ref.node.loc;
+        break;
       case 'directory': // calculated later
-        width = 2 * DirPadding;
+        width = DirPadding;
+        height = NodePadding;
         break;
     }
 
@@ -26,6 +34,7 @@ export class NodeFactory {
       children: [],
       childrenDepth: 0,
       width,
+      height,
       depth: parent ? parent.depth + 1 : 0,
       angle: 0,
       x: 0,
@@ -37,6 +46,7 @@ export class NodeFactory {
       },
       labelPoints: [],
       range: [] as any,
+      margin: 0,
     };
     model.range = [model, model];
     return model;

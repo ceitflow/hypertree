@@ -26,12 +26,13 @@ export type NodeModel = {
   ref:
     | { type: 'directory'; node: Directory }
     | { type: 'codeFile'; node: CodeFile }
-    | { type: 'otherFile'; node: OtherFile }
+    | { type: 'otherFile'; node: OtherFile } // todo merge into 1 type, add type flag
     | { type: 'declaration'; node: Declaration }; // ref is underlying data that this node represents
   parent: NodeModel | null;
   children: NodeModel[];
   childrenDepth: number; // depth of children relative to this node
   width: number;
+  height: number;
   depth: number;
   angle: number;
   x: number;
@@ -43,6 +44,7 @@ export type NodeModel = {
   }; // points relative to x,y
   labelPoints: [number, number, number][]; // x,y,angle
   range: [NodeModel, NodeModel]; // by default it points to [self, self]
+  margin: number; // right
 };
 
 // for tidy tree algorithm

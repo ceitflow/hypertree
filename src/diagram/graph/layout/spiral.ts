@@ -1,11 +1,12 @@
 import { NodeModel } from '../types.ts';
-import TidyTree, { eachBefore } from './tidy-tree.ts';
-import { DirPadding, SpiralArmWidth } from './node-factory.ts';
+import { eachBefore } from './tidy-tree.ts';
+import { IcicleLayout } from './icicle.ts';
+import { DirPadding, NodePadding, NodeSize, SpiralArmWidth } from './node-factory.ts';
 
-export class Layout {
+export class Spiral {
   spiralLayout(root: NodeModel, overrideLinear = true) {
     console.log(root);
-    TidyTree(root); // todo layout declaration nodes into column (so it reads like real code file)
+    IcicleLayout(root);
     if (overrideLinear) {
       return;
     }
@@ -13,13 +14,10 @@ export class Layout {
   }
 
   private spiral(root: NodeModel) {
-    const startOffset = Math.PI * 2600; // todo calculate length of single spiral turn of SpiralArmWidth width
+    const startOffset = Math.PI * 600; // todo calculate length of single spiral turn of SpiralArmWidth width
 
     // calculate arc points for each node
     eachBefore(root, v => {
-      if (v === root) {
-        return;
-      }
       const out: [number, number, number] = [0, 0, 0]; // data container (for performance)
       const maxX = v.width;
       const maxY = v.shapePoints.bottom[0][1];
@@ -31,24 +29,29 @@ export class Layout {
       v.shapePoints.top = [];
       v.shapePoints.bottom = [];
       v.labelPoints = [];
+      let lastLabelX = -300;
+      const isDir = v.ref.type === 'directory';
+      const d = isDir ? -1 : 0;
 
-      for (let dx = 0; dx <= maxX; dx += DirPadding) {
+      for (let dx = 0; dx <= maxX; dx += NodePadding) {
         // top border
-        this.getCartesianFromSpiralLength(root.childrenDepth, v.spiralLength + dx, v.depth, 0, out);
+        this.getCartesianFromSpiralLength(root.childrenDepth, v.spiralLength + dx, d, 0, out);
         v.shapePoints.top.push([out[0] - v.x, out[1] - v.y]);
 
-        if (dx === 0) {
-          v.labelPoints.push([out[0], out[1], out[2] % (2 * Math.PI)]);
+        if (dx - lastLabelX >= 300) {
+          const angle = (out[2] + (isDir ? (Math.PI / 2) : 0)) % (2 * Math.PI);
+          v.labelPoints.push([out[0], out[1], angle]);
+          lastLabelX += 300;
         }
         // bottom border
-        this.getCartesianFromSpiralLength(root.childrenDepth, v.spiralLength + dx, v.depth, maxY, out);
+        this.getCartesianFromSpiralLength(root.childrenDepth, v.spiralLength + dx, d, maxY, out);
         v.shapePoints.bottom.push([out[0] - v.x, out[1] - v.y]);
 
         if (dx + DirPadding > maxX) {
           // make sure to add the last point
-          this.getCartesianFromSpiralLength(root.childrenDepth, v.spiralLength + maxX, v.depth, 0, out);
+          this.getCartesianFromSpiralLength(root.childrenDepth, v.spiralLength + maxX, d, 0, out);
           v.shapePoints.top.push([out[0] - v.x, out[1] - v.y]);
-          this.getCartesianFromSpiralLength(root.childrenDepth, v.spiralLength + maxX, v.depth, maxY, out);
+          this.getCartesianFromSpiralLength(root.childrenDepth, v.spiralLength + maxX, d, maxY, out);
           v.shapePoints.bottom.push([out[0] - v.x, out[1] - v.y]);
         }
       }
@@ -65,7 +68,7 @@ export class Layout {
     offset: number,
     out: [number, number, number]
   ) {
-    const spiralWidth = totalDepth * SpiralArmWidth;
+    const spiralWidth = NodeSize + 40 //totalDepth * SpiralArmWidth;
     const width = spiralWidth / 2 / Math.PI; // distance between spiral arms
 
     // Step 1: Calculate the angle θ from the arc length L ≈ (a/2) * θ^2  =>  θ = sqrt(2L / a)
@@ -73,9 +76,7 @@ export class Layout {
 
     // Step 2: Calculate the radius r = a * θ with offset
     let radius = width * angle;
-    if (offsetByDepth) {
-      radius = Math.max(0, radius - ((totalDepth - offsetByDepth) / totalDepth) * spiralWidth + offset);
-    }
+    radius = Math.max(0, radius - (totalDepth - offsetByDepth) * SpiralArmWidth + offset);
     out[0] = radius * Math.cos(angle);
     out[1] = radius * Math.sin(angle);
     out[2] = angle;

@@ -1,5 +1,5 @@
 import { NodeModel, TidyNode } from '../types.ts';
-import { DirPadding, NodeFactory, NodeSize, SpiralArmWidth } from './node-factory.ts';
+import { DirPadding, NodeFactory, NodeSize } from './node-factory.ts';
 
 // Tree diagram using the Reingold-Tilford "tidy" algorithm
 // Computes the layout using Buchheim et al.'s algorithm.
@@ -8,12 +8,7 @@ function Separation(left: TidyNode, right: TidyNode) {
   return left.width;
 }
 
-function YPosition(depth: number): number {
-  return depth * SpiralArmWidth;
-}
-
-function TidyTree(data: NodeModel) {
-  // TODO assign correct width to directories!
+export function TidyTree(data: NodeModel) {
   const root = NodeFactory.buildTidyTreeNodes(data);
   addVirtualWallNodes(root);
   // Computes a preliminary x-coordinate for v. Before that, FIRST WALK is
@@ -55,7 +50,7 @@ function TidyTree(data: NodeModel) {
     const parentMod = v.parent?.mod || 0;
     v.ref.x = v.prelim + parentMod;
     v.mod += parentMod;
-    v.ref.y = YPosition(v.depth);
+    v.ref.y = v.depth * DirPadding;
 
     // Compute the left-most, right-most, and depth-most nodes for extents.
     if (v.ref.x < left.ref.x) left = v;
@@ -75,68 +70,64 @@ function TidyTree(data: NodeModel) {
   });
 
   // add padding
-  function addPadding(v: TidyNode, globalShift: number) {
+  function addPadding(v: TidyNode, globalShift = 0) {
     v.ref.x += globalShift;
     let localShift = DirPadding;
     if (!v.children.length) {
       return localShift;
     }
     for (const child of v.children) {
-      // if (child.ref.ref.type === 'directory' && child.i > 0) {
-      //   localShift += DirPadding;
-      //   child.margin = DirPadding; // todo * depth?
-      // }
+      if (child.ref.ref.type === 'directory') {
+        const dx = (root.ref.childrenDepth - child.depth) * DirPadding;
+        localShift += dx;
+        child.margin = dx; // todo * depth?
+      }
       localShift += addPadding(child, globalShift + localShift); // returns only added padding
     }
-    localShift += DirPadding;
-    v.padding = DirPadding;
+    const lastChildMargin = v.children[v.children.length - 1].margin;
+    localShift += DirPadding + lastChildMargin;
+    v.padding = DirPadding + lastChildMargin;
 
     return localShift;
   }
-  addPadding(root, 0);
+  addPadding(root);
 
-  // update shape points and dir widths
+  // update files, shape points and dir widths
   eachAfter(root, (v: TidyNode) => {
     if (v.ref.ref.type === 'directory') {
       v.ref.width = v.ref.range[1].x + v.ref.range[1].width - v.ref.range[0].x || v.ref.width;
     }
+
     // if leaf node
     if (!v.children.length) {
       v.ref.shapePoints.top = [
         [0, 0],
-        [v.ref.width, 0]
+        [v.ref.width, 0],
       ];
       v.ref.shapePoints.bottom = [
         [0, NodeSize],
-        [v.ref.width, NodeSize]
+        [v.ref.width, NodeSize],
       ];
-      v.ref.labelPoints = [
-        [v.ref.x, v.ref.y + DirPadding, Math.PI / 2]
-      ]
+      v.ref.labelPoints = [[v.ref.x + DirPadding, v.ref.y + DirPadding, Math.PI / 2]];
+      // add declaration nodes
+      // if (v.ref.ref.type === 'codeFile') {
+      //   let tempX = 0;
+      //   v.ref.ref.node.exports.forEach(declaration => {
+      //     const id = v.ref.id + '--' + declaration.name;
+      //     const declarationNode = NodeFactory.createNode({ type: 'declaration', node: declaration }, id, v.ref);
+      //     declarationNode.x = v.ref.x + tempX;
+      //     declarationNode.y = v.ref.y;
+      //     addRectangularShapePoints(declarationNode);
+      //     tempX += declarationNode.width;
+      //     v.ref.children.push(declarationNode);
+      //   });
+      // }
       return;
-    }
-
-    // if has children then find the min height to fit them
-    let height = -Infinity;
-    const onlyDirs = v.children[0].ref.ref.type === 'directory';
-    if (onlyDirs) {
-      // if only directories then look for the shortest one
-      v.children.forEach(c => {
-        height = Math.max(height, c.ref.shapePoints.bottom[0][1]);
-      });
-    } else {
-      v.children.find(c => {
-        const isDir = c.ref.ref.type === 'directory';
-        if (!isDir) {
-          c.ref.shapePoints.bottom.forEach(point => (height = Math.max(height, point[1])));
-        }
-        return isDir;
-      });
     }
 
     const lastChild = v.children[v.children.length - 1];
     const lastPoint = lastChild.ref.shapePoints.bottom[lastChild.ref.shapePoints.bottom.length - 1];
-    const y = height + (lastChild.ref.y - v.ref.y);
+    const y = lastChild.ref.y - v.ref.y;
     v.ref.shapePoints.bottom = [
       [0, y],
       [lastPoint[0] + lastChild.ref.x - v.ref.x + v.padding, y],
@@ -145,6 +136,7 @@ function TidyTree(data: NodeModel) {
       [0, 0],
       [v.ref.shapePoints.bottom[v.ref.shapePoints.bottom.length - 1][0], 0],
     ];
+    v.ref.labelPoints = [[v.ref.x, v.ref.y, 0]];
   });
 
   console.log(
@@ -152,8 +144,6 @@ function TidyTree(data: NodeModel) {
     `fullWidth: ${right.ref.x - left.ref.x} depth: ${root.ref.childrenDepth}`
   );
 }
-
-export default TidyTree;
 
 // adds virtual nodes to leftmost and rightmost leaves of each parent to prevent subtrees from overlapping
 function addVirtualWallNodes(root: TidyNode) {

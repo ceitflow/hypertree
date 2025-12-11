@@ -1,4 +1,4 @@
-import { Layout } from './layout/layout.ts';
+import { Spiral } from './layout/spiral.ts';
 import { NodeFactory } from './layout/node-factory.ts';
 import { Directory, FileEnum, NodeModel, ProgramGraph } from './types.ts';
 
@@ -9,7 +9,7 @@ type GraphModel = {
 
 export class Graph {
   model: GraphModel | null = null;
-  layout = new Layout();
+  layout = new Spiral();
 
   initialize(program: ProgramGraph) {
     const data = program.root; //.dirs!.find(c => c.name === 'src')!//.dirs!.find(c => c.name === 'app')!; // todo for testing only
@@ -29,17 +29,12 @@ export class Graph {
       if (ref.files?.length) {
         for (let i = 0; i < ref.files.length; i++) {
           const childRef = ref.files[i];
-          const child = NodeFactory.createNode(
+          const fileNode = NodeFactory.createNode(
             childRef.type === FileEnum.Code ? { type: 'codeFile', node: childRef } : { type: 'otherFile', node: childRef },
             childRef.id,
             dirNode
           );
-          dirNode.children.push(child);
-
-          // node.ref.node.exports.forEach(declaration => { // todo include these in file data somewhere
-          //   const id = node.id + '-' + declaration.name;
-          //   addChildToNode({ type: 'declaration', node: declaration }, id);
-          // });
+          dirNode.children.push(fileNode);
         }
       }
       if (ref.dirs?.length) {
