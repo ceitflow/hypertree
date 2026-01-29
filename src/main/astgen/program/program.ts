@@ -1,19 +1,8 @@
 import { SourceFile } from 'typescript';
-import { OtherFile } from './other-file';
-import { Directory, File } from './directory/directory.type';
-import { Analyzer, FileEnum, IdPath, IO } from '../analyzer';
+import { Analyzer, IO } from '../analyzer';
+import { CreateDirectory } from './directory';
+import { FileEnum, IdPath, Directory, OtherFile, File, ProgramGraph } from '@lib/ast';
 import { CodeFileBuilder, EmptyImportFactory, ImportFactory, ReexportFactory } from './code-file';
-
-export type ProgramGraph = {
-  name: string;
-  // referencedExternalPackages: string[]
-  root: Directory;
-  stats: {
-    filesCount: number;
-    externalFilesCount: number;
-    totalLoc: number;
-  }
-}
 
 export class Program {
   graph: ProgramGraph;
@@ -23,13 +12,7 @@ export class Program {
     const srcName = srcPath.split(IO.separator).pop()!;
     this.graph = {
       name: srcName,
-      root: {
-        name: srcName,
-        dirs: [],
-        files: [],
-        depth: 0,
-        path: srcPath,
-      },
+      root: CreateDirectory(srcPath, 0),
       stats: {
         filesCount: files.size,
         externalFilesCount: 0,
@@ -151,13 +134,13 @@ export class Program {
       // gets reference to node_modules, create one if doesn't exist
       const nodemodules = this.graph.root.dirs?.find(c => c.name === 'node_modules');
       if (!nodemodules) {
-        temp = { name: 'node_modules', dirs: [], files: [], depth: 1, path: 'node_modules' };
-        this.graph.root.dirs!.push(temp);
+        temp = CreateDirectory('node_modules', 1);
+        this.graph.root.dirs.push(temp);
       } else temp = nodemodules;
     }
     // no folders in path
     if (segments.length === 1) {
-      temp.files!.push(file);
+      temp.files.push(file);
       return;
     }
     // create folder for each path segment
@@ -165,7 +148,7 @@ export class Program {
       let exists = temp.dirs?.find(child => child.name === seg);
       if (!exists) {
         if (!temp.dirs) temp.dirs = [];
-        exists = { name: seg, depth: idx + 1, path: segments.slice(0, idx + 1).join(osSeparator) };
+        exists = CreateDirectory(segments.slice(0, idx + 1).join(osSeparator), idx + 1);
         temp.dirs.push(exists);
       }
       temp = exists;

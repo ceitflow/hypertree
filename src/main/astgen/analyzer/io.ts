@@ -1,7 +1,7 @@
 import ig from 'ignore';
 import path from 'node:path';
-import { IdPath } from './analyzer.type';
-import { readdirSync, readFileSync, statSync, writeFileSync, existsSync } from 'node:fs';
+import { IdPath } from '@lib/ast';
+import { readdirSync, readFileSync, statSync, existsSync, writeFileSync } from 'node:fs';
 
 export class IO {
   static separator = path.sep;
@@ -58,6 +58,6 @@ export class IO {
   }
 
   static writeOutput(json: string) {
-    // writeFileSync('/Users/ceitflow/WebstormProjects/graphkit/backend/dist' + '/output.json', json);
+    writeFileSync('/Users/ceitflow/WebstormProjects/hypertree/src/renderer' + '/output.json', json);
   }
 }

@@ -22,7 +22,8 @@ import {
 } from 'typescript';
 import { IO } from './io';
 import path from 'node:path';
-import { CategoryType, GroupedTypeFlags, IdPath } from './analyzer.type';
+import { IdPath } from '@lib/ast';
+import { CategoryType, GroupedTypeFlags } from './analyzer.type';
 
 export class Analyzer {
   private typeCheck: TypeChecker;

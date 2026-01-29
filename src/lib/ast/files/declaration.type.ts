@@ -1,6 +1,10 @@
 // export of SourceFile
+import { IdPath } from './id.type';
+
 export type DeclarationNode = {
+  id: IdPath; // file id + index of definition in codefile
   name: string;
+  depth: number;
   loc: number;
   referencedImportTokens: string[];
   token: DeclarationClass

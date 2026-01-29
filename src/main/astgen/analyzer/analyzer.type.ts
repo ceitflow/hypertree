@@ -1,11 +1,5 @@
 import { TypeFlags } from 'typescript';
 
-export type IdPath = string; // path relative to options.src OR package name if external
-export enum FileEnum {
-  Code,
-  Other,
-}
-
 export const GroupedTypeFlags = {
   Unknown: [TypeFlags.Any, TypeFlags.Unknown],
   Boolean: [TypeFlags.Boolean, TypeFlags.BooleanLiteral, TypeFlags.BooleanLike],

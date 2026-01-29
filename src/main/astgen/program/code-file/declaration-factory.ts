@@ -12,111 +12,132 @@ import {
   isNamespaceImport,
   ObjectLiteralExpression,
   SyntaxKind,
-  TypeAliasDeclaration,
+  TypeAliasDeclaration
 } from 'typescript';
-import { Analyzer } from '../../analyzer/analyzer';
+import { Analyzer } from '../../analyzer';
 import { CodeFileBuilder } from './code-file-builder';
 import { CacheExportItem, CacheReExportItem } from './code-file-cache';
-import { DeclarationEnum, DeclarationNode } from './declaration.type';
-import { CodeFileEmptyImport, CodeFileImport, CodeFileReExport } from './code-file.type';
+import { CodeFileEmptyImport, CodeFileImport, CodeFileReExport, DeclarationEnum, DeclarationNode, IdPath } from '@lib/ast';
 
 // create Export, Import and Reexport types from TS Nodes
-export const ExportFactory = (node: CacheExportItem['node'], analyzer: Analyzer): DeclarationNode | undefined => {
+export const ExportFactory = (
+  node: CacheExportItem['node'],
+  analyzer: Analyzer,
+  id: IdPath,
+  depth: number,
+): DeclarationNode | undefined => {
+
   switch (node.kind) {
     case SyntaxKind.Identifier: {
       const n = node as Identifier;
       return {
+        id,
         name: n.text,
+        depth,
         loc: calculateLoc(n),
         referencedImportTokens: [],
         token: {
           category: DeclarationEnum.Primitive,
-          type: analyzer.evaluateType(node)?.astType as any, // todo might not work without pointing to parent?
-        },
-      }
+          type: analyzer.evaluateType(node)?.astType as any // todo might not work without pointing to parent?
+        }
+      };
     }
     case SyntaxKind.ExportSpecifier: {
       const n = node as ExportSpecifier;
       return {
+        id,
         name: n.name.text,
+        depth,
         loc: calculateLoc(n),
         referencedImportTokens: [],
         token: {
           category: analyzer.evaluateType(node)?.category as any,
-          type: analyzer.evaluateType(n.name as Identifier)?.category as any,
-        },
-      }
+          type: analyzer.evaluateType(n.name as Identifier)?.category as any
+        }
+      };
     }
     case SyntaxKind.ObjectLiteralExpression: {
       const n = node as ObjectLiteralExpression;
       return {
+        id,
         name: '_',
+        depth,
         loc: calculateLoc(n),
         referencedImportTokens: [],
         token: {
           category: DeclarationEnum.Object,
-          type: 'object',
-        },
-      }
+          type: 'object'
+        }
+      };
     }
     case SyntaxKind.ClassDeclaration: {
       const n = node as ClassDeclaration;
       return {
+        id,
         name: n.name?.text as string,
+        depth,
         loc: calculateLoc(n),
         referencedImportTokens: [],
         token: {
-          category: DeclarationEnum.Class,
+          category: DeclarationEnum.Class
           // todo metadata extract using analyzer
-        },
-      }
+        }
+      };
     }
     case SyntaxKind.FunctionDeclaration: {
       const n = node as FunctionDeclaration;
       return {
+        id,
         name: n.name?.text as string,
+        depth,
         loc: calculateLoc(n),
         referencedImportTokens: [],
         token: {
-          category: DeclarationEnum.Function,
-        },
-      }
+          category: DeclarationEnum.Function
+        }
+      };
     }
     case SyntaxKind.InterfaceDeclaration: {
       const n = node as InterfaceDeclaration;
       return {
+        id,
         name: n.name.text,
+        depth,
         loc: calculateLoc(n),
         referencedImportTokens: [],
         token: {
           category: DeclarationEnum.TsType,
-          type: 'interface',
-        },
-      }
+          type: 'interface'
+        }
+      };
     }
     case SyntaxKind.EnumDeclaration: {
       const n = node as EnumDeclaration;
       return {
+        id,
         name: n.name.text,
+        depth,
         loc: calculateLoc(n),
         referencedImportTokens: [],
         token: {
           category: DeclarationEnum.TsType,
-          type: 'enum',
-        },
-      }
+          type: 'enum'
+        }
+      };
     }
     case SyntaxKind.TypeAliasDeclaration: {
       const n = node as TypeAliasDeclaration;
       return {
+        id,
         name: n.name.text,
+        depth,
         loc: calculateLoc(n),
         referencedImportTokens: [],
         token: {
           category: DeclarationEnum.TsType,
-          type: 'typeAlias',
-        },
-      }
+          type: 'typeAlias'
+        }
+      };
     }
 
     // export default defineConfig()
@@ -125,33 +146,33 @@ export const ExportFactory = (node: CacheExportItem['node'], analyzer: Analyzer)
       if (!analyzer.getSymbol(n.parent)) {
         // @ts-expect-error missing typescript type on default export, so make it a generic object
         n['kind'] = SyntaxKind.ObjectLiteralExpression;
-        return ExportFactory(n, analyzer);
+        return ExportFactory(n, analyzer, id, depth);
       }
       const declaration = analyzer.getCallExpressionDeclaration(n);
       if (!declaration) {
         console.error(`Unsupported declaration type: ${SyntaxKind[n['kind']]}`);
         return;
       }
-      return ExportFactory(declaration as any, analyzer); // feed back the return value of call expression
+      return ExportFactory(declaration as any, analyzer, id, depth); // feed back the return value of call expression
     }
 
     // export default {} as Something;
     case SyntaxKind.AsExpression: {
       const n = node as AsExpression;
-      return ExportFactory(n.expression as any, analyzer);
+      return ExportFactory(n.expression as any, analyzer, id, depth);
     }
 
     default:
       console.error(`Unsupported declaration type: ${SyntaxKind[node['kind']]}`);
   }
-}
+};
 
 const calculateLoc = (node: CacheExportItem['node']): number => {
   const sourceFile = node.getSourceFile();
   const { line: startLine } = sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile));
   const { line: endLine } = sourceFile.getLineAndCharacterOfPosition(node.end);
   return endLine - startLine + 1;
-}
+};
 
 export const EmptyImportFactory = (node: ImportDeclaration, analyzer: Analyzer): CodeFileEmptyImport => {
   const { resolvedPath, isExternal } = analyzer.getResolvedImportPath(node);
@@ -159,18 +180,22 @@ export const EmptyImportFactory = (node: ImportDeclaration, analyzer: Analyzer):
   return {
     type: 'empty',
     from: resolvedPath,
-    isExternal,
-  }
-}
+    isExternal
+  };
+};
 
-export const ImportFactory = (node: ImportDeclaration, analyzer: Analyzer, fromNode: CodeFileBuilder): CodeFileImport[] => {
+export const ImportFactory = (
+  node: ImportDeclaration,
+  analyzer: Analyzer,
+  fromNode: CodeFileBuilder
+): CodeFileImport[] => {
   const result: CodeFileImport[] = [];
   const importClause = node.importClause;
   const namedBindings = importClause?.namedBindings;
   const { resolvedPath, isExternal } = analyzer.getResolvedImportPath(node);
 
   if (!importClause) {
-    throw new Error("Cannot build import token without from path");
+    throw new Error('Cannot build import token without from path');
   }
 
   // import default from '..'
@@ -181,51 +206,55 @@ export const ImportFactory = (node: ImportDeclaration, analyzer: Analyzer, fromN
       token: {
         isDefault: true,
         name: node.importClause!.name!.text,
-        pathToDeclaration: isExternal ? resolvedPath : analyzer.getPathToOriginalNode(importClause.name),
+        pathToDeclaration: isExternal ? resolvedPath : analyzer.getPathToOriginalNode(importClause.name)
       },
-      isExternal,
+      isExternal
     });
   }
 
   // import: import * as name from '..'
   if (namedBindings && isNamespaceImport(namedBindings)) {
-    fromNode.fileExports.forEach(ex =>
-        result.push({
-          from: resolvedPath,
-          token: {
-            name: ex.name,
-            pathToDeclaration: resolvedPath,
-          },
-          isExternal,
-        }),
+    fromNode.fileExports.forEach((ex) =>
+      result.push({
+        from: resolvedPath,
+        token: {
+          name: ex.name,
+          pathToDeclaration: resolvedPath
+        },
+        isExternal
+      })
     );
-    fromNode.fileReExports.forEach(re =>
-        result.push({
-          from: resolvedPath,
-          token: { ...re.token },
-          isExternal,
-        }),
+    fromNode.fileReExports.forEach((re) =>
+      result.push({
+        from: resolvedPath,
+        token: { ...re.token },
+        isExternal
+      })
     );
   }
 
   // import { a, b } from '..'
   if (namedBindings && isNamedImports(namedBindings))
-    namedBindings.elements.forEach(element => {
+    namedBindings.elements.forEach((element) => {
       result.push({
         from: resolvedPath,
         token: {
           name: element.name.text,
           originalName: element.propertyName?.text,
-          pathToDeclaration: isExternal ? resolvedPath : analyzer.getPathToOriginalNode(element.name),
+          pathToDeclaration: isExternal ? resolvedPath : analyzer.getPathToOriginalNode(element.name)
         },
-        isExternal,
+        isExternal
       });
     });
 
   return result;
-}
+};
 
-export const ReexportFactory = (cached: CacheReExportItem, analyzer: Analyzer, fromNode: CodeFileBuilder): CodeFileReExport[] => {
+export const ReexportFactory = (
+  cached: CacheReExportItem,
+  analyzer: Analyzer,
+  fromNode: CodeFileBuilder
+): CodeFileReExport[] => {
   const { node, fromGraphNode } = cached;
   const result: CodeFileReExport[] = [];
 
@@ -240,8 +269,8 @@ export const ReexportFactory = (cached: CacheReExportItem, analyzer: Analyzer, f
         token: {
           name,
           originalName,
-          pathToDeclaration: fromGraphNode,
-        },
+          pathToDeclaration: fromGraphNode
+        }
       });
       break;
     }
@@ -251,48 +280,48 @@ export const ReexportFactory = (cached: CacheReExportItem, analyzer: Analyzer, f
         from: fromGraphNode, // TODO
         token: {
           name: node.text,
-          pathToDeclaration: fromGraphNode,
-        },
+          pathToDeclaration: fromGraphNode
+        }
       });
       break;
     }
     case SyntaxKind.NamespaceExport: {
       //  export * as X from '..'
       const { resolvedPath, isExternal } = analyzer.getResolvedImportPath(node.parent);
-      fromNode.fileExports.forEach(ex =>
-          result.push({
-            from: resolvedPath,
-            token: {
-              name: ex.name!,
-              pathToDeclaration: resolvedPath,
-            },
-          }),
+      fromNode.fileExports.forEach((ex) =>
+        result.push({
+          from: resolvedPath,
+          token: {
+            name: ex.name!,
+            pathToDeclaration: resolvedPath
+          }
+        })
       );
-      fromNode.fileReExports.forEach(re =>
-          result.push({
-            from: resolvedPath,
-            token: { ...re.token },
-          }),
+      fromNode.fileReExports.forEach((re) =>
+        result.push({
+          from: resolvedPath,
+          token: { ...re.token }
+        })
       );
       break;
     }
     case SyntaxKind.ExportDeclaration: {
       // export * from '..' (no alias)
       const { resolvedPath, isExternal } = analyzer.getResolvedImportPath(node);
-      fromNode.fileExports.forEach(ex =>
-          result.push({
-            from: resolvedPath,
-            token: {
-              name: ex.name!,
-              pathToDeclaration: resolvedPath,
-            },
-          }),
+      fromNode.fileExports.forEach((ex) =>
+        result.push({
+          from: resolvedPath,
+          token: {
+            name: ex.name!,
+            pathToDeclaration: resolvedPath
+          }
+        })
       );
-      fromNode.fileReExports.forEach(re =>
-          result.push({
-            from: resolvedPath,
-            token: { ...re.token },
-          }),
+      fromNode.fileReExports.forEach((re) =>
+        result.push({
+          from: resolvedPath,
+          token: { ...re.token }
+        })
       );
       break;
     }
@@ -303,11 +332,11 @@ export const ReexportFactory = (cached: CacheReExportItem, analyzer: Analyzer, f
         token: {
           isDefault: true,
           name: node.name?.text as string,
-          pathToDeclaration: fromGraphNode,
-        },
+          pathToDeclaration: fromGraphNode
+        }
       });
       break;
     }
   }
   return result;
-}
+};

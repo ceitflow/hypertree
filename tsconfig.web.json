@@ -18,7 +18,8 @@
     "noUnusedParameters": false,
     "noFallthroughCasesInSwitch": true,
     "paths": {
-      "@lib/ast/*": ["src/lib/ast/*"],
+      "@lib/ast": ["src/lib/ast"],
+      "@lib/ast/*": ["src/lib/ast/*"]
     }
   }
 }

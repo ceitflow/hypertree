@@ -10,10 +10,11 @@ import {
   sys,
 } from 'typescript';
 import { Program } from './program';
+import { OtherFile } from '@lib/ast';
 import { Analyzer, IO } from './analyzer';
-import { CreateOtherFile, OtherFile } from './program/other-file';
+import { CreateOtherFile } from './program/other-file';
 
-export async function AST() {
+export async function AstGen() {
   // /Users/ceitflow/WebstormProjects/koia-adminflow/adminflow
   // /Users/ceitflow/WebstormProjects/m3/coplan-visualizer
   // /Users/ceitflow/WebstormProjects/graphkit-test-repos/angular/packages

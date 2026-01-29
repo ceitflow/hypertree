@@ -33,12 +33,19 @@ import {
   TypeAliasDeclaration,
   VariableDeclaration,
 } from 'typescript';
+import {
+  CodeFile,
+  CodeFileEmptyImport,
+  CodeFileImport,
+  CodeFileReExport,
+  DeclarationNode,
+  FileEnum,
+  IdPath
+} from '@lib/ast';
 import path from 'node:path';
+import { Analyzer, IO } from '../../analyzer';
 import { CodeFileCache } from './code-file-cache';
-import { DeclarationNode } from './declaration.type';
 import { ExportFactory } from './declaration-factory';
-import { Analyzer, FileEnum, IdPath } from '../../analyzer';
-import { CodeFile, CodeFileEmptyImport, CodeFileImport, CodeFileReExport } from './code-file.type';
 
 export class CodeFileBuilder {
   id: IdPath; // path relative to options.src
@@ -95,8 +102,11 @@ export class CodeFileBuilder {
     }
 
     // build file exports (declarations)
-    this.cache.cachedExports.forEach(exp => {
-      const declaration = ExportFactory(exp.node, analyzer);
+    let idx = 0;
+    this.cache.cachedExports.forEach((exp) => {
+      const declarationId = this.id + IO.separator + idx;
+      const declaration = ExportFactory(exp.node, analyzer, declarationId, this.depth + 1);
+      idx++;
       if (!declaration) return;
 
       // ts overload, for now ignore todo

@@ -17,8 +17,8 @@ import {
   SyntaxKind,
   TypeAliasDeclaration,
 } from 'typescript';
-import { IdPath } from '../../analyzer/analyzer.type';
-import { Analyzer } from '../../analyzer/analyzer';
+import { IdPath } from '@lib/ast';
+import { Analyzer } from '../../analyzer';
 
 export type CacheExportItem = {
   node:

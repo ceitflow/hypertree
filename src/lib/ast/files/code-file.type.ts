@@ -1,5 +1,5 @@
 import { ScriptKind } from 'typescript';
-import { FileEnum, IdPath } from '../../analyzer';
+import { FileEnum, IdPath } from './id.type';
 import { DeclarationNode } from './declaration.type';
 
 export type CodeFile = {

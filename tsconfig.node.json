@@ -4,6 +4,10 @@
   "compilerOptions": {
     "composite": true,
     "baseUrl": ".",
+    "paths": {
+      "@lib/ast": ["src/lib/ast"],
+      "@lib/ast/*": ["src/lib/ast/*"]
+    },
     "noImplicitAny": false,
     "noImplicitReturns": false,
     "noUnusedLocals": false,
