@@ -1,14 +1,22 @@
 import { resolve } from 'path'
-import { defineConfig } from 'electron-vite'
 import react from '@vitejs/plugin-react'
+import { defineConfig } from 'electron-vite'
+
+const libAliases = {
+  '@lib/ast': resolve('src/lib/ast'),
+}
 
 export default defineConfig({
-  main: {},
-  preload: {},
+  main: {
+    resolve: { alias: libAliases }
+  },
+  preload: {
+    resolve: { alias: libAliases }
+  },
   renderer: {
     resolve: {
       alias: {
-        '@renderer': resolve('src/renderer/src')
+        ...libAliases
       }
     },
     plugins: [react()]
