@@ -1,6 +1,6 @@
-import { DeclarationNode, CodeFile, DeclarationEnum, Directory, FileEnum, OtherFile } from '@lib/ast';
+import { CodeFile, DeclarationEnum, DeclarationNode, Directory, NodeEnum, OtherFile } from '@lib/ast';
 
-export class Factory {
+export class AstFactory {
   static createCodeFile({
     id = 'id',
     name = 'name',
@@ -15,7 +15,8 @@ export class Factory {
     reexports = []
   }: Partial<CodeFile>): CodeFile {
     const result: CodeFile = {
-      type: FileEnum.Code,
+      type: NodeEnum.Code,
+      isExternalFile: false,
       id,
       name,
       depth,
@@ -37,7 +38,7 @@ export class Factory {
 
   static createOtherFile({ id = 'id', name = 'name', loc = 1, bigFile = false }: Partial<OtherFile>): OtherFile {
     return {
-      type: FileEnum.Other,
+      type: NodeEnum.Other,
       id,
       depth: 0,
       name,
@@ -46,10 +47,11 @@ export class Factory {
     };
   }
 
-  static createDir({ name = 'name', path = 'path', depth = 0, dirs = [], files = [] }: Partial<Directory>): Directory {
+  static createDir({ name = 'name', id = 'path', depth = 0, dirs = [], files = [] }: Partial<Directory>): Directory {
     return {
       name,
-      path,
+      id,
+      type: NodeEnum.Directory,
       depth,
       dirs,
       files
@@ -66,6 +68,7 @@ export class Factory {
   }: Partial<DeclarationNode>): DeclarationNode {
     return {
       id,
+      type: NodeEnum.Declaration,
       name,
       depth,
       loc,

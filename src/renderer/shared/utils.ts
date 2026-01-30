@@ -1,7 +1,9 @@
-export function eachAfter<T extends { children: T[] }>(root: T, callback: (node: T) => void): void {
-  const nodes: T[] = [root];
-  const next: T[] = [];
-  let node: T | undefined;
+import { GraphNode } from '../graph';
+
+export function eachAfter(root: GraphNode, callback: (node: GraphNode) => void): void {
+  const nodes: GraphNode[] = [root];
+  const next: GraphNode[] = [];
+  let node: GraphNode | undefined;
 
   while (nodes.length) {
     node = nodes.pop()!;
@@ -11,9 +13,9 @@ export function eachAfter<T extends { children: T[] }>(root: T, callback: (node:
   while (next.length) callback(next.pop()!);
 }
 
-export function eachBefore<T extends { children: T[] }>(root: T, callback: (node: T) => void): void {
-  const nodes: T[] = [root];
-  let node: T | undefined;
+export function eachBefore(root: GraphNode, callback: (node: GraphNode) => void): void {
+  const nodes: GraphNode[] = [root];
+  let node: GraphNode | undefined;
 
   while (nodes.length) {
     node = nodes.pop()!;

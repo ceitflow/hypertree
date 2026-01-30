@@ -1,10 +1,6 @@
-// export of SourceFile
-import { IdPath } from './id.type';
+import { NodeEnum, BaseNode } from './id.type';
 
-export type DeclarationNode = {
-  id: IdPath; // file id + index of definition in codefile
-  name: string;
-  depth: number;
+export type DeclarationNode = BaseNode<NodeEnum.Declaration> & {
   loc: number;
   referencedImportTokens: string[];
   token: DeclarationClass
@@ -27,8 +23,8 @@ export type DeclarationFunction = {
   category: DeclarationEnum.Function;
   properties?: (DeclarationFunction | DeclarationPrimitive | DeclarationObject)[];
   params?: string[];
-  async?: true;
-  generator?: true;
+  async: boolean;
+  generator: boolean;
   // pure: boolean
 }
 

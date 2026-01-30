@@ -1,40 +1,34 @@
 import { SourceFile } from 'typescript';
 import { Analyzer, IO } from '../analyzer';
 import { CreateDirectory } from './directory';
-import { FileEnum, IdPath, Directory, OtherFile, File, ProgramGraph } from '@lib/ast';
+import { NodeEnum, IdPath, Directory, OtherFile, File } from '@lib/ast';
 import { CodeFileBuilder, EmptyImportFactory, ImportFactory, ReexportFactory } from './code-file';
 
 export class Program {
-  graph: ProgramGraph;
+  root: Directory;
 
   constructor(files: Set<(SourceFile | OtherFile)>, analyzer: Analyzer) {
     const srcPath = analyzer.getProgramSrcPath();
-    const srcName = srcPath.split(IO.separator).pop()!;
-    this.graph = {
-      name: srcName,
-      root: CreateDirectory(srcPath, 0),
-      stats: {
-        filesCount: files.size,
-        externalFilesCount: 0,
-        totalLoc: 0,
-      },
-    };
+    this.root = CreateDirectory(srcPath, 0);
+    this.build(files, analyzer);
+  }
+
+  private build(files: Set<(SourceFile | OtherFile)>, analyzer: Analyzer): Directory {
     const filesBuilder = new Map<IdPath, CodeFileBuilder>();
     const externalFiles = new Map<IdPath, SourceFile>();
 
     console.log(`1. build files ${files.size}`);
     for (const sourceFile of files) {
-      if ('type' in sourceFile) { // other file
+      if ('type' in sourceFile) {
+        // other file
         this.addToDirectoryGraph(sourceFile);
         continue;
       }
       const file = new CodeFileBuilder(sourceFile, analyzer);
       filesBuilder.set(file.id, file);
-      this.graph.stats.totalLoc += file.loc;
       for (const extFile of file.cache.externalReferencedFiles) {
         if (!externalFiles.has(extFile.file.fileName)) {
           externalFiles.set(extFile.packageName, extFile.file);
-          this.graph.stats.externalFilesCount++;
         }
       }
       console.log(`Converting AST graph node: ${file.id}`);
@@ -65,16 +59,18 @@ export class Program {
         const fromNode = filesBuilder.get(resolvedPath);
         if (!fromNode) {
           console.error(`Attempt to import file that's not registered: ${resolvedPath} from: ${file.id}`);
-        } else file.fileImports.push(...ImportFactory(node, analyzer, fromNode));
+        } else {
+          file.fileImports.push(...ImportFactory(node, analyzer, fromNode));
+        }
       });
     }
 
     // build files and dirGraph
     for (const file of filesBuilder.values()) {
       const builtFile = file.build();
-      // this.graph.filesMap[builtFile.id] = builtFile;
       this.addToDirectoryGraph(builtFile);
     }
+    return this.root;
   }
 
   private buildReExports(node: CodeFileBuilder, graph: Map<IdPath, CodeFileBuilder>, analyzer: Analyzer): void {
@@ -102,7 +98,7 @@ export class Program {
         stack.pop(); // refs processed, going back to previous node in stack
         item.areReferencesResolved = !item.recalculateAgain;
         if (item.areReferencesResolved)
-          item.cache.cachedReExports.forEach(reexport => {
+          item.cache.cachedReExports.forEach((reexport) => {
             const fromNode = graph.get(reexport.fromGraphNode);
             if (!fromNode) console.error(`Referencing file that was skipped: ${reexport.fromGraphNode}`);
             else item.fileReExports.push(...ReexportFactory(reexport, analyzer, fromNode));
@@ -128,15 +124,17 @@ export class Program {
   private addToDirectoryGraph(file: File): void {
     const osSeparator = IO.separator;
     const segments = file.id.split(osSeparator); // unix or windows paths
-    let temp: Directory = this.graph.root;
+    let temp: Directory = this.root;
 
-    if (file.type === FileEnum.Code && file.isExternalFile) {
+    if (file.type === NodeEnum.Code && file.isExternalFile) {
       // gets reference to node_modules, create one if doesn't exist
-      const nodemodules = this.graph.root.dirs?.find(c => c.name === 'node_modules');
+      const nodemodules = this.root.dirs.find((c) => c.name === 'node_modules');
       if (!nodemodules) {
         temp = CreateDirectory('node_modules', 1);
-        this.graph.root.dirs.push(temp);
-      } else temp = nodemodules;
+        this.root.dirs.push(temp);
+      } else {
+        temp = nodemodules;
+      }
     }
     // no folders in path
     if (segments.length === 1) {
@@ -145,7 +143,7 @@ export class Program {
     }
     // create folder for each path segment
     segments.slice(0, -1).forEach((seg, idx) => {
-      let exists = temp.dirs?.find(child => child.name === seg);
+      let exists = temp.dirs?.find((child) => child.name === seg);
       if (!exists) {
         if (!temp.dirs) temp.dirs = [];
         exists = CreateDirectory(segments.slice(0, idx + 1).join(osSeparator), idx + 1);
@@ -160,10 +158,8 @@ export class Program {
   }
 
   toJSON(): string {
-    const { filesCount, externalFilesCount, totalLoc } = this.graph.stats;
-    console.log(`outputting json graph (${filesCount} files + ${externalFilesCount} external, total LOC: ${totalLoc})`);
     // sort
-    const temp = [this.graph.root];
+    const temp = [this.root];
     while (temp.length) {
       const item = temp.pop()!;
       if (item.name === 'node_modules') {
@@ -174,9 +170,9 @@ export class Program {
       if (item.files) item.files.sort((a, b) => a.name.localeCompare(b.name));
       if (item.dirs) {
         item.dirs.sort((a, b) => a.name.localeCompare(b.name));
-        temp.push(...item.dirs)
+        temp.push(...item.dirs);
       }
     }
-    return JSON.stringify(this.graph, undefined, 2);
+    return JSON.stringify(this.root, undefined, 2);
   }
 }

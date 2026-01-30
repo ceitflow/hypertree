@@ -1,6 +1,6 @@
 import {
-  CallExpression,
   AsExpression,
+  CallExpression,
   ClassDeclaration,
   EnumDeclaration,
   ExportSpecifier,
@@ -14,24 +14,32 @@ import {
   SyntaxKind,
   TypeAliasDeclaration
 } from 'typescript';
+import {
+  CodeFileEmptyImport,
+  CodeFileImport,
+  CodeFileReExport,
+  DeclarationEnum,
+  DeclarationNode,
+  IdPath,
+  NodeEnum,
+} from '@lib/ast';
 import { Analyzer } from '../../analyzer';
 import { CodeFileBuilder } from './code-file-builder';
 import { CacheExportItem, CacheReExportItem } from './code-file-cache';
-import { CodeFileEmptyImport, CodeFileImport, CodeFileReExport, DeclarationEnum, DeclarationNode, IdPath } from '@lib/ast';
 
 // create Export, Import and Reexport types from TS Nodes
 export const ExportFactory = (
   node: CacheExportItem['node'],
   analyzer: Analyzer,
   id: IdPath,
-  depth: number,
+  depth: number
 ): DeclarationNode | undefined => {
-
   switch (node.kind) {
     case SyntaxKind.Identifier: {
       const n = node as Identifier;
       return {
         id,
+        type: NodeEnum.Declaration,
         name: n.text,
         depth,
         loc: calculateLoc(n),
@@ -46,6 +54,7 @@ export const ExportFactory = (
       const n = node as ExportSpecifier;
       return {
         id,
+        type: NodeEnum.Declaration,
         name: n.name.text,
         depth,
         loc: calculateLoc(n),
@@ -60,6 +69,7 @@ export const ExportFactory = (
       const n = node as ObjectLiteralExpression;
       return {
         id,
+        type: NodeEnum.Declaration,
         name: '_',
         depth,
         loc: calculateLoc(n),
@@ -74,6 +84,7 @@ export const ExportFactory = (
       const n = node as ClassDeclaration;
       return {
         id,
+        type: NodeEnum.Declaration,
         name: n.name?.text as string,
         depth,
         loc: calculateLoc(n),
@@ -88,12 +99,15 @@ export const ExportFactory = (
       const n = node as FunctionDeclaration;
       return {
         id,
+        type: NodeEnum.Declaration,
         name: n.name?.text as string,
         depth,
         loc: calculateLoc(n),
         referencedImportTokens: [],
         token: {
-          category: DeclarationEnum.Function
+          category: DeclarationEnum.Function,
+          async: false,
+          generator: false
         }
       };
     }
@@ -101,6 +115,7 @@ export const ExportFactory = (
       const n = node as InterfaceDeclaration;
       return {
         id,
+        type: NodeEnum.Declaration,
         name: n.name.text,
         depth,
         loc: calculateLoc(n),
@@ -115,6 +130,7 @@ export const ExportFactory = (
       const n = node as EnumDeclaration;
       return {
         id,
+        type: NodeEnum.Declaration,
         name: n.name.text,
         depth,
         loc: calculateLoc(n),
@@ -129,6 +145,7 @@ export const ExportFactory = (
       const n = node as TypeAliasDeclaration;
       return {
         id,
+        type: NodeEnum.Declaration,
         name: n.name.text,
         depth,
         loc: calculateLoc(n),
@@ -218,6 +235,7 @@ export const ImportFactory = (
       result.push({
         from: resolvedPath,
         token: {
+          isDefault: false,
           name: ex.name,
           pathToDeclaration: resolvedPath
         },
@@ -239,6 +257,7 @@ export const ImportFactory = (
       result.push({
         from: resolvedPath,
         token: {
+          isDefault: false,
           name: element.name.text,
           originalName: element.propertyName?.text,
           pathToDeclaration: isExternal ? resolvedPath : analyzer.getPathToOriginalNode(element.name)
@@ -268,6 +287,7 @@ export const ReexportFactory = (
         from: resolvedPath,
         token: {
           name,
+          isDefault: false,
           originalName,
           pathToDeclaration: fromGraphNode
         }
@@ -279,6 +299,7 @@ export const ReexportFactory = (
       result.push({
         from: fromGraphNode, // TODO
         token: {
+          isDefault: false,
           name: node.text,
           pathToDeclaration: fromGraphNode
         }
@@ -292,6 +313,7 @@ export const ReexportFactory = (
         result.push({
           from: resolvedPath,
           token: {
+            isDefault: false,
             name: ex.name!,
             pathToDeclaration: resolvedPath
           }
@@ -312,6 +334,7 @@ export const ReexportFactory = (
         result.push({
           from: resolvedPath,
           token: {
+            isDefault: false,
             name: ex.name!,
             pathToDeclaration: resolvedPath
           }

@@ -1,21 +1,27 @@
-import { Store } from './store';
+import { Graph } from '../graph';
 import { Paper } from './paper/paper';
-import { Treemap } from './graph/layout';
+import { Layout } from './layout/layout';
+import styles from './TreeMap.module.css';
 import { useEffect, useRef } from 'react';
 import { createEngine } from '../shared/engine';
-import { MockData } from './mocks/mock-data';
+import { MockAstData } from './mocks/mock-ast-data';
 
 export const TreeMap = () => {
   const mapRef = useRef<HTMLDivElement>(null);
+  const initialized = useRef(false);
 
   useEffect(() => {
+    if (initialized.current) return;
+
+    initialized.current = true;
+
     createEngine(mapRef.current!).then((engine) => {
-      const mock = MockData;
-      const store = new Store(mock);
-      Treemap(store.model.program.root);
-      new Paper(engine, store);
+      const graph = new Graph(MockAstData);
+      console.log(graph.model.root);
+      Layout(graph.model.root);
+      new Paper(engine, graph);
     });
   }, []);
 
-  return <div ref={mapRef}>Map works</div>;
+  return <div ref={mapRef} className={styles.treemapContainer}></div>;
 };

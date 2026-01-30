@@ -1,19 +1,20 @@
-/**
+/*
+/!**
  * @typedef {Object} PotpackBox
  * @property {number} w Box width.
  * @property {number} h Box height.
  * @property {number} [x] X coordinate in the resulting container.
  * @property {number} [y] Y coordinate in the resulting container.
- */
+ *!/
 
-/**
+/!**
  * @typedef {Object} PotpackStats
  * @property {number} w Width of the resulting container.
  * @property {number} h Height of the resulting container.
  * @property {number} fill The space utilization value (0 to 1). Higher is better.
- */
+ *!/
 
-/**
+/!**
  * Packs 2D rectangles into a near-square container.
  *
  * Mutates the {@link boxes} array: it's sorted (by height/width),
@@ -21,7 +22,7 @@
  *
  * @param {PotpackBox[]} boxes
  * @return {PotpackStats}
- */
+ *!/
 export function rectPack(v: NodeModel) {
   const isFile = v.ast.type === 'codeFile';
   const isDirectory = v.ast.type === 'directory';
@@ -43,7 +44,7 @@ export function rectPack(v: NodeModel) {
     });
     childrenBBox.w = v.map.width;
     childrenBBox.h = tempY;
-  } /*else if (isDirectory && v.children.every(c => c.ref.type !== 'directory')) {
+  } /!*else if (isDirectory && v.children.every(c => c.ref.type !== 'directory')) {
     // files only, layout manually into row
     let tempX = 0;
     let maxY = 0;
@@ -54,7 +55,7 @@ export function rectPack(v: NodeModel) {
     });
     childrenBBox.w = tempX;
     childrenBBox.h = maxY;
-  }*/ else {
+  }*!/ else {
     childrenBBox = potpack(childRects);
   }
 
@@ -156,3 +157,4 @@ function potpack(boxes: { x: number; y: number; width: number; height: number }[
     fill: area / (width * height) || 0, // space utilization
   };
 }
+*/

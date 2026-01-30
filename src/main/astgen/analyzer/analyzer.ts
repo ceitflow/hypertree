@@ -80,18 +80,17 @@ export class Analyzer {
     return path.relative(this.srcPath, filePath);
   }
 
-  getResolvedImportPath(node: ImportDeclaration | ExportDeclaration): { resolvedPath: string; isExternal?: true } {
+  getResolvedImportPath(node: ImportDeclaration | ExportDeclaration): { resolvedPath: string; isExternal: boolean } {
     const relativePath = (node.moduleSpecifier as StringLiteral).text;
     const src = this.getSourceFileFromImport(node.moduleSpecifier);
     if (src) {
       const isExternal =
         src.notPresentInProgram ||
         this.program.isSourceFileFromExternalLibrary(src.file) ||
-        this.program.isSourceFileDefaultLibrary(src.file) ||
-        undefined;
+        this.program.isSourceFileDefaultLibrary(src.file);
       return { resolvedPath: isExternal ? relativePath : this.getRelativePath(src.file.fileName), isExternal };
     }
-    return { resolvedPath: relativePath };
+    return { resolvedPath: relativePath, isExternal: false };
   }
 
   getTopExportsFromFile(file: SourceFile | ModuleDeclaration): Node[] {

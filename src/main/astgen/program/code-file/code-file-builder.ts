@@ -39,8 +39,8 @@ import {
   CodeFileImport,
   CodeFileReExport,
   DeclarationNode,
-  FileEnum,
-  IdPath
+  NodeEnum,
+  IdPath,
 } from '@lib/ast';
 import path from 'node:path';
 import { Analyzer, IO } from '../../analyzer';
@@ -244,13 +244,13 @@ export class CodeFileBuilder {
 
   build(): CodeFile {
     return {
-      type: FileEnum.Code,
+      isExternalFile: this.isExternalFile,
+      type: NodeEnum.Code,
       id: this.id,
       name: this.name,
       depth: this.depth,
       loc: this.loc,
       kind: this.kind,
-      isExternalFile: this.isExternalFile || undefined,
       exports: this.fileExports,
       emptyImports: this.fileEmptyImports,
       imports: this.fileImports,

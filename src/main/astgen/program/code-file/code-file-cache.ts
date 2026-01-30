@@ -36,7 +36,7 @@ export type CacheExportItem = {
 
 export type CacheReExportItem = {
   fromGraphNode: IdPath;
-  isExternal?: true;
+  isExternal: boolean;
   node:
     | ExportSpecifier // { A }
     | Identifier // (variable) const X = FromImport todo can be part of chain, resolve alias always
@@ -46,7 +46,7 @@ export type CacheReExportItem = {
 };
 
 type CacheImportItem = {
-  isExternal?: true;
+  isExternal: boolean;
   resolvedPath: string;
   node: ImportDeclaration;
 };
@@ -77,7 +77,7 @@ export class CodeFileCache {
     this.cachedExports.set(item.node, item);
   }
 
-  addImport(node: ImportDeclaration, resolvedPath: IdPath, isExternal?: true): void {
+  addImport(node: ImportDeclaration, resolvedPath: IdPath, isExternal: boolean): void {
     const item: CacheImportItem = {
       isExternal,
       resolvedPath,
@@ -95,7 +95,7 @@ export class CodeFileCache {
     }
   }
 
-  addReExport(node: CacheReExportItem['node'], fromGraphNode: IdPath, isExternal?: true): void {
+  addReExport(node: CacheReExportItem['node'], fromGraphNode: IdPath, isExternal: boolean): void {
     const item: CacheReExportItem = {
       node,
       fromGraphNode,

@@ -19,6 +19,11 @@ export default defineConfig({
         ...libAliases
       }
     },
+    css: {
+      modules: {
+        localsConvention: 'camelCase'
+      }
+    },
     plugins: [react()]
   }
 })

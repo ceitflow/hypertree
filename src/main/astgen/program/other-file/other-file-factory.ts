@@ -1,5 +1,5 @@
 import { Analyzer, IO } from '../../analyzer';
-import { FileEnum, IdPath, OtherFile } from '@lib/ast';
+import { NodeEnum, IdPath, OtherFile } from '@lib/ast';
 
 export const CreateOtherFile = (path: IdPath, analyzer: Analyzer): OtherFile => {
   const id = analyzer.getRelativePath(path);
@@ -9,7 +9,7 @@ export const CreateOtherFile = (path: IdPath, analyzer: Analyzer): OtherFile => 
     id,
     name: id.split(IO.separator).pop()!,
     depth: id.split(IO.separator).length - 1,
-    type: FileEnum.Other,
+    type: NodeEnum.Other,
     loc,
     bigFile: loc > limit,
   }
