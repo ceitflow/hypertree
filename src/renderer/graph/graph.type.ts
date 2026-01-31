@@ -27,7 +27,7 @@ export type GraphNode<T extends NodeEnum = NodeEnum> = {
   children: GraphNode[];
 
   area: number; // square pixels
-  bbox: BBox;
+  bbox: BBox; // includes padding
   margin: Margin;
   padding: Margin;
   labelPoints: [number, number, number][]; // x,y,angle

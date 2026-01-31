@@ -87,16 +87,46 @@ export const MockAstData = AstFactory.createDir({
       id: 'five',
       name: 'Five.ts',
       depth: 1,
-      loc: 100,
+      loc: 70,
       exports: [
         AstFactory.createDeclaration({
           id: 'five/0',
           depth: 2,
           name: 'Five',
+          loc: 70,
+          token: { category: DeclarationEnum.Class }
+        })
+      ]
+    }),
+    AstFactory.createCodeFile({
+      id: 'six',
+      name: 'six.ts',
+      depth: 1,
+      loc: 90,
+      exports: [
+        AstFactory.createDeclaration({
+          id: 'six/0',
+          depth: 2,
+          name: 'Six',
+          loc: 90,
+          token: { category: DeclarationEnum.Class }
+        })
+      ]
+    }),
+    AstFactory.createCodeFile({
+      id: 'seven',
+      name: 'seven.ts',
+      depth: 1,
+      loc: 100,
+      exports: [
+        AstFactory.createDeclaration({
+          id: 'seven/0',
+          depth: 2,
+          name: 'Seven',
           loc: 100,
           token: { category: DeclarationEnum.Class }
         })
       ]
-    })
+    }),
   ]
 });

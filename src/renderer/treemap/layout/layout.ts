@@ -1,5 +1,6 @@
+import { NodeEnum } from '@lib/ast';
 import { GraphNode } from '../../graph';
-import { eachAfter } from '../../shared/utils';
+import { eachAfter, eachBefore } from '../../shared/utils';
 
 export function Layout(root: GraphNode) {
   // 1 Loc = 1px height x 80px width
@@ -7,120 +8,96 @@ export function Layout(root: GraphNode) {
   const defaultPadding = 4;
   const targetRatio = 0.844;
 
-  const getArea = (nodes: GraphNode[]) => {
-    return nodes.reduce((sum, n) => {
-      const {
-        bbox: { width, height },
-        margin: m,
-        padding: p
-      } = n;
-      return sum + (width + m.left + m.right + p.left + p.right) * (height + m.top + m.bottom + p.top + p.bottom);
-    }, 0);
-  };
-
   eachAfter(root, (v) => {
+    const { ref, bbox, margin, padding } = v;
 
-    // compute margins and layout declarations in a single column
-    /*v.files.forEach((child) => {
-      switch (child.type) {
-        case NodeEnum.Code: {
-          const m = Math.round(Math.sqrt(child.loc) / 2);
-          child.layout.margin = { top: 0, right: m, bottom: m / 2, left: 0 };
-          child.layout.padding = { top: m, right: defaultPadding, bottom: defaultPadding / 2, left: defaultPadding };
-          child.layout.bbox.width = fileWidth;
-          child.layout.bbox.height = child.loc;
-
-          let tempY = child.layout.padding.top;
-          child.exports.forEach((decl) => {
-            decl.layout.margin = { top: 0, right: 0, bottom: child.exports.length > 1 ? 2 : 0, left: 0 };
-            decl.layout.bbox.width = fileWidth;
-            decl.layout.bbox.height = decl.loc;
-            decl.layout.bbox.x = child.layout.padding.left;
-            decl.layout.bbox.y = tempY;
-            tempY += decl.layout.bbox.height + decl.layout.margin.bottom;
-          });
-          break;
-        }
-        case NodeEnum.Other: {
-          child.layout.margin = { top: 0, right: 10, bottom: 10, left: 0 };
-          child.layout.bbox.width = fileWidth;
-          child.layout.bbox.height = Math.ceil(child.loc / fileWidth);
-          // if (child.node.bigFile) {
-          //   child.layout.bbox.height = 10;
-          // }
-          break;
-        }
+    switch (ref.type) {
+      case NodeEnum.Declaration: {
+        const isNotLast = v.parent!.children[v.parent!.children.length - 1] !== v;
+        margin.bottom = v.parent!.children.length > 1 && isNotLast ? 2 : 0;
+        bbox.width = fileWidth;
+        bbox.height = ref.loc;
+        v.area = ref.loc;
+        break;
       }
-    });
+      case NodeEnum.Code: {
+        const m = Math.round(Math.sqrt(ref.loc) / 2);
+        margin.right = m;
+        margin.bottom = m / 2;
+        padding.top = m;
+        padding.right = defaultPadding;
+        padding.bottom = defaultPadding / 2;
+        padding.left = defaultPadding;
 
-    v.layout.treeMapValue = 1;
-    v.children.forEach(c => (v.map.treeMapValue += c.map.treeMapValue));
-    const m = margin(v);
-    v.map.margin = { top: 0, right: m, bottom: m, left: m };
-    v.map.padding = { top: m, right: defaultPadding, bottom: defaultPadding, left: defaultPadding };
-    if (!v.children.length) {
-      v.map.width = fileWidth;
-      v.map.height = fileWidth;
+        // layout declarations in a single column
+        let tempY = padding.top;
+        v.children.forEach((decl) => {
+          decl.bbox.x = v.padding.left;
+          decl.bbox.y = tempY;
+          tempY += decl.bbox.height + decl.margin.bottom;
+        });
+
+        bbox.width = fileWidth + padding.left + padding.right;
+        bbox.height = tempY + padding.top + padding.bottom;
+        v.area = ref.loc;
+        break;
+      }
+      case NodeEnum.Other: {
+        margin.right = 10;
+        margin.bottom = 10;
+        bbox.width = fileWidth;
+        bbox.height = ref.loc;
+        // if (child.node.bigFile) {
+        //   child.layout.bbox.height = 10;
+        // }
+        v.area = ref.loc;
+        break;
+      }
+      case NodeEnum.Virtual:
+      case NodeEnum.Directory: {
+        v.area = v.children.reduce((s, c) => s + c.area, 0);
+        const m = Math.round(Math.sqrt(v.area) / 2);
+        margin.right = m;
+        margin.bottom = m;
+        margin.left = m;
+        padding.top = ref.type === NodeEnum.Directory ? m : defaultPadding;
+        padding.right = defaultPadding;
+        padding.bottom = defaultPadding;
+        padding.left = defaultPadding;
+
+        v.children.sort((a, b) => b.area - a.area);
+
+        // layout in a single row
+        let totalWidth = padding.left;
+        let totalHeight = 0;
+
+        v.children.forEach((child) => {
+          const childM = child.margin;
+          const childB = child.bbox;
+          childB.x = totalWidth + childM.left;
+          childB.y = padding.top + childM.top;
+          totalWidth += childB.width + childM.left + childM.right;
+          const height = childB.height + padding.top + childM.top + childM.bottom;
+          if (height > totalHeight) totalHeight = height;
+        });
+        totalWidth += v.padding.right;
+        totalHeight += v.padding.bottom;
+        bbox.width = totalWidth;
+        bbox.height = totalHeight;
+        break;
+      }
     }
-
-    if (v.files.length) {
-      // files are grouped together
-      v.files.sort((a, b) => b.loc - a.loc);
-      v.layoutGroups.push({
-        nodes: v.files,
-        area: getArea(v.files)
-      });
-    }
-
-    v.dirs.forEach((child) => {
-      // every dir gets its own group
-      v.layoutGroups.push({
-        nodes: [child],
-        area: getArea([child])
-      });
-    });
-
-    if (!v.layoutGroups.length) {
-      v.layout.bbox.width = fileWidth;
-      v.layout.bbox.height = fileWidth;
-      return;
-    }
-
-    v.layoutGroups.sort((a, b) => b.area - a.area);
-
-    // 1. layout in a single row first
-    let totalWidth = v.layout.padding.left;
-    let totalHeight = 0;
-
-    v.layoutGroups.forEach((group) => {
-      group.nodes.forEach((child) => {
-        const margin = child.layout.margin;
-        child.layout.bbox.x = totalWidth + margin.left;
-        child.layout.bbox.y = v.layout.padding.top + margin.top;
-        totalWidth += child.layout.bbox.width + margin.left + margin.right;
-        const height = child.layout.bbox.height + v.layout.padding.top + margin.top + margin.bottom;
-        if (height > totalHeight) totalHeight = height;
-      });
-    });
-    totalWidth += v.layout.padding.right;
-    totalHeight += v.layout.padding.bottom;
-    v.layout.bbox.width = totalWidth;
-    v.layout.bbox.height = totalHeight;*/
   });
 
-  // 2. layout second pass
-  /*eachBefore(root, (dir) => {
-    // adjusting for relative positions
-    for (const group of dir.layoutGroups) {
-      group.nodes.forEach((n) => {
-        n.layout.bbox.x += dir.layout.bbox.x;
-        n.layout.bbox.y += dir.layout.bbox.y;
-      });
-    }
-  });*/
-
-  /*
   eachBefore(root, (v) => {
+    // adjusting for relative positions
+    v.children.forEach((c) => {
+      c.bbox.x += v.bbox.x;
+      c.bbox.y += v.bbox.y;
+    });
+  });
+
+  /*eachBefore(root, (v) => {
     // labels
     // if (v.ast.type === 'directory') {
     //   const margin = 4600;
