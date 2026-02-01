@@ -1,6 +1,6 @@
 import mitt from 'mitt';
 import { Directory, NodeEnum } from '@lib/ast';
-import { GraphModel, GraphNode } from './graph.type';
+import { BBox, GraphModel, GraphNode } from './graph.type';
 
 export class Graph {
   model: GraphModel;
@@ -14,20 +14,76 @@ export class Graph {
     };
   }
 
-  private createGraphNodes(root: Directory): GraphNode {
-    function makeGraphNode(ref: GraphNode['ref'], parent: GraphNode | null): GraphNode {
-      return {
-        ref,
-        parent,
-        children: [],
-        area: 0,
-        bbox: { x: 0, y: 0, width: 0, height: 0 },
-        margin: { top: 0, bottom: 0, left: 0, right: 0 },
-        padding: { top: 0, bottom: 0, left: 0, right: 0 },
-        labelPoints: []
-      };
+  static createGraphNode(ref: GraphNode['ref'], parent: GraphNode | null): GraphNode {
+    return {
+      ref,
+      parent,
+      children: [],
+      area: 0,
+      bbox: { x: 0, y: 0, width: 0, height: 0 },
+      margin: { top: 0, bottom: 0, left: 0, right: 0 },
+      padding: { top: 0, bottom: 0, left: 0, right: 0 },
+      labelPoints: []
+    };
+  }
+
+  static createVirtualNode(isColumnWrapper: boolean, parent: GraphNode | null) {
+    return this.createGraphNode({ type: NodeEnum.Virtual, isColumnWrapper }, parent);
+  }
+
+  static fitBBoxToChildren(node: GraphNode) {
+    node.bbox = this.getFitChildrenBBox(node);
+  }
+
+  static fitSizeToChildren(node: GraphNode) {
+    const { width, height } = this.getFitChildrenBBox(node);
+    node.bbox.width = width;
+    node.bbox.height = height;
+  }
+
+  private static getFitChildrenBBox(node: GraphNode): BBox {
+    if (!node.children.length) {
+      return { x: 0, y: 0, width: 0, height: 0 };
     }
-    const rootNode = makeGraphNode(root, null);
+    const { padding } = node;
+    const first = node.children[0];
+
+    const getLeft = (c: GraphNode) => c.bbox.x - c.margin.left;
+    const getTop = (c: GraphNode) => c.bbox.y - c.margin.top;
+    const getRight = (c: GraphNode) => c.bbox.x + c.bbox.width + c.margin.right;
+    const getBottom = (c: GraphNode) => c.bbox.y + c.bbox.height + c.margin.bottom;
+
+    let minX = getLeft(first);
+    let minY = getTop(first);
+    let maxX = getRight(first);
+    let maxY = getBottom(first);
+
+    for (let i = 1; i < node.children.length; i++) {
+      const c = node.children[i];
+      minX = Math.min(minX, getLeft(c));
+      minY = Math.min(minY, getTop(c));
+      maxX = Math.max(maxX, getRight(c));
+      maxY = Math.max(maxY, getBottom(c));
+    }
+
+    return {
+      x: minX,
+      y: minY,
+      width: maxX - minX + padding.left + padding.right,
+      height: maxY - minY + padding.top + padding.bottom
+    };
+  }
+
+  static getFullHeight(n: GraphNode) {
+    return n.margin.top + n.bbox.height + n.margin.bottom;
+  }
+
+  static getFullWidth(n: GraphNode) {
+    return n.margin.left + n.bbox.width + n.margin.right;
+  }
+
+  private createGraphNodes(root: Directory): GraphNode {
+    const rootNode = Graph.createGraphNode(root, null);
 
     const stack: { dir: Directory; parentNode: GraphNode }[] = [{ dir: root, parentNode: rootNode }];
 
@@ -35,19 +91,19 @@ export class Graph {
       const { dir, parentNode } = stack.pop()!;
 
       for (const subdir of dir.dirs) {
-        const dirNode = makeGraphNode(subdir, parentNode);
+        const dirNode = Graph.createGraphNode(subdir, parentNode);
         parentNode.children.push(dirNode);
         stack.push({ dir: subdir, parentNode: dirNode });
       }
 
+      // group files into virtual GraphNode
       if (dir.files.length > 0) {
-        const virtualNode = makeGraphNode({ type: NodeEnum.Virtual }, parentNode);
+        const virtualNode = Graph.createVirtualNode(false, parentNode);
 
-        // group files into virtual GraphNode
         for (const file of dir.files) {
-          const fileNode = makeGraphNode(file, virtualNode);
+          const fileNode = Graph.createGraphNode(file, virtualNode);
           if (file.type === NodeEnum.Code) {
-            for (const e of file.exports) fileNode.children.push(makeGraphNode(e, fileNode));
+            for (const e of file.exports) fileNode.children.push(Graph.createGraphNode(e, fileNode));
           }
           virtualNode.children.push(fileNode);
         }

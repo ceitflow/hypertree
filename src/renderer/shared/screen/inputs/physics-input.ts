@@ -63,6 +63,7 @@ export function PhysicsInput({ config, physics, frameStart, transform: t, physic
         dx = output[0];
         dy = output[1];
         physics.active = false;
+        return;
       } else {
         // animate next frame
         const time = Math.min(frameStart.time - timeStart, animDurationMs);
@@ -71,12 +72,13 @@ export function PhysicsInput({ config, physics, frameStart, transform: t, physic
         dy = animEaseFn(time, output[1], animDurationMs) - animEaseFn(prevTime, output[1], animDurationMs);
         if (time === animDurationMs) {
           physics.active = false;
+          return;
         }
       }
 
       // physicsTransform: [dx, dy, scaleX, scaleY]
       // input: [xForce, yForce] <- negative [right, bottom], positive [left, top]
-      // console.log('input', physics.input, 'currentInput', currentInput, 'output', output, 'dx', dx, 'dy', dy, 'active', animation.active);
+      // console.log('input', physics.input, 'currentInput', currentInput, 'output', output, 'dx', dx, 'dy', dy, 'active', physics.active);
 
       const scale = t[2];
       const width = (extent[2] - extent[0]) * scale;

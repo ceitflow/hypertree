@@ -3,6 +3,10 @@ import { main } from './main'
 import icon from '../../resources/icon.png?asset'
 import { app, shell, BrowserWindow } from 'electron'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
+import { installExtension } from 'electron-devtools-installer'
+
+/** Official PixiJS DevTools Chrome extension ID (Chrome Web Store) */
+const PIXI_DEVTOOLS_EXTENSION_ID = 'dlkffcaaoccbofklocbjcmppahjjboce'
 
 function createWindow(): void {
   // Create the browser window.
@@ -19,6 +23,7 @@ function createWindow(): void {
   })
 
   mainWindow.on('ready-to-show', () => {
+    mainWindow.maximize()
     mainWindow.show()
   })
 
@@ -39,7 +44,7 @@ function createWindow(): void {
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   // Set app user model id for windows
   electronApp.setAppUserModelId('com.electron')
 
@@ -49,6 +54,18 @@ app.whenReady().then(() => {
   app.on('browser-window-created', (_, window) => {
     optimizer.watchWindowShortcuts(window)
   })
+
+  // Load PixiJS DevTools into Electron DevTools (dev only)
+  if (is.dev) {
+    try {
+      const ext = await installExtension(PIXI_DEVTOOLS_EXTENSION_ID, {
+        loadExtensionOptions: { allowFileAccess: true }
+      })
+      console.log('PixiJS DevTools extension loaded:', ext.name)
+    } catch (err) {
+      console.warn('PixiJS DevTools extension failed to load:', err)
+    }
+  }
 
   main();
   createWindow()

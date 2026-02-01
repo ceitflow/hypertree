@@ -4,12 +4,12 @@ import { DeclarationEnum, NodeEnum } from '@lib/ast';
 export const MockAstData = AstFactory.createDir({
   name: 'Mockero',
   type: NodeEnum.Directory,
-  id: 'mockLand',
+  id: 'Mockero',
   depth: 0,
   dirs: [
     AstFactory.createDir({
       name: 'src',
-      id: 'src',
+      id: 'Mockero/src',
       depth: 1,
       files: [
         AstFactory.createCodeFile({
@@ -28,16 +28,61 @@ export const MockAstData = AstFactory.createDir({
           ]
         }),
         AstFactory.createCodeFile({
+          id: 'yyy/one11',
+          name: 'One1.ts',
+          depth: 2,
+          loc: 100,
+          exports: [
+            AstFactory.createDeclaration({
+              id: 'yyy/one11/0',
+              name: 'One1',
+              depth: 3,
+              loc: 100,
+              token: { category: DeclarationEnum.Class }
+            })
+          ]
+        }),
+        AstFactory.createCodeFile({
+          id: 'yyy/one12',
+          name: 'One2.ts',
+          depth: 2,
+          loc: 100,
+          exports: [
+            AstFactory.createDeclaration({
+              id: 'yyy/one12/0',
+              name: 'One2',
+              depth: 3,
+              loc: 100,
+              token: { category: DeclarationEnum.Class }
+            })
+          ]
+        }),
+        AstFactory.createCodeFile({
+          id: 'yyy/one13',
+          name: 'One3.ts',
+          depth: 2,
+          loc: 100,
+          exports: [
+            AstFactory.createDeclaration({
+              id: 'yyy/one13/0',
+              name: 'One3',
+              depth: 3,
+              loc: 100,
+              token: { category: DeclarationEnum.Class }
+            })
+          ]
+        }),
+        AstFactory.createCodeFile({
           id: 'yyy/two',
           name: 'Two.ts',
           depth: 2,
-          loc: 110,
+          loc: 200,
           exports: [
             AstFactory.createDeclaration({
               id: 'yyy/two/0',
               name: 'Two',
               depth: 3,
-              loc: 100,
+              loc: 190,
               token: { category: DeclarationEnum.Class }
             }),
             AstFactory.createDeclaration({

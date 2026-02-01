@@ -31,7 +31,8 @@ export default defineConfig(
       '@typescript-eslint/no-explicit-any': 'warn',
       '@typescript-eslint/ ban-ts-comment': 'off',
       'no-empty': 'warn',
-      '@typescript-eslint/explicit-function-return-type': 'off'
+      '@typescript-eslint/explicit-function-return-type': 'off',
+      '@typescript-eslint/no-empty-function': 'off'
     }
   }
 )

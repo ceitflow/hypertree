@@ -7,7 +7,6 @@ import { CreateViewport, Mouse, ScreenType } from '../../shared/screen';
 export class Paper {
   screen: ScreenType;
   container: {
-    viewport: Container;
     background: Graphics;
     paper: Container; // scrollable
   };
@@ -17,14 +16,12 @@ export class Paper {
     private graph: Graph
   ) {
     const { width, height } = engine.canvas.getBoundingClientRect();
-    const viewport = new Container({ label: 'map', parent: engine.stage, x: 0, y: 0 });
-    const background = new Graphics({ label: 'bg', interactive: true, eventMode: 'dynamic', parent: viewport })
+    const background = new Graphics({ label: 'bg', interactive: true, parent: engine.stage, eventMode: 'dynamic' })
       .rect(0, 0, width, height)
       .fill('0x444');
     this.container = {
-      viewport,
       background,
-      paper: new Container({ label: 'paper', parent: viewport, zIndex: 2 })
+      paper: new Container({ label: 'paper', zIndex: 2, parent: engine.stage })
     };
     this.screen = CreateViewport(this.engine, this.container.paper, { zoom: { min: 0.03 } });
     this.reload();
@@ -39,7 +36,7 @@ export class Paper {
     this.render(root);
 
     // center in viewport
-    const paper = this.container.paper;
+    const { paper } = this.container;
     const dx = paper.width / 2;
     const dy = paper.height / 2;
     paper.children.forEach((c) => {
@@ -47,6 +44,7 @@ export class Paper {
       c.y += dy;
     });
     console.log('map size: ', paper.getSize());
+    paper.pivot.set(paper.width / 2, paper.height / 2);
     this.screen.transformer.updateExtentArea({ x: 0, y: 0, width: paper.width, height: paper.height });
     this.screen.controller.zoom.zoomToFit();
   }

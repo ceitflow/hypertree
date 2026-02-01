@@ -8,8 +8,8 @@ export function ExtentLimiter(dx: number, dy: number, t: TransformType, view: Re
   const scale = t[2];
   if (Number.isNaN(scale)) throw new Error('isNaN(scale)');
 
-  const dstToLeft = x / scale - extent[0];
-  const dstToTop = y / scale - extent[1];
+  const dstToLeft = x / scale;
+  const dstToTop = y / scale;
   const dstToRight = (view[2] - x) / scale - extent[2];
   const dstToBottom = (view[3] - y) / scale - extent[3];
 
@@ -18,8 +18,8 @@ export function ExtentLimiter(dx: number, dy: number, t: TransformType, view: Re
   let topPadding = (view[3] * viewportPadding) / scale;
   let bottomPadding = (view[3] * viewportPadding) / scale;
 
-  const heightFitInViewport = extent[3] * scale <= view[3];
-  const widthFitInViewport = extent[2] * scale <= view[2];
+  const heightFitInViewport = extent[3] * scale <= view[3] - view[1];
+  const widthFitInViewport = extent[2] * scale <= view[2] - view[0];
 
   if (widthFitInViewport) {
     // when all of viewport is visible, override padding to prevent diagram going beyond viewport edge

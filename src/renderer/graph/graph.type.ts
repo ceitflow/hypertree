@@ -6,6 +6,7 @@ export type GraphModel = {
 
 export type VirtualNode = {
   type: NodeEnum.Virtual; // for grouping files in a single node
+  isColumnWrapper: boolean;
 };
 
 /** Maps NodeEnum to the corresponding ref type for GraphNode */
@@ -26,6 +27,7 @@ export type GraphNode<T extends NodeEnum = NodeEnum> = {
   parent: GraphNode | null;
   children: GraphNode[];
 
+  // layoutDepth: number // because depth can change by virtual nodes
   area: number; // square pixels
   bbox: BBox; // includes padding
   margin: Margin;
