@@ -24,6 +24,15 @@ export class Paper {
       paper: new Container({ label: 'paper', zIndex: 2, parent: engine.stage })
     };
     this.screen = CreateViewport(this.engine, this.container.paper, { zoom: { min: 0.03 } });
+
+    // auto resize
+    const resizeObserver = new ResizeObserver(entries => {
+      const bbox = engine.canvas.getBoundingClientRect()
+      this.screen.transformer.updateVisibleViewport(bbox);
+      background.rect(0, 0, bbox.width, bbox.height).fill('0x444');
+    });
+    resizeObserver.observe(engine.canvas);
+
     this.reload();
     this.addEvents();
   }

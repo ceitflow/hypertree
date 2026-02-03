@@ -1,17 +1,24 @@
+import {
+  CodeGraphNode,
+  DeclarationGraphNode,
+  DirectoryGraphNode,
+  GraphNode,
+  GraphNodeEnum,
+  OtherGraphNode,
+  VirtualGraphNode
+} from '../../graph';
 import { PaperNode } from './types';
-import { NodeEnum } from '@lib/ast';
-import { GraphNode } from '../../graph';
 import { BitmapText, Graphics } from 'pixi.js';
 
 export class Factory {
   static createLabels(node: GraphNode) {
-    if (node.ref.type === NodeEnum.Directory) {
+    if (node.type === GraphNodeEnum.Directory) {
       return this.createDirLabels(node);
-    } else if (node.ref.type === NodeEnum.Virtual) {
+    } else if (node.type === GraphNodeEnum.Virtual) {
       return [];
     } else {
       const { x, y } = node.bbox;
-      return [this.createLabel(x, y, 0, node.ref.name, 5)];
+      return [this.createLabel(x, y, 0, node.ast.name, 5)];
     }
   }
 
@@ -41,13 +48,13 @@ export class Factory {
     return label;
   }
 
-  private static createDirLabels(node: GraphNode<NodeEnum.Directory>) {
+  private static createDirLabels(node: DirectoryGraphNode) {
     const result: BitmapText[] = [];
-    let text = node.ref.name;
+    let text = node.ast.name;
     let prefix: string;
 
-    if (node.ref.depth !== 0) {
-      const p = node.ref.id.split('/').slice(-2);
+    if (node.ast.depth !== 0) {
+      const p = node.ast.id.split('/').slice(-2);
       if (p.length === 2) {
         prefix = p[0];
         text = '/' + p[1];
@@ -77,21 +84,21 @@ export class Factory {
   }
 
   static createNode(node: GraphNode): PaperNode {
-    switch (node.ref.type) {
-      case NodeEnum.Directory:
+    switch (node.type) {
+      case GraphNodeEnum.Directory:
         return this.createDirectoryNode(node);
-      case NodeEnum.Code:
+      case GraphNodeEnum.Code:
         return this.createCodeNode(node);
-      case NodeEnum.Other:
+      case GraphNodeEnum.Other:
         return this.createOtherNode(node);
-      case NodeEnum.Declaration:
+      case GraphNodeEnum.Declaration:
         return this.createDeclarationNode(node);
-      case NodeEnum.Virtual:
+      case GraphNodeEnum.Virtual:
         return this.createVirtualNode(node);
     }
   }
 
-  private static createDirectoryNode(node: GraphNode<NodeEnum.Directory>): PaperNode {
+  private static createDirectoryNode(node: DirectoryGraphNode): PaperNode {
     const color = [
       '#333333',
       '#404040',
@@ -105,7 +112,7 @@ export class Factory {
       '#a6a6a6',
       '#b3b3b3',
       '#c0c0c0'
-    ][Math.min(node.ref.depth, 11)];
+    ][Math.min(node.ast.depth, 11)];
     const { x, y, width, height } = node.bbox;
 
     const graphic = new Graphics() as PaperNode;
@@ -114,20 +121,20 @@ export class Factory {
     graphic.x = x;
     graphic.y = y;
     graphic.rotation = 0;
-    graphic.label = node.ref.name;
+    graphic.label = node.ast.name;
     graphic.interactive = true;
     graphic.node = node;
     return graphic;
   }
 
-  private static createCodeNode(node: GraphNode<NodeEnum.Code>): PaperNode {
+  private static createCodeNode(node: CodeGraphNode): PaperNode {
     const { x, y, width, height } = node.bbox;
     const graphic = new Graphics() as PaperNode;
     const color = '#e24c00';
 
     graphic.rect(0, 0, width, height).fill(color);
 
-    if (node.ref.kind === 'JS') {
+    if (node.ast.kind === 'JS') {
       graphic.stroke({
         width: 10,
         alignment: 1,
@@ -138,29 +145,29 @@ export class Factory {
     graphic.x = x;
     graphic.y = y;
     graphic.rotation = 0;
-    graphic.label = node.ref.name;
+    graphic.label = node.ast.name;
     graphic.interactive = true;
     graphic.node = node;
     return graphic;
   }
 
-  private static createOtherNode(node: GraphNode<NodeEnum.Other>): PaperNode {
+  private static createOtherNode(node: OtherGraphNode): PaperNode {
     const { x, y, width, height } = node.bbox;
     const graphic = new Graphics() as PaperNode;
-    const color = node.ref.bigFile ? '#adad30' : '#d39000';
+    const color = node.ast.bigFile ? '#adad30' : '#d39000';
 
     graphic.rect(0, 0, width, height).fill(color);
 
     graphic.x = x;
     graphic.y = y;
     graphic.rotation = 0;
-    graphic.label = node.ref.name;
+    graphic.label = node.ast.name;
     graphic.interactive = true;
     graphic.node = node;
     return graphic;
   }
 
-  private static createDeclarationNode(node: GraphNode<NodeEnum.Declaration>): PaperNode {
+  private static createDeclarationNode(node: DeclarationGraphNode): PaperNode {
     const { x, y, width, height } = node.bbox;
     const graphic = new Graphics() as PaperNode;
     const color = '#866957';
@@ -170,13 +177,13 @@ export class Factory {
     graphic.x = x;
     graphic.y = y;
     graphic.rotation = 0;
-    graphic.label = node.ref.name;
+    graphic.label = node.ast.name;
     graphic.interactive = true;
     graphic.node = node;
     return graphic;
   }
 
-  private static createVirtualNode(node: GraphNode<NodeEnum.Virtual>): PaperNode {
+  private static createVirtualNode(node: VirtualGraphNode): PaperNode {
     const { x, y, width, height } = node.bbox;
     const graphic = new Graphics() as PaperNode;
     const color = '#e4f1ff';

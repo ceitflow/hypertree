@@ -1,6 +1,5 @@
-import { NodeEnum } from '@lib/ast';
-import { Graph, GraphNode } from '../../graph';
 import { eachAfter, eachBefore } from '../../shared/utils';
+import { Graph, GraphNode, GraphNodeEnum } from '../../graph';
 
 export function Layout(root: GraphNode) {
   // 1 Loc = 1px height x 80px width
@@ -9,20 +8,20 @@ export function Layout(root: GraphNode) {
   const targetRatio = 0.844;
 
   eachAfter(root, (v) => {
-    const { ref, bbox, margin, padding } = v;
+    const { type, bbox, margin, padding } = v;
 
     // padding is included in bbox
-    switch (ref.type) {
-      case NodeEnum.Declaration: {
+    switch (type) {
+      case GraphNodeEnum.Declaration: {
         const isNotLast = v.parent!.children[v.parent!.children.length - 1] !== v;
         margin.bottom = v.parent!.children.length > 1 && isNotLast ? 2 : 0;
         bbox.width = fileWidth;
-        bbox.height = ref.loc;
-        v.area = ref.loc;
+        bbox.height = v.ast.loc;
+        v.area = v.ast.loc;
         break;
       }
-      case NodeEnum.Code: {
-        const m = Math.round(Math.sqrt(ref.loc) / 2);
+      case GraphNodeEnum.Code: {
+        const m = Math.round(Math.sqrt(v.ast.loc) / 2);
         margin.right = m;
         margin.bottom = m;
         padding.top = m * 2;
@@ -40,26 +39,26 @@ export function Layout(root: GraphNode) {
 
         // file can sometimes have more LOC than sum of its declarations
         bbox.width = fileWidth + padding.left + padding.right;
-        bbox.height = ref.loc + padding.top + padding.bottom + marginsAddition;
-        v.area = ref.loc;
+        bbox.height = v.ast.loc + padding.top + padding.bottom + marginsAddition;
+        v.area = v.ast.loc;
         break;
       }
-      case NodeEnum.Other: {
+      case GraphNodeEnum.Other: {
         margin.right = 10;
         margin.bottom = 10;
         bbox.width = fileWidth;
-        bbox.height = ref.loc;
+        bbox.height = v.ast.loc;
         // if (child.node.bigFile) {
         //   child.layout.bbox.height = 10;
         // }
-        v.area = ref.loc;
+        v.area = v.ast.loc;
         break;
       }
-      case NodeEnum.Virtual:
-      case NodeEnum.Directory: {
+      case GraphNodeEnum.Virtual:
+      case GraphNodeEnum.Directory: {
         v.area = v.children.reduce((s, c) => s + c.area, 0);
         const m = Math.round(Math.sqrt(v.area) / 2);
-        if (ref.type === NodeEnum.Directory) {
+        if (type === GraphNodeEnum.Directory) {
           margin.right = m;
           margin.bottom = m;
           margin.left = m;
@@ -75,7 +74,7 @@ export function Layout(root: GraphNode) {
         let totalWidth = padding.left;
         let totalHeight = 0;
 
-        v.children.forEach((child) => { // todo doesnt include margins
+        v.children.forEach((child) => {
           child.bbox.x = totalWidth + child.margin.left;
           child.bbox.y = padding.top + child.margin.top;
           totalWidth += Graph.getFullWidth(child);
@@ -89,7 +88,7 @@ export function Layout(root: GraphNode) {
         bbox.width = totalWidth;
         bbox.height = totalHeight;
 
-        aspectRatioLayout(v, targetRatio, 1);
+        new AspectRatioLayout(v, targetRatio);
         break;
       }
     }
@@ -102,7 +101,7 @@ export function Layout(root: GraphNode) {
       c.bbox.y += v.bbox.y;
     });
 
-    if (v.ref.type === NodeEnum.Directory) {
+    if (v.type === GraphNodeEnum.Directory) {
       const margin = 1000;
       for (let x = v.margin.left + v.padding.left; x < v.bbox.width; x += margin) {
         v.labelPoints.push([v.bbox.x + x, v.bbox.y, 0]);
@@ -111,49 +110,87 @@ export function Layout(root: GraphNode) {
   });
 }
 
-function aspectRatioLayout(node: GraphNode, targetRatio: number, maxModifyPercentage: number) {
-  const _name = node.ref['id'] || node.parent?.ref['id'] + ' virtual';
-  const isValidRatio = (r: number) => Math.abs(targetRatio - r) / targetRatio <= 0.1;
+class AspectRatioLayout {
+  w: number;
+  h: number;
+  currentRatio: number;
 
-  let w = node.bbox.width;
-  let h = node.bbox.height;
-  let currentRatio = h / w;
+  constructor(
+    node: GraphNode,
+    private targetRatio: number
+  ) {
+    this.w = node.bbox.width;
+    this.h = node.bbox.height;
+    this.currentRatio = this.h / this.w;
 
-  if (isValidRatio(currentRatio) || !node.children.length) {
-    return;
-  }
+    const _name =
+      node.type === GraphNodeEnum.Directory
+        ? node.ast.id
+        : node.parent?.type === GraphNodeEnum.Directory
+          ? node.parent.ast.id + ' virtual'
+          : 'virtual';
+    const isValidRatio = (r: number) => Math.abs(targetRatio - r) / targetRatio <= 0.1;
 
-  while (!isValidRatio(currentRatio)) {
-    console.log(_name, currentRatio);
+    if (isValidRatio(this.currentRatio) || !node.children.length) {
+      return;
+    }
 
-    // too tall, squash leftmost
-    // TODO
-    if (currentRatio > targetRatio) {
-      console.log('too tall');
-      let tallestChildIdx = 0;
-      node.children.forEach((child, idx) => {
-        if (Graph.getFullHeight(child) > Graph.getFullHeight(node.children[tallestChildIdx])) {
-          tallestChildIdx = idx;
-        }
-      });
+    while (!isValidRatio(this.currentRatio)) {
+      console.log(_name, this.currentRatio);
 
-      const tallest = node.children[tallestChildIdx];
-      const newHeight = h - tallest.bbox.height / 2;
-      const newWidth = w + tallest.bbox.width;
-      const newRatio = newHeight / newWidth;
-
-      // if improved
-      if (Math.abs(newRatio - targetRatio) < Math.abs(currentRatio - targetRatio)) {
-        // todo wrap nodes into Virtual and layoutInColumn = true nodes
+      // too tall, squash leftmost
+      if (this.currentRatio > targetRatio) {
+        console.log('too tall');
+        const success = this.squashBiggestChildNode(node);
+        if (!success) break;
       } else {
-        console.log('not improved too tall, aborting');
-        break;
+        // too wide, stack 2 nodes into column
+        const success = this.stackTwoSmallestChildren(node);
+        if (!success) break;
       }
     }
 
+    console.log(_name, 'finished with', this.currentRatio);
+    Graph.fitBBoxToChildren(node);
+  }
+
+  squashBiggestChildNode(node: GraphNode): boolean {
+    const sortedByHeight = [...node.children].sort((a, b) => Graph.getFullHeight(b) - Graph.getFullHeight(a));
+
+    for (const c of sortedByHeight) {
+      if (c.type === GraphNodeEnum.Directory) {
+        // todo const s = squashBiggestChildNode(c) ?
+        continue;
+      } else if (c.type === GraphNodeEnum.Virtual) {
+        continue;
+      } else if (c.type === GraphNodeEnum.Code || c.type === GraphNodeEnum.Other) {
+        // cut height in half and double the width
+        const newHeight = this.h - c.bbox.height / 2;
+        const newWidth = this.w + c.bbox.width;
+        const newRatio = newHeight / newWidth;
+
+        // if improved
+        if (Math.abs(newRatio - this.targetRatio) < Math.abs(this.currentRatio - this.targetRatio)) {
+          return false; // true
+
+          this.w = newWidth;
+          this.h = newHeight;
+          this.currentRatio = newRatio;
+        } else {
+          return false;
+        }
+      }
+    }
+
+    // couldn't find node to squash
+    console.log('not improved too tall, aborting');
+    return false;
+  }
+
+  stackTwoSmallestChildren(node: GraphNode): boolean {
     if (node.children.length === 1) {
-      console.log('too few children, skipping', node.ref['name']);
-      break; // nothing to stack
+      console.log('too few children, skipping', 'ast' in node ? node.ast.name : 'virtual');
+      return false; // nothing to stack
     }
 
     // Too wide, stack columns rightmost first.
@@ -172,18 +209,23 @@ function aspectRatioLayout(node: GraphNode, targetRatio: number, maxModifyPercen
         lastIdx = idx;
       }
     });
-    const newHeight = Math.max(h, Graph.getFullHeight(prevLast) + Graph.getFullHeight(last));
-    const newWidth = w - Graph.getFullWidth(last);
+    const newHeight = Math.max(this.h, Graph.getFullHeight(prevLast) + Graph.getFullHeight(last));
+    const newWidth = this.w - Graph.getFullWidth(last);
     const newRatio = newHeight / newWidth;
 
     // if improved
-    if (Math.abs(newRatio - targetRatio) < Math.abs(currentRatio - targetRatio)) {
-      if (!(prevLast.ref.type === NodeEnum.Virtual && prevLast.ref.isColumnWrapper)) {
+    if (Math.abs(newRatio - this.targetRatio) < Math.abs(this.currentRatio - this.targetRatio)) {
+      if (!(prevLast.type === GraphNodeEnum.Virtual && prevLast.isColumnWrapper)) {
         // if target is a CodeFile or OtherFile, then wrap it
         const columnWrapper = Graph.createVirtualNode(true, node);
         const { x, y, width, height } = prevLast.bbox;
         const m = prevLast.margin;
-        columnWrapper.bbox = { x: x - m.left, y: y - m.top, width: width + m.left + m.right, height: height + m.top + m.bottom };
+        columnWrapper.bbox = {
+          x: x - m.left,
+          y: y - m.top,
+          width: width + m.left + m.right,
+          height: height + m.top + m.bottom
+        };
         prevLast.bbox.x = m.left;
         prevLast.bbox.y = m.top;
         prevLast.parent = columnWrapper;
@@ -193,7 +235,7 @@ function aspectRatioLayout(node: GraphNode, targetRatio: number, maxModifyPercen
       }
 
       // append last to prevLast
-      if (last.ref.type === NodeEnum.Virtual && last.ref.isColumnWrapper) {
+      if (last.type === GraphNodeEnum.Virtual && last.isColumnWrapper) {
         last.children.forEach((c) => {
           c.bbox.x = 0;
           c.bbox.y = Graph.getFullHeight(prevLast);
@@ -212,16 +254,15 @@ function aspectRatioLayout(node: GraphNode, targetRatio: number, maxModifyPercen
       for (let i = lastIdx; i < node.children.length; i++) {
         node.children[i].bbox.x -= Graph.getFullWidth(last);
       }
-      w = newWidth;
-      h = newHeight;
-      currentRatio = newRatio;
-    } else {
-      console.log('not improved too wide, aborting');
-      break;
+      this.w = newWidth;
+      this.h = newHeight;
+      this.currentRatio = newRatio;
+      return true;
     }
+
+    console.log('not improved too wide, aborting');
+    return false;
   }
-  console.log(_name, 'finished with', currentRatio)
-  Graph.fitBBoxToChildren(node);
 }
 
 // calculate min w/h and max w/h for each container

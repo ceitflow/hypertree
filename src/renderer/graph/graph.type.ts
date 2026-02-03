@@ -1,33 +1,24 @@
-import { CodeFile, DeclarationNode, Directory, NodeEnum, OtherFile } from '@lib/ast';
+import { CodeFile, DeclarationNode, Directory, OtherFile } from '@lib/ast';
 
 export type GraphModel = {
-  root: GraphNode<NodeEnum.Directory>;
-}
-
-export type VirtualNode = {
-  type: NodeEnum.Virtual; // for grouping files in a single node
-  isColumnWrapper: boolean;
+  root: GraphNode;
 };
 
-/** Maps NodeEnum to the corresponding ref type for GraphNode */
-type AstRef<T extends NodeEnum> = T extends NodeEnum.Directory
-  ? Directory
-  : T extends NodeEnum.Code
-    ? CodeFile
-    : T extends NodeEnum.Other
-      ? OtherFile
-      : T extends NodeEnum.Declaration
-        ? DeclarationNode
-        : T extends NodeEnum.Virtual
-          ? VirtualNode
-          : never;
+export type ParentType = GraphNode | null;
+export type BBox = { x: number; y: number; width: number; height: number };
+export type Margin = { top: number; bottom: number; left: number; right: number };
 
-export type GraphNode<T extends NodeEnum = NodeEnum> = {
-  ref: AstRef<T>;
-  parent: GraphNode | null;
+export enum GraphNodeEnum {
+  Code = 'code',
+  Declaration = 'declaration',
+  Other = 'other',
+  Directory = 'directory',
+  Virtual = 'virtual'
+}
+
+type GraphNodeBase = {
+  parent: ParentType;
   children: GraphNode[];
-
-  // layoutDepth: number // because depth can change by virtual nodes
   area: number; // square pixels
   bbox: BBox; // includes padding
   margin: Margin;
@@ -35,5 +26,29 @@ export type GraphNode<T extends NodeEnum = NodeEnum> = {
   labelPoints: [number, number, number][]; // x,y,angle
 };
 
-export type BBox = { x: number; y: number; width: number; height: number };
-export type Margin = { top: number; bottom: number; left: number; right: number };
+export type DirectoryGraphNode = GraphNodeBase & {
+  type: GraphNodeEnum.Directory;
+  ast: Directory;
+};
+
+export type CodeGraphNode = GraphNodeBase & {
+  type: GraphNodeEnum.Code;
+  ast: CodeFile;
+};
+
+export type OtherGraphNode = GraphNodeBase & {
+  type: GraphNodeEnum.Other;
+  ast: OtherFile;
+};
+
+export type DeclarationGraphNode = GraphNodeBase & {
+  type: GraphNodeEnum.Declaration;
+  ast: DeclarationNode;
+};
+
+export type VirtualGraphNode = GraphNodeBase & {
+  type: GraphNodeEnum.Virtual;
+  isColumnWrapper: boolean;
+};
+
+export type GraphNode = DirectoryGraphNode | CodeGraphNode | OtherGraphNode | DeclarationGraphNode | VirtualGraphNode;

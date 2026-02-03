@@ -5,7 +5,6 @@ export enum NodeEnum {
   Declaration,
   Other,
   Directory,
-  Virtual // for frontend layout
 }
 
 export type BaseNode<T extends NodeEnum> = {

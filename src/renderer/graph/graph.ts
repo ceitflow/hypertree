@@ -1,6 +1,17 @@
+import {
+  BBox,
+  CodeGraphNode,
+  DeclarationGraphNode,
+  DirectoryGraphNode,
+  GraphModel,
+  GraphNode,
+  GraphNodeEnum,
+  OtherGraphNode,
+  ParentType,
+  VirtualGraphNode
+} from './graph.type';
 import mitt from 'mitt';
-import { Directory, NodeEnum } from '@lib/ast';
-import { BBox, GraphModel, GraphNode } from './graph.type';
+import { CodeFile, DeclarationNode, Directory, NodeEnum, OtherFile } from '@lib/ast';
 
 export class Graph {
   model: GraphModel;
@@ -14,21 +25,36 @@ export class Graph {
     };
   }
 
-  static createGraphNode(ref: GraphNode['ref'], parent: GraphNode | null): GraphNode {
+  private static createBase(parent: ParentType) {
     return {
-      ref,
       parent,
-      children: [],
+      children: [] as GraphNode[],
       area: 0,
       bbox: { x: 0, y: 0, width: 0, height: 0 },
       margin: { top: 0, bottom: 0, left: 0, right: 0 },
       padding: { top: 0, bottom: 0, left: 0, right: 0 },
-      labelPoints: []
+      labelPoints: [] as [number, number, number][]
     };
   }
 
-  static createVirtualNode(isColumnWrapper: boolean, parent: GraphNode | null) {
-    return this.createGraphNode({ type: NodeEnum.Virtual, isColumnWrapper }, parent);
+  static createDirectoryNode(ast: Directory, parent: ParentType): DirectoryGraphNode {
+    return { ...this.createBase(parent), type: GraphNodeEnum.Directory, ast };
+  }
+
+  static createCodeNode(ast: CodeFile, parent: ParentType): CodeGraphNode {
+    return { ...this.createBase(parent), type: GraphNodeEnum.Code, ast };
+  }
+
+  static createOtherNode(ast: OtherFile, parent: ParentType): OtherGraphNode {
+    return { ...this.createBase(parent), type: GraphNodeEnum.Other, ast };
+  }
+
+  static createDeclarationNode(ast: DeclarationNode, parent: ParentType): DeclarationGraphNode {
+    return { ...this.createBase(parent), type: GraphNodeEnum.Declaration, ast };
+  }
+
+  static createVirtualNode(isColumnWrapper: boolean, parent: ParentType): VirtualGraphNode {
+    return { ...this.createBase(parent), type: GraphNodeEnum.Virtual, isColumnWrapper };
   }
 
   static fitBBoxToChildren(node: GraphNode) {
@@ -83,7 +109,7 @@ export class Graph {
   }
 
   private createGraphNodes(root: Directory): GraphNode {
-    const rootNode = Graph.createGraphNode(root, null);
+    const rootNode = Graph.createDirectoryNode(root, null);
 
     const stack: { dir: Directory; parentNode: GraphNode }[] = [{ dir: root, parentNode: rootNode }];
 
@@ -91,19 +117,21 @@ export class Graph {
       const { dir, parentNode } = stack.pop()!;
 
       for (const subdir of dir.dirs) {
-        const dirNode = Graph.createGraphNode(subdir, parentNode);
+        const dirNode = Graph.createDirectoryNode(subdir, parentNode);
         parentNode.children.push(dirNode);
         stack.push({ dir: subdir, parentNode: dirNode });
       }
 
-      // group files into virtual GraphNode
       if (dir.files.length > 0) {
         const virtualNode = Graph.createVirtualNode(false, parentNode);
 
         for (const file of dir.files) {
-          const fileNode = Graph.createGraphNode(file, virtualNode);
+          let fileNode: GraphNode;
           if (file.type === NodeEnum.Code) {
-            for (const e of file.exports) fileNode.children.push(Graph.createGraphNode(e, fileNode));
+            fileNode = Graph.createCodeNode(file, virtualNode);
+            for (const e of file.exports) fileNode.children.push(Graph.createDeclarationNode(e, fileNode));
+          } else {
+            fileNode = Graph.createOtherNode(file, virtualNode);
           }
           virtualNode.children.push(fileNode);
         }
