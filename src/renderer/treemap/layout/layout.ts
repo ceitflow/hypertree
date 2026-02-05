@@ -1,80 +1,47 @@
 import { eachAfter, eachBefore } from '../../shared/utils';
-import { Graph, GraphNode, GraphNodeEnum } from '../../graph';
+import { DeclarationGraphNode, Graph, GraphNode, GraphNodeEnum } from '../../graph';
 
 export function Layout(root: GraphNode) {
-  // 1 Loc = 1px height x 80px width
-  const fileWidth = 60;
-  const defaultPadding = 4;
   const targetRatio = 0.844;
 
   eachAfter(root, (v) => {
-    const { type, bbox, margin, padding } = v;
+    const { type, bbox, margin, padding, children } = v;
 
-    // padding is included in bbox
     switch (type) {
-      case GraphNodeEnum.Declaration: {
-        const isNotLast = v.parent!.children[v.parent!.children.length - 1] !== v;
-        margin.bottom = v.parent!.children.length > 1 && isNotLast ? 2 : 0;
-        bbox.width = fileWidth;
-        bbox.height = v.ast.loc;
-        v.area = v.ast.loc;
-        break;
-      }
       case GraphNodeEnum.Code: {
-        const m = Math.round(Math.sqrt(v.ast.loc) / 2);
-        margin.right = m;
-        margin.bottom = m;
-        padding.top = m * 2;
-        padding.bottom = defaultPadding;
-
         // layout declarations in a single column
         let tempY = padding.top;
-        let marginsAddition = 0;
-        v.children.forEach((decl) => {
-          decl.bbox.x = v.padding.left;
+        let marginsAddition = 0; // margins of declarations used to adjust height of code file
+
+        children.forEach((d) => {
+          const decl = d as DeclarationGraphNode;
+          decl.bbox.x = padding.left;
           decl.bbox.y = tempY;
           tempY += decl.bbox.height + decl.margin.bottom;
           marginsAddition += decl.margin.bottom;
         });
 
-        // file can sometimes have more LOC than sum of its declarations
-        bbox.width = fileWidth + padding.left + padding.right;
-        bbox.height = v.ast.loc + padding.top + padding.bottom + marginsAddition;
-        v.area = v.ast.loc;
-        break;
-      }
-      case GraphNodeEnum.Other: {
-        margin.right = 10;
-        margin.bottom = 10;
-        bbox.width = fileWidth;
-        bbox.height = v.ast.loc;
-        // if (child.node.bigFile) {
-        //   child.layout.bbox.height = 10;
-        // }
-        v.area = v.ast.loc;
+        bbox.height += marginsAddition;
         break;
       }
       case GraphNodeEnum.Virtual:
       case GraphNodeEnum.Directory: {
-        v.area = v.children.reduce((s, c) => s + c.area, 0);
-        const m = Math.round(Math.sqrt(v.area) / 2);
+        v.area = children.reduce((s, c) => s + c.area, 0);
+
         if (type === GraphNodeEnum.Directory) {
+          const m = Math.round(Math.sqrt(v.area) / 2);
           margin.right = m;
           margin.bottom = m;
           margin.left = m;
           padding.top = m;
-          padding.right = defaultPadding;
-          padding.bottom = defaultPadding;
-          padding.left = defaultPadding;
         }
-
-        v.children.sort((a, b) => b.area - a.area);
+        // children.sort((a, b) => b.area - a.area);
 
         // layout in a single row
         let totalWidth = padding.left;
         let totalHeight = 0;
 
-        v.children.forEach((child) => {
+        children.forEach((child) => {
           child.bbox.x = totalWidth + child.margin.left;
           child.bbox.y = padding.top + child.margin.top;
           totalWidth += Graph.getFullWidth(child);
@@ -123,7 +90,7 @@ class AspectRatioLayout {
     this.h = node.bbox.height;
     this.currentRatio = this.h / this.w;
 
-    const _name =
+    const debugName =
       node.type === GraphNodeEnum.Directory
         ? node.ast.id
         : node.parent?.type === GraphNodeEnum.Directory
@@ -136,7 +103,7 @@ class AspectRatioLayout {
     }
 
     while (!isValidRatio(this.currentRatio)) {
-      console.log(_name, this.currentRatio);
+      console.log(debugName, this.currentRatio);
 
       // too tall, squash leftmost
       if (this.currentRatio > targetRatio) {
@@ -150,7 +117,7 @@ class AspectRatioLayout {
       }
     }
 
-    console.log(_name, 'finished with', this.currentRatio);
+    console.log(debugName, 'finished with', this.currentRatio);
     Graph.fitBBoxToChildren(node);
   }
 
@@ -162,26 +129,87 @@ class AspectRatioLayout {
         // todo const s = squashBiggestChildNode(c) ?
         continue;
       } else if (c.type === GraphNodeEnum.Virtual) {
+        // skip
         continue;
       } else if (c.type === GraphNodeEnum.Code || c.type === GraphNodeEnum.Other) {
         // cut height in half and double the width
-        const newHeight = this.h - c.bbox.height / 2;
-        const newWidth = this.w + c.bbox.width;
+        const { bbox, padding: p } = c;
+        const deltaWidth = c.bbox.width;
+        const deltaHeight = (c.bbox.height - p.top - p.bottom) / 2;
+        const newHeight = this.h - deltaHeight;
+        const newWidth = this.w + deltaWidth;
         const newRatio = newHeight / newWidth;
+        const idx = node.children.indexOf(c);
 
         // if improved
-        if (Math.abs(newRatio - this.targetRatio) < Math.abs(this.currentRatio - this.targetRatio)) {
-          return false; // true
-
+        // TODO run until hit aspect ratio or hit the limit
+        if (newHeight > 10 && Math.abs(newRatio - this.targetRatio) < Math.abs(this.currentRatio - this.targetRatio)) {
+          c.layoutColumns *= 2;
           this.w = newWidth;
           this.h = newHeight;
           this.currentRatio = newRatio;
+
+          bbox.width += deltaWidth;
+          bbox.height -= deltaHeight;
+
+          if (c.type === GraphNodeEnum.Code) {
+            const columnHeight = bbox.height - p.top - p.bottom;
+            const temp = { columnIdx: 0, yPos: 0 }; // last declaration position
+            c.children = [];
+
+            Graph.createFileDeclarations(c).forEach((decl) => {
+              const addClone = (h: number) => {
+                const cl = Graph.createDeclarationNode(decl.ast, c);
+                cl.bbox = {
+                  x: temp.columnIdx * decl.bbox.width + 1,
+                  y: temp.yPos + p.top,
+                  width: cl.bbox.width - 2,
+                  height: h
+                };
+                c.children.push(cl);
+                return cl;
+              };
+              const { bbox, margin } = decl;
+              const totalHeight = bbox.height;
+
+              if (totalHeight < columnHeight - temp.yPos) {
+                // fits in this column
+                bbox.x = temp.columnIdx * decl.bbox.width;
+                bbox.y = temp.yPos + p.top;
+                temp.yPos += totalHeight;
+                c.children.push(decl); // push entire node without cutting
+              } else {
+                // overflows to the next column
+                const toBottom = columnHeight - temp.yPos;
+                addClone(toBottom);
+                let tempH = totalHeight - toBottom;
+                temp.yPos = 0;
+                temp.columnIdx++;
+
+                while (tempH) {
+                  if (tempH - columnHeight < 0) {
+                    // last column
+                    addClone(tempH);
+                    temp.yPos += tempH + margin.bottom;
+                    break;
+                  }
+                  addClone(columnHeight);
+                  tempH -= columnHeight;
+                  temp.columnIdx++;
+                }
+              }
+            });
+          }
+          // move all nodes to the right
+          for (let i = idx + 1; i < node.children.length; i++) {
+            node.children[i].bbox.x += deltaWidth;
+          }
+          return true;
         } else {
           return false;
         }
       }
     }
-
     // couldn't find node to squash
     console.log('not improved too tall, aborting');
     return false;

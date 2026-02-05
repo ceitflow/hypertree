@@ -19,7 +19,7 @@ export enum GraphNodeEnum {
 type GraphNodeBase = {
   parent: ParentType;
   children: GraphNode[];
-  area: number; // square pixels
+  area: number; // square pixels, for calculating weighted margins
   bbox: BBox; // includes padding
   margin: Margin;
   padding: Margin;
@@ -34,16 +34,20 @@ export type DirectoryGraphNode = GraphNodeBase & {
 export type CodeGraphNode = GraphNodeBase & {
   type: GraphNodeEnum.Code;
   ast: CodeFile;
+  layoutColumns: number;
 };
 
 export type OtherGraphNode = GraphNodeBase & {
   type: GraphNodeEnum.Other;
   ast: OtherFile;
+  layoutColumns: number;
 };
 
-export type DeclarationGraphNode = GraphNodeBase & {
+export type DeclarationGraphNode = Omit<GraphNodeBase, 'parent'> & {
+  parent: CodeGraphNode;
   type: GraphNodeEnum.Declaration;
   ast: DeclarationNode;
+  isSplit: boolean;
 };
 
 export type VirtualGraphNode = GraphNodeBase & {

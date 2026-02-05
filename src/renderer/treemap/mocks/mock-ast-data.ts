@@ -76,18 +76,18 @@ export const MockAstData = AstFactory.createDir({
           id: 'yyy/two',
           name: 'Two.ts',
           depth: 2,
-          loc: 500,
+          loc: 1200,
           exports: [
             AstFactory.createDeclaration({
               id: 'yyy/two/0',
-              name: 'Two',
+              name: 'Long',
               depth: 3,
-              loc: 490,
+              loc: 1190,
               token: { category: DeclarationEnum.Class }
             }),
             AstFactory.createDeclaration({
               id: 'yyy/two/1',
-              name: 'One2',
+              name: 'Short',
               depth: 3,
               loc: 10,
               token: { category: DeclarationEnum.Class }

@@ -83,7 +83,7 @@ export class Factory {
     return result;
   }
 
-  static createNode(node: GraphNode): PaperNode {
+  static createNode(node: GraphNode): PaperNode[] {
     switch (node.type) {
       case GraphNodeEnum.Directory:
         return this.createDirectoryNode(node);
@@ -98,7 +98,7 @@ export class Factory {
     }
   }
 
-  private static createDirectoryNode(node: DirectoryGraphNode): PaperNode {
+  private static createDirectoryNode(node: DirectoryGraphNode): PaperNode[] {
     const color = [
       '#333333',
       '#404040',
@@ -124,10 +124,10 @@ export class Factory {
     graphic.label = node.ast.name;
     graphic.interactive = true;
     graphic.node = node;
-    return graphic;
+    return [graphic];
   }
 
-  private static createCodeNode(node: CodeGraphNode): PaperNode {
+  private static createCodeNode(node: CodeGraphNode): PaperNode[] {
     const { x, y, width, height } = node.bbox;
     const graphic = new Graphics() as PaperNode;
     const color = '#e24c00';
@@ -148,10 +148,10 @@ export class Factory {
     graphic.label = node.ast.name;
     graphic.interactive = true;
     graphic.node = node;
-    return graphic;
+    return [graphic];
   }
 
-  private static createOtherNode(node: OtherGraphNode): PaperNode {
+  private static createOtherNode(node: OtherGraphNode): PaperNode[] {
     const { x, y, width, height } = node.bbox;
     const graphic = new Graphics() as PaperNode;
     const color = node.ast.bigFile ? '#adad30' : '#d39000';
@@ -164,13 +164,14 @@ export class Factory {
     graphic.label = node.ast.name;
     graphic.interactive = true;
     graphic.node = node;
-    return graphic;
+    return [graphic];
   }
 
-  private static createDeclarationNode(node: DeclarationGraphNode): PaperNode {
+  private static createDeclarationNode(node: DeclarationGraphNode): PaperNode[] {
     const { x, y, width, height } = node.bbox;
     const graphic = new Graphics() as PaperNode;
     const color = '#866957';
+    const result: PaperNode[] = [graphic];
 
     graphic.rect(0, 0, width, height).fill(color);
 
@@ -180,13 +181,13 @@ export class Factory {
     graphic.label = node.ast.name;
     graphic.interactive = true;
     graphic.node = node;
-    return graphic;
+    return result;
   }
 
-  private static createVirtualNode(node: VirtualGraphNode): PaperNode {
+  private static createVirtualNode(node: VirtualGraphNode): PaperNode[] {
     const { x, y, width, height } = node.bbox;
     const graphic = new Graphics() as PaperNode;
-    const color = '#e4f1ff';
+    const color = '#e4f1ff33';
 
     graphic.rect(0, 0, width, height).stroke(color);
 
@@ -196,6 +197,6 @@ export class Factory {
     graphic.label = 'Virtual';
     graphic.interactive = true;
     graphic.node = node;
-    return graphic;
+    return [graphic];
   }
 }

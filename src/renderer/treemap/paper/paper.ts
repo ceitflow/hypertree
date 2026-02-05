@@ -111,9 +111,9 @@ export class Paper {
     while (stack.length) {
       const n = stack.pop()!;
       stack.push(...n.children);
-      const paperNode = Factory.createNode(n);
-      const labels = Factory.createLabels(n);
-      container.addChild(paperNode, ...labels);
+      const nodes = Factory.createNode(n);
+      const labels = Factory.createLabels(n); // todo if declaration split then show '1/2 ...'
+      container.addChild(...nodes, ...labels);
     }
   }
 }
