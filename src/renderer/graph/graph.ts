@@ -194,7 +194,15 @@ export class Graph {
     return rootNode;
   }
 
-  static createFileDeclarations(file: CodeGraphNode): DeclarationGraphNode[] {
+  static createFileDeclarations(file: GraphNode): DeclarationGraphNode[] {
+    if (file.type !== GraphNodeEnum.Code) {
+      return [];
+    }
     return file.ast.exports.map((e) => Graph.createDeclarationNode(e, file));
+  }
+
+  static getFullFileNodeHeight(node: CodeGraphNode | OtherGraphNode) {
+    const margins = this.createFileDeclarations(node).reduce((a, b) => a + b.margin.top + b.margin.bottom, 0);
+    return node.ast.loc + node.padding.top + node.padding.bottom + margins;
   }
 }

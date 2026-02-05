@@ -124,7 +124,8 @@ class AspectRatioLayout {
   squashBiggestChildNode(node: GraphNode): boolean {
     const sortedByHeight = [...node.children].sort((a, b) => Graph.getFullHeight(b) - Graph.getFullHeight(a));
 
-    for (const c of sortedByHeight) {
+    for (let i = 0; i < sortedByHeight.length; i++){
+      const c = sortedByHeight[i]
       if (c.type === GraphNodeEnum.Directory) {
         // todo const s = squashBiggestChildNode(c) ?
         continue;
@@ -133,18 +134,20 @@ class AspectRatioLayout {
         continue;
       } else if (c.type === GraphNodeEnum.Code || c.type === GraphNodeEnum.Other) {
         // cut height in half and double the width
-        const { bbox, padding: p } = c;
-        const deltaWidth = c.bbox.width;
-        const deltaHeight = (c.bbox.height - p.top - p.bottom) / 2;
-        const newHeight = this.h - deltaHeight;
+        const { bbox, padding: p, layoutColumns } = c;
+        const deltaWidth = Graph.fileWidth;
+        const originalH = Graph.getFullFileNodeHeight(c);
+        const resultHeight = originalH / (layoutColumns + 1);
+        const deltaHeight = bbox.height - (p.top + p.bottom) - resultHeight + (p.top + p.bottom) / (layoutColumns + 1); // padding also needs to be proportionate to calculate single col height
+
+        const newHeight = Math.max(this.h - deltaHeight, sortedByHeight[i + 1]?.bbox.height);
         const newWidth = this.w + deltaWidth;
         const newRatio = newHeight / newWidth;
-        const idx = node.children.indexOf(c);
 
         // if improved
         // TODO run until hit aspect ratio or hit the limit
         if (newHeight > 10 && Math.abs(newRatio - this.targetRatio) < Math.abs(this.currentRatio - this.targetRatio)) {
-          c.layoutColumns *= 2;
+          c.layoutColumns++;
           this.w = newWidth;
           this.h = newHeight;
           this.currentRatio = newRatio;
@@ -201,6 +204,7 @@ class AspectRatioLayout {
             });
           }
           // move all nodes to the right
+          const idx = node.children.indexOf(c);
           for (let i = idx + 1; i < node.children.length; i++) {
             node.children[i].bbox.x += deltaWidth;
           }

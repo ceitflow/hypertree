@@ -76,17 +76,39 @@ export const MockAstData = AstFactory.createDir({
           id: 'yyy/two',
           name: 'Two.ts',
           depth: 2,
-          loc: 1200,
+          loc: 1000,
           exports: [
             AstFactory.createDeclaration({
               id: 'yyy/two/0',
               name: 'Long',
               depth: 3,
-              loc: 1190,
+              loc: 990,
               token: { category: DeclarationEnum.Class }
             }),
             AstFactory.createDeclaration({
               id: 'yyy/two/1',
+              name: 'Short',
+              depth: 3,
+              loc: 10,
+              token: { category: DeclarationEnum.Class }
+            })
+          ]
+        }),
+        AstFactory.createCodeFile({
+          id: 'yyy/longer',
+          name: 'Longer.ts',
+          depth: 2,
+          loc: 2000,
+          exports: [
+            AstFactory.createDeclaration({
+              id: 'yyy/longer/0',
+              name: 'Long',
+              depth: 3,
+              loc: 1990,
+              token: { category: DeclarationEnum.Class }
+            }),
+            AstFactory.createDeclaration({
+              id: 'yyy/longer/1',
               name: 'Short',
               depth: 3,
               loc: 10,
@@ -157,6 +179,12 @@ export const MockAstData = AstFactory.createDir({
           token: { category: DeclarationEnum.Class }
         })
       ]
+    }),
+    AstFactory.createOtherFile({
+      id: 'other',
+      name: 'other.ts',
+      depth: 1,
+      loc: 100,
     }),
     AstFactory.createCodeFile({
       id: 'seven',
