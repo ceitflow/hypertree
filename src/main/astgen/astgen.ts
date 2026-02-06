@@ -22,7 +22,7 @@ export async function AstGen(): Promise<Directory> {
   // /Users/ceitflow/WebstormProjects/medusa/my-medusa-store-storefront
   // /Users/ceitflow/WebstormProjects/graphkit-test-repos/vue-main
   // /Users/ceitflow/WebstormProjects/paymentSavvy/chatbot-frontend
-  const src = '/Users/ceitflow/WebstormProjects/koia-adminflow/adminflow';
+  const src = '/Users/ceitflow/WebstormProjects/m3/coplan-visualizer';
 
   const configPath = findConfigFile(src, sys.fileExists);
   if (!configPath) {
@@ -58,6 +58,6 @@ export async function AstGen(): Promise<Directory> {
   });
 
   const program = new Program(files, analyzer);
-  // IO.writeOutput(program.toJSON());
+  IO.writeOutput(program.toJSON());
   return program.root;
 }

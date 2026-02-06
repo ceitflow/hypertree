@@ -55,6 +55,8 @@ export function Layout(root: GraphNode) {
         bbox.width = totalWidth;
         bbox.height = totalHeight;
 
+
+        // todo row layout in app/portfolio aligns to first child rather than widest one
         new AspectRatioLayout(v, targetRatio);
         break;
       }
@@ -81,6 +83,7 @@ class AspectRatioLayout {
   w: number;
   h: number;
   currentRatio: number;
+  static lol = false;
 
   constructor(
     node: GraphNode,
@@ -102,9 +105,9 @@ class AspectRatioLayout {
       return;
     }
 
+
     while (!isValidRatio(this.currentRatio)) {
       console.log(debugName, this.currentRatio);
-
       // too tall, squash leftmost
       if (this.currentRatio > targetRatio) {
         console.log('too tall');
@@ -179,7 +182,7 @@ class AspectRatioLayout {
                 // fits in this column
                 bbox.x = temp.columnIdx * decl.bbox.width;
                 bbox.y = temp.yPos + p.top;
-                temp.yPos += totalHeight;
+                temp.yPos += totalHeight+ margin.bottom;
                 c.children.push(decl); // push entire node without cutting
               } else {
                 // overflows to the next column
@@ -225,7 +228,7 @@ class AspectRatioLayout {
       return false; // nothing to stack
     }
 
-    // Too wide, stack columns rightmost first.
+    // Too wide, stack columns
     // Find two smallest nodes to stack them
     let last = node.children[0];
     let prevLast = node.children[1];
@@ -266,6 +269,7 @@ class AspectRatioLayout {
         prevLast = columnWrapper;
       }
 
+      const cachedPrevLastWidth = prevLast.bbox.width;
       // append last to prevLast
       if (last.type === GraphNodeEnum.Virtual && last.isColumnWrapper) {
         last.children.forEach((c) => {
@@ -282,9 +286,14 @@ class AspectRatioLayout {
       }
       node.children.splice(lastIdx, 1);
 
-      // move all columns to the right of 'last' (note last node is already removed from children array)
+      // fill in the gap from removing last node (note it is already removed from children array)
       for (let i = lastIdx; i < node.children.length; i++) {
         node.children[i].bbox.x -= Graph.getFullWidth(last);
+      }
+      // push nodes if prevLast grew
+      const diff = prevLast.bbox.width - cachedPrevLastWidth;
+      for (let i = prevLastIdx + 1; i < node.children.length; i++) {
+        node.children[i].bbox.x += diff;
       }
       this.w = newWidth;
       this.h = newHeight;

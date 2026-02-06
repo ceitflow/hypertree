@@ -1,9 +1,12 @@
-import { Directory, NodeEnum } from '@lib/ast';
+import { Directory, IdPath, NodeEnum } from '@lib/ast';
+import { IO } from '../../analyzer';
 
-export const CreateDirectory = (path: string, depth: number): Directory => {
+export const CreateDirectory = (path: IdPath, depth: number): Directory => {
+  const osSeparator = IO.separator;
+  const name = path.split(osSeparator).pop()!; // unix or windows paths
   return {
     id: path,
-    name: path[path.length - 1],
+    name,
     type: NodeEnum.Directory,
     depth,
     files: [],

@@ -197,6 +197,7 @@ export class Factory {
     graphic.label = 'Virtual';
     graphic.interactive = true;
     graphic.node = node;
+
     return [graphic];
   }
 }

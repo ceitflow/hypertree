@@ -146,8 +146,116 @@ export const MockAstData = AstFactory.createDir({
             })
           ]
         })
+      ],
+      dirs: [
+        AstFactory.createDir({
+          name: 'node_modules',
+          id: 'Mockero/node_modules',
+          depth: 2,
+          files: [
+            AstFactory.createCodeFile({
+              id: 'five',
+              name: 'Five.ts',
+              depth: 3,
+              loc: 300,
+              exports: [
+                AstFactory.createDeclaration({
+                  id: 'five/0',
+                  depth: 4,
+                  name: 'Five',
+                  loc: 300,
+                  token: { category: DeclarationEnum.Class }
+                })
+              ]
+            }),
+            AstFactory.createCodeFile({
+              id: 'five',
+              name: 'Five.ts',
+              depth: 3,
+              loc: 300,
+              exports: [
+                AstFactory.createDeclaration({
+                  id: 'five/0',
+                  depth: 4,
+                  name: 'Five',
+                  loc: 300,
+                  token: { category: DeclarationEnum.Class }
+                })
+              ]
+            }),
+            AstFactory.createCodeFile({
+              id: 'five',
+              name: 'Five.ts',
+              depth: 3,
+              loc: 300,
+              exports: [
+                AstFactory.createDeclaration({
+                  id: 'five/0',
+                  depth: 4,
+                  name: 'Five',
+                  loc: 300,
+                  token: { category: DeclarationEnum.Class }
+                })
+              ]
+            }),
+          ],
+          dirs: [
+            AstFactory.createDir({
+              name: 'node_modules',
+              id: 'Mockero/node_modules',
+              depth: 3,
+              files: [
+                AstFactory.createCodeFile({
+                  id: 'five',
+                  name: 'Five.ts',
+                  depth: 4,
+                  loc: 300,
+                  exports: [
+                    AstFactory.createDeclaration({
+                      id: 'five/0',
+                      depth: 5,
+                      name: 'Five',
+                      loc: 300,
+                      token: { category: DeclarationEnum.Class }
+                    })
+                  ]
+                }),
+                AstFactory.createCodeFile({
+                  id: 'five',
+                  name: 'Five.ts',
+                  depth: 4,
+                  loc: 300,
+                  exports: [
+                    AstFactory.createDeclaration({
+                      id: 'five/0',
+                      depth: 5,
+                      name: 'Five',
+                      loc: 300,
+                      token: { category: DeclarationEnum.Class }
+                    })
+                  ]
+                }),
+                AstFactory.createCodeFile({
+                  id: 'five',
+                  name: 'Five.ts',
+                  depth: 4,
+                  loc: 300,
+                  exports: [
+                    AstFactory.createDeclaration({
+                      id: 'five/0',
+                      depth: 5,
+                      name: 'Five',
+                      loc: 300,
+                      token: { category: DeclarationEnum.Class }
+                    })
+                  ]
+                }),
+              ]
+            }),
+          ]
+        }),
       ]
-    })
+    }),
   ],
   files: [
     AstFactory.createCodeFile({

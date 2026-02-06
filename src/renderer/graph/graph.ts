@@ -45,7 +45,7 @@ export class Graph {
 
   static createCodeNode(ast: CodeFile, parent: ParentType): CodeGraphNode {
     const m = Math.round(Math.sqrt(ast.loc) / 2);
-    const padding = { top: m * 2, bottom: 0, left: 0, right: 0 };
+    const padding = { top: Math.max(m * 2, 6), bottom: 0, left: 0, right: 0 };
     return {
       parent,
       children: [] as GraphNode[],
@@ -87,7 +87,7 @@ export class Graph {
       children: [] as GraphNode[],
       area: ast.loc,
       bbox: { x: 0, y: 0, width: this.fileWidth, height: ast.loc },
-      margin: { top: 0, bottom: 2, left: 0, right: 0 },
+      margin: { top: 0, bottom: 4, left: 0, right: 0 },
       padding: { top: 0, bottom: 0, left: 0, right: 0 },
       labelPoints: [] as [number, number, number][],
       type: GraphNodeEnum.Declaration,

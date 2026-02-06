@@ -58,6 +58,6 @@ export class IO {
   }
 
   static writeOutput(json: string) {
-    writeFileSync('/Users/ceitflow/WebstormProjects/hypertree/src/renderer' + '/output.json', json);
+    writeFileSync('/Users/ceitflow/WebstormProjects/hypertree/hypertree/resources' + '/output.json', json);
   }
 }
