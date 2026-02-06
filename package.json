@@ -24,6 +24,7 @@
     "@electron-toolkit/preload": "^3.0.2",
     "@electron-toolkit/utils": "^4.0.0",
     "@pixi/devtools": "^2.0.1",
+    "codemirror": "^6.0.2",
     "ignore": "^7.0.5",
     "lodash": "^4.17.23",
     "mitt": "^3.0.1",

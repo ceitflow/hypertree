@@ -17,12 +17,13 @@ import { CreateOtherFile } from './program/other-file';
 export async function AstGen(): Promise<Directory> {
   // /Users/ceitflow/WebstormProjects/koia-adminflow/adminflow
   // /Users/ceitflow/WebstormProjects/m3/coplan-visualizer
-  // /Users/ceitflow/WebstormProjects/graphkit-test-repos/angular/packages
-  // /Users/ceitflow/WebstormProjects/graphkit-test-repos/vscode/src
+  // /Users/ceitflow/WebstormProjects/hypertree/graphkit-test-repos/angular/packages
+  // /Users/ceitflow/WebstormProjects/hypertree/graphkit-test-repos/vscode/src
   // /Users/ceitflow/WebstormProjects/medusa/my-medusa-store-storefront
-  // /Users/ceitflow/WebstormProjects/graphkit-test-repos/vue-main
+  // /Users/ceitflow/WebstormProjects/hypertree/graphkit-test-repos/vue-main
   // /Users/ceitflow/WebstormProjects/paymentSavvy/chatbot-frontend
-  const src = '/Users/ceitflow/WebstormProjects/m3/coplan-visualizer';
+  // /Users/ceitflow/WebstormProjects/hypertree/graphkit-test-repos/excalidraw-master
+  const src = '/Users/ceitflow/WebstormProjects/hypertree/graphkit-test-repos/excalidraw-master';
 
   const configPath = findConfigFile(src, sys.fileExists);
   if (!configPath) {

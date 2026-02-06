@@ -19,7 +19,7 @@ export class Graph {
   // padding is included in bbox
   static fileWidth = 60;
   static defaultPadding = 4;
-  readonly emit = mitt<{ select: null }>();
+  readonly emit = mitt<{ select: GraphNode | null }>();
 
   constructor(astRoot: Directory) {
     const root = this.createGraphNodes(astRoot);
@@ -161,7 +161,7 @@ export class Graph {
     return n.margin.left + n.bbox.width + n.margin.right;
   }
 
-  private createGraphNodes(root: Directory): GraphNode {
+  private createGraphNodes(root: Directory): DirectoryGraphNode {
     const rootNode = Graph.createDirectoryNode(root, null);
 
     const stack: { dir: Directory; parentNode: GraphNode }[] = [{ dir: root, parentNode: rootNode }];

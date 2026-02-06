@@ -1,6 +1,6 @@
 export class ApiService {
-  static async readFile(filePath: string): Promise<string> {
-    return window.electron.ipcRenderer.invoke('api:readFile', filePath) as Promise<string>
+  static async readFile(rootPath: string, filePath: string): Promise<string> {
+    return window.electron.ipcRenderer.invoke('api:readFile', [rootPath, filePath]) as Promise<string>
   }
 
   static async readGraph(): Promise<Record<string, unknown>> {

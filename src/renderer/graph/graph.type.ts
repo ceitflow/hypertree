@@ -1,7 +1,7 @@
 import { CodeFile, DeclarationNode, Directory, OtherFile } from '@lib/ast';
 
 export type GraphModel = {
-  root: GraphNode;
+  root: DirectoryGraphNode;
 };
 
 export type ParentType = GraphNode | null;

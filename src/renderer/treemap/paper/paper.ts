@@ -98,6 +98,7 @@ export class Paper {
         const n = (e.target as PaperNode).node;
         // this.graph.select(n.type === 'declaration' ? n.parent! : n); // todo paper select data
         console.log(n);
+        this.graph.emit.emit('select', n);
       });
       c.on('wheel', (e) => mouse.wheel(e as WheelEvent));
     });

@@ -84,8 +84,8 @@ export class CodeFileBuilder {
     // recursively pull all modules (modules can be nested)
     while (modulesStack.length) {
       const module = modulesStack.pop()!;
-      const symbol = analyzer.getSymbol(module)!;
-      if (!module.body || !isModuleBlock(module.body)) continue;
+      const symbol = analyzer.getSymbol(module);
+      if (!symbol || !module.body || !isModuleBlock(module.body)) continue;
 
       if (symbol.valueDeclaration && symbol.declarations && symbol.declarations.length > 1) continue; // todo its augmentation
 

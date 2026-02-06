@@ -29,12 +29,14 @@ export function Layout(root: GraphNode) {
         v.area = children.reduce((s, c) => s + c.area, 0);
 
         if (type === GraphNodeEnum.Directory) {
-          const m = Math.round(Math.sqrt(v.area) / 2);
+          const m = Math.round(Math.sqrt(v.area));
           margin.right = m;
           margin.bottom = m;
           margin.left = m;
           padding.top = m;
         }
+        // TODO inverse margin (large get small, small get large)
+        // todo polygon bboxes, will allow more compact layout
         // children.sort((a, b) => b.area - a.area);
 
         // layout in a single row
