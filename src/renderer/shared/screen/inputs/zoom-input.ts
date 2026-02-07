@@ -1,4 +1,4 @@
-import { State, Vector2 } from '../types';
+import { EaseFunction, State, Vector2 } from '../types';
 import { Ease, Clamp, Round } from '../plugins';
 import { PhysicsInputType } from './physics-input';
 
@@ -11,22 +11,36 @@ export function ZoomInput({ config, transform, zoom, frameStart, viewport, exten
     return Ease.Inverse(inputEaseFn, targetZoom - min, max - min, 1) * (max - min) + min;
   };
 
+  // calculates diff to apply to target zoom (it differs from input because it follows easing fn)
+  const calculateDiffToTargetZoom = (input: number) => {
+    const { min, max, inputEaseFn } = config.zoom;
+    const currentZoom = transform[2];
+    const mapping = (input - min) / (max - min); // mapping [min,max] to [0,1] (0,max)
+    return Clamp(min + inputEaseFn(mapping, max - min, 1), min, max) - currentZoom;
+  };
+
   return {
     clamp: (dScale: number) => {
       return Clamp(dScale, config.zoom.min, config.zoom.max);
     },
     // todo adaptive zoom step (like inertia) if zooming while is active then speed up
     // todo auto scale min max? depends on viewport size and extent?
-    zoomStep: (origin: Vector2, step: number) => {
+    // step:
+    // - true zoomin
+    // - false zoomout
+    // - number implicit override step
+    zoomStep: (origin: Vector2, option: true | false | number) => {
       const { input, output } = zoom;
-      const { min, max, inputEaseFn } = config.zoom;
-      const currentZoom = transform[2];
+      const { min, max } = config.zoom;
+      const step = 0.05 + 0.04 * zoom.inputTicks;
+      const delta = option === true ? step : option === false ? -step : option;
       input[0] = origin[0];
       input[1] = origin[1];
-      input[2] = Clamp(input[2] + step, min, max); // clamp so there is no dead scrolling if outside range
+      input[2] = Clamp(input[2] + delta, min, max); // clamp so there is no dead scrolling if outside range
+      input[3] = frameStart.time;
+      zoom.inputTicks++;
 
-      const mapping = (input[2] - min) / (max - min); // mapping [min,max] to [0,1] (0,max)
-      const diffToTargetZoom = Clamp(min + inputEaseFn(mapping, max - min, 1), min, max) - currentZoom;
+      const diffToTargetZoom = calculateDiffToTargetZoom(input[2]);
 
       if (!Round(diffToTargetZoom, 4)) return; // todo detect if min,max set min max
 
@@ -56,12 +70,16 @@ export function ZoomInput({ config, transform, zoom, frameStart, viewport, exten
     nextFrame: () => {
       if (!zoom.active) return;
 
-      const { limiterForces, output, timeStart } = zoom;
-      const { animDurationMs, animEaseFn, limitToViewport } = config.zoom;
+      const { limiterForces, output, timeStart, input } = zoom;
+      const { animDurationMs, animEaseFn, limitToViewport, inputDurationMs } = config.zoom;
 
       let dx: number;
       let dy: number;
       let ds: number;
+
+      if (frameStart.time - input[3] > inputDurationMs) {
+        zoom.inputTicks = 0;
+      }
 
       // if instant or empty
       if (animDurationMs <= frameStart.deltaTime || !(output[0] || output[1] || output[2])) {
@@ -86,6 +104,6 @@ export function ZoomInput({ config, transform, zoom, frameStart, viewport, exten
       transform[0] += dx + limiterForces[2];
       transform[1] += dy + limiterForces[3];
       transform[2] += ds;
-    },
+    }
   };
 }

@@ -6,6 +6,41 @@ import { DeepPartial, ScreenConfig, State, UpdateTransform } from './types';
 
 export type ScreenType = ReturnType<typeof Screen>;
 
+const defaultConfig: ScreenConfig = {
+  viewportPadding: 0.5,
+
+  physics: {
+    maxCompressPercent: 0.1,
+    stiffness: 2,
+    inputEaseFn: Ease.outCirc,
+    animDurationMs: 500,
+    animEaseFn: Ease.outBack,
+  },
+  drag: {
+    limitToViewport: true,
+    animDurationMs: 0,
+    animEaseFn: Ease.outQuint,
+  },
+  zoom: {
+    inputEaseFn: Ease.inExpo,
+    min: 0.05,
+    max: 5,
+    limitToViewport: false,
+    inputDurationMs: 100,
+    animDurationMs: 500,
+    animEaseFn: Ease.outQuint,
+  },
+  inertia: {
+    inputCacheDurationMs: 20,
+    friction: 0.91,
+    durationMultiplier: 1,
+    turboVelocityThreshold: 14,
+    minVelocity: 1,
+    limitToViewport: true,
+    animEaseFn: Ease.outQuint,
+  },
+}
+
 export function Screen(updateTransform: UpdateTransform, config: DeepPartial<ScreenConfig> = {}) {
   const state: State = {
     transform: [0, 0, 1],
@@ -14,41 +49,8 @@ export function Screen(updateTransform: UpdateTransform, config: DeepPartial<Scr
     viewport: [0, 0, 0, 0],
     extent: [0, 0, 0, 0],
 
-    // default config
     config: merge(
-      {
-        viewportPadding: 0.5,
-
-        physics: {
-          maxCompressPercent: 0.1,
-          stiffness: 2,
-          inputEaseFn: Ease.outCirc,
-          animDurationMs: 500,
-          animEaseFn: Ease.outBack,
-        },
-        drag: {
-          limitToViewport: true,
-          animDurationMs: 0,
-          animEaseFn: Ease.outQuint,
-        },
-        zoom: {
-          inputEaseFn: Ease.inLog,
-          min: 0.05,
-          max: 5,
-          limitToViewport: false,
-          animDurationMs: 500,
-          animEaseFn: Ease.outQuint,
-        },
-        inertia: {
-          inputCacheDurationMs: 20,
-          friction: 0.91,
-          durationMultiplier: 1,
-          turboVelocityThreshold: 14,
-          minVelocity: 1,
-          limitToViewport: true,
-          animEaseFn: Ease.outQuint,
-        },
-      },
+      defaultConfig,
       config
     ),
 
@@ -75,7 +77,8 @@ export function Screen(updateTransform: UpdateTransform, config: DeepPartial<Scr
     },
     zoom: {
       active: false,
-      input: [0, 0, 0],
+      input: [0, 0, 0, 0],
+      inputTicks: 0,
       timeStart: 0,
       output: [0, 0, 0],
       limiterForces: [0, 0, 0, 0],

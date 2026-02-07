@@ -189,7 +189,7 @@ export class Factory {
     const graphic = new Graphics() as PaperNode;
     const color = '#e4f1ff00';
 
-    graphic.rect(0, 0, width, height).stroke(color);
+    graphic.rect(0, 0, width, height).stroke({ width: 1, color });
 
     graphic.x = x;
     graphic.y = y;

@@ -37,6 +37,7 @@ export type ScreenConfig = {
     min: number;
     max: number;
     limitToViewport: boolean;
+    inputDurationMs: number;
     animDurationMs: number;
     animEaseFn: EaseFunction;
   };
@@ -62,7 +63,7 @@ export type State = {
   config: ScreenConfig;
 
   frameStart: {
-    time: number;
+    time: number; // in milliseconds
     deltaTime: number; // duration between last frame and current
   };
 
@@ -84,7 +85,8 @@ export type State = {
     output: Vector2; // dx, dy
   };
   zoom: {
-    input: Vector3; // ox, oy, scale
+    input: Vector4; // ox, oy, scale, timeStart
+    inputTicks: number; // how many times input has been triggered in succession
     limiterForces: Vector4; // totalX, totalY, dx, dy
     active: boolean;
     timeStart: number;

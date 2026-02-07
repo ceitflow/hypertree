@@ -1,9 +1,7 @@
-import { InputController } from '../inputs/input-controller';
+import { InputController } from '../inputs';
 
 export function Mouse({ drag, zoom, inertia, invert }: InputController) {
   let isDragging = false;
-  const wheelStrength = 0.005;
-  const dblClickStrength = 1;
 
   return {
     mousedown: (e: MouseEvent) => {
@@ -23,12 +21,12 @@ export function Mouse({ drag, zoom, inertia, invert }: InputController) {
       isDragging = false;
     },
     dblclick: (e: MouseEvent) => {
-      zoom.zoomStep(invert(e.clientX, e.clientY), dblClickStrength);
+      // zoom.zoomStep(invert(e.clientX, e.clientY), dblClickStrength);
     },
     wheel: (e: WheelEvent) => {
       const delta = -e.deltaY;
       if (delta !== 0) {
-        zoom.zoomStep(invert(e.clientX, e.clientY), delta * wheelStrength);
+        zoom.zoomStep(invert(e.clientX, e.clientY), delta > 0);
       }
     },
   };

@@ -24,4 +24,3 @@ export const TreeMap = ({ graph }: Props) => {
 
   return <div ref={mapRef} className={styles.treemapContainer} />;
 };
-/* @refresh reset */

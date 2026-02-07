@@ -57,7 +57,6 @@ export function Layout(root: GraphNode) {
         bbox.width = totalWidth;
         bbox.height = totalHeight;
 
-
         // todo row layout in app/portfolio aligns to first child rather than widest one
         new AspectRatioLayout(v, targetRatio);
         break;
@@ -85,7 +84,6 @@ class AspectRatioLayout {
   w: number;
   h: number;
   currentRatio: number;
-  static lol = false;
 
   constructor(
     node: GraphNode,
@@ -107,9 +105,9 @@ class AspectRatioLayout {
       return;
     }
 
-
     while (!isValidRatio(this.currentRatio)) {
       console.log(debugName, this.currentRatio);
+
       // too tall, squash leftmost
       if (this.currentRatio > targetRatio) {
         console.log('too tall');
@@ -129,8 +127,8 @@ class AspectRatioLayout {
   squashBiggestChildNode(node: GraphNode): boolean {
     const sortedByHeight = [...node.children].sort((a, b) => Graph.getFullHeight(b) - Graph.getFullHeight(a));
 
-    for (let i = 0; i < sortedByHeight.length; i++){
-      const c = sortedByHeight[i]
+    for (let i = 0; i < sortedByHeight.length; i++) {
+      const c = sortedByHeight[i];
       if (c.type === GraphNodeEnum.Directory) {
         // todo const s = squashBiggestChildNode(c) ?
         continue;
@@ -184,7 +182,7 @@ class AspectRatioLayout {
                 // fits in this column
                 bbox.x = temp.columnIdx * decl.bbox.width;
                 bbox.y = temp.yPos + p.top;
-                temp.yPos += totalHeight+ margin.bottom;
+                temp.yPos += totalHeight + margin.bottom;
                 c.children.push(decl); // push entire node without cutting
               } else {
                 // overflows to the next column
@@ -286,10 +284,9 @@ class AspectRatioLayout {
         prevLast.children.push(last);
         Graph.fitSizeToChildren(prevLast);
       }
-      node.children.splice(lastIdx, 1);
 
       // fill in the gap from removing last node (note it is already removed from children array)
-      for (let i = lastIdx; i < node.children.length; i++) {
+      for (let i = lastIdx + 1; i < node.children.length; i++) {
         node.children[i].bbox.x -= Graph.getFullWidth(last);
       }
       // push nodes if prevLast grew
@@ -297,6 +294,7 @@ class AspectRatioLayout {
       for (let i = prevLastIdx + 1; i < node.children.length; i++) {
         node.children[i].bbox.x += diff;
       }
+      node.children.splice(lastIdx, 1);
       this.w = newWidth;
       this.h = newHeight;
       this.currentRatio = newRatio;
