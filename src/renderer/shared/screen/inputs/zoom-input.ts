@@ -32,7 +32,8 @@ export function ZoomInput({ config, transform, zoom, frameStart, viewport, exten
     zoomStep: (origin: Vector2, option: true | false | number) => {
       const { input, output } = zoom;
       const { min, max } = config.zoom;
-      const step = 0.05 + 0.04 * zoom.inputTicks;
+      let step = 0.08;
+      for (let i = 1; i <= zoom.inputTicks; i++) step += Math.pow(0.2, i);
       const delta = option === true ? step : option === false ? -step : option;
       input[0] = origin[0];
       input[1] = origin[1];

@@ -1,86 +1,14 @@
-import { eachAfter, eachBefore } from '../../shared/utils';
-import { DeclarationGraphNode, Graph, GraphNode, GraphNodeEnum } from '../../graph';
+import {
+  CodeGraphNode,
+  DeclarationGraphNode,
+  Graph,
+  GraphNode,
+  GraphNodeEnum,
+  OtherGraphNode,
+  VirtualGraphNode
+} from '../../index';
 
-export function Layout(root: GraphNode) {
-  const targetRatio = 0.844;
-
-  eachAfter(root, (v) => {
-    const { type, bbox, margin, padding, children } = v;
-
-    switch (type) {
-      case GraphNodeEnum.Code: {
-        // layout declarations in a single column
-        let tempY = padding.top;
-        let marginsAddition = 0; // margins of declarations used to adjust height of code file
-
-        children.forEach((d) => {
-          const decl = d as DeclarationGraphNode;
-          decl.bbox.x = padding.left;
-          decl.bbox.y = tempY;
-          tempY += decl.bbox.height + decl.margin.bottom;
-          marginsAddition += decl.margin.bottom;
-        });
-
-        bbox.height += marginsAddition;
-        break;
-      }
-      case GraphNodeEnum.Virtual:
-      case GraphNodeEnum.Directory: {
-        v.area = children.reduce((s, c) => s + c.area, 0);
-
-        if (type === GraphNodeEnum.Directory) {
-          const m = Math.round(Math.sqrt(v.area));
-          margin.right = m;
-          margin.bottom = m;
-          margin.left = m;
-          padding.top = m;
-        }
-        // TODO inverse margin (large get small, small get large)
-        // todo polygon bboxes, will allow more compact layout
-        // children.sort((a, b) => b.area - a.area);
-
-        // layout in a single row
-        let totalWidth = padding.left;
-        let totalHeight = 0;
-
-        children.forEach((child) => {
-          child.bbox.x = totalWidth + child.margin.left;
-          child.bbox.y = padding.top + child.margin.top;
-          totalWidth += Graph.getFullWidth(child);
-          const height = Graph.getFullHeight(child);
-          if (height > totalHeight) {
-            totalHeight = height;
-          }
-        });
-        totalWidth += padding.right;
-        totalHeight += padding.top + padding.bottom;
-        bbox.width = totalWidth;
-        bbox.height = totalHeight;
-
-        // todo row layout in app/portfolio aligns to first child rather than widest one
-        new AspectRatioLayout(v, targetRatio);
-        break;
-      }
-    }
-  });
-
-  eachBefore(root, (v) => {
-    // adjusting for relative positions
-    v.children.forEach((c) => {
-      c.bbox.x += v.bbox.x;
-      c.bbox.y += v.bbox.y;
-    });
-
-    if (v.type === GraphNodeEnum.Directory) {
-      const margin = 1000;
-      for (let x = v.margin.left + v.padding.left; x < v.bbox.width; x += margin) {
-        v.labelPoints.push([v.bbox.x + x, v.bbox.y, 0]);
-      }
-    }
-  });
-}
-
-class AspectRatioLayout {
+export class AspectRatioLayout {
   w: number;
   h: number;
   currentRatio: number;
@@ -121,11 +49,18 @@ class AspectRatioLayout {
     }
 
     console.log(debugName, 'finished with', this.currentRatio);
-    Graph.fitBBoxToChildren(node);
+    node.fitBBoxToChildren();
+  }
+
+  private getFullFileNodeHeight(node: CodeGraphNode | OtherGraphNode) {
+    let margins = 0;
+    if (node.type === GraphNodeEnum.Code)
+      margins = DeclarationGraphNode.createFromCodeFile(node).reduce((a, b) => a + b.margin.top + b.margin.bottom, 0);
+    return node.ast.loc + node.padding.top + node.padding.bottom + margins;
   }
 
   squashBiggestChildNode(node: GraphNode): boolean {
-    const sortedByHeight = [...node.children].sort((a, b) => Graph.getFullHeight(b) - Graph.getFullHeight(a));
+    const sortedByHeight = [...node.children].sort((a, b) => b.getFullHeight() - a.getFullHeight());
 
     for (let i = 0; i < sortedByHeight.length; i++) {
       const c = sortedByHeight[i];
@@ -136,10 +71,11 @@ class AspectRatioLayout {
         // skip
         continue;
       } else if (c.type === GraphNodeEnum.Code || c.type === GraphNodeEnum.Other) {
+        // todo split separate
         // cut height in half and double the width
         const { bbox, padding: p, layoutColumns } = c;
-        const deltaWidth = Graph.fileWidth;
-        const originalH = Graph.getFullFileNodeHeight(c);
+        const deltaWidth = CodeGraphNode.defaultWidth;
+        const originalH = this.getFullFileNodeHeight(c);
         const resultHeight = originalH / (layoutColumns + 1);
         const deltaHeight = bbox.height - (p.top + p.bottom) - resultHeight + (p.top + p.bottom) / (layoutColumns + 1); // padding also needs to be proportionate to calculate single col height
 
@@ -163,9 +99,9 @@ class AspectRatioLayout {
             const temp = { columnIdx: 0, yPos: 0 }; // last declaration position
             c.children = [];
 
-            Graph.createFileDeclarations(c).forEach((decl) => {
+            DeclarationGraphNode.createFromCodeFile(c).forEach((decl) => {
               const addClone = (h: number) => {
-                const cl = Graph.createDeclarationNode(decl.ast, c);
+                const cl = DeclarationGraphNode.create(c, decl.ast);
                 cl.bbox = {
                   x: temp.columnIdx * decl.bbox.width + 1,
                   y: temp.yPos + p.top,
@@ -236,7 +172,7 @@ class AspectRatioLayout {
     let prevLastIdx = 1;
     node.children.forEach((child, idx) => {
       if (child === last) return;
-      if (Graph.getFullHeight(child) <= Graph.getFullHeight(last)) {
+      if (child.getFullHeight() <= last.getFullHeight()) {
         // '<=' to prefer rightmost
         prevLast = last;
         last = child;
@@ -244,15 +180,15 @@ class AspectRatioLayout {
         lastIdx = idx;
       }
     });
-    const newHeight = Math.max(this.h, Graph.getFullHeight(prevLast) + Graph.getFullHeight(last));
-    const newWidth = this.w - Graph.getFullWidth(last);
+    const newHeight = Math.max(this.h, prevLast.getFullHeight() + last.getFullHeight());
+    const newWidth = this.w - last.getFullWidth();
     const newRatio = newHeight / newWidth;
 
     // if improved
     if (Math.abs(newRatio - this.targetRatio) < Math.abs(this.currentRatio - this.targetRatio)) {
       if (!(prevLast.type === GraphNodeEnum.Virtual && prevLast.isColumnWrapper)) {
         // if target is a CodeFile or OtherFile, then wrap it
-        const columnWrapper = Graph.createVirtualNode(true, node);
+        const columnWrapper = VirtualGraphNode.create(node, true);
         const { x, y, width, height } = prevLast.bbox;
         const m = prevLast.margin;
         columnWrapper.bbox = {
@@ -274,20 +210,20 @@ class AspectRatioLayout {
       if (last.type === GraphNodeEnum.Virtual && last.isColumnWrapper) {
         last.children.forEach((c) => {
           c.bbox.x = 0;
-          c.bbox.y = Graph.getFullHeight(prevLast);
+          c.bbox.y = prevLast.getFullHeight();
           prevLast.children.push(c);
-          Graph.fitSizeToChildren(prevLast);
+          prevLast.fitSizeToChildren();
         });
       } else {
         last.bbox.x = 0;
-        last.bbox.y = Graph.getFullHeight(prevLast);
+        last.bbox.y = prevLast.getFullHeight();
         prevLast.children.push(last);
-        Graph.fitSizeToChildren(prevLast);
+        prevLast.fitSizeToChildren();
       }
 
       // fill in the gap from removing last node (note it is already removed from children array)
       for (let i = lastIdx + 1; i < node.children.length; i++) {
-        node.children[i].bbox.x -= Graph.getFullWidth(last);
+        node.children[i].bbox.x -= last.getFullWidth();
       }
       // push nodes if prevLast grew
       const diff = prevLast.bbox.width - cachedPrevLastWidth;
@@ -305,10 +241,3 @@ class AspectRatioLayout {
     return false;
   }
 }
-
-// calculate min w/h and max w/h for each container
-// foreach node calculate 2 states, 1 row and 1 column
-//  (for tall nodes just rotate them - switch width with height)
-
-// eachAfter - calculate min max sizes for each node AND layout node optimally (~equals given aspect ratio)
-// eachBefore - second pass do main layout, traverse up - parent nodes can only modify 25% off of children aspect ratio from ideal

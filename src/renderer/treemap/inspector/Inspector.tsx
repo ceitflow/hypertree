@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
 import styles from './Inspector.module.css';
+import { ApiService } from '../../api.service';
 import { EditorState } from '@codemirror/state';
+import { useEffect, useRef, useState } from 'react';
 import { EditorView, basicSetup } from 'codemirror';
 import { Graph, GraphNode, GraphNodeEnum } from '../graph';
-import { ApiService } from '../api.service';
 
 function getLabel(node: GraphNode): string {
   if (node.type === GraphNodeEnum.Virtual) return node.parent!['ast'].name + ' virtual';
@@ -46,7 +46,6 @@ export const Inspector = ({ graph }: Props) => {
 
       try {
         const content = await ApiService.readFile(graph.model.root.ast.id, filePath);
-        console.log(node, content)
         if (viewRef.current === view) {
           view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: content } });
         }

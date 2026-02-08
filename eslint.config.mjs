@@ -32,7 +32,8 @@ export default defineConfig(
       '@typescript-eslint/ ban-ts-comment': 'off',
       'no-empty': 'warn',
       '@typescript-eslint/explicit-function-return-type': 'off',
-      '@typescript-eslint/no-empty-function': 'off'
+      '@typescript-eslint/no-empty-function': 'off',
+      'react-hooks/set-state-in-effect': 'warn',
     }
   }
 )

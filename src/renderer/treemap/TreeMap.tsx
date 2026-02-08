@@ -1,26 +1,40 @@
+import { Graph } from './graph';
+import { Directory } from '@lib/ast';
 import { Paper } from './paper/paper';
-import type { Graph } from '../graph';
 import styles from './TreeMap.module.css';
-import { useEffect, useRef } from 'react';
-import { createEngine } from '../shared/engine';
+import { Engine } from '../shared/engine';
+import { Inspector } from './inspector/Inspector';
+import { useEffect, useRef, useState } from 'react';
 
 type Props = {
-  graph: Graph;
+  data: Directory;
 };
 
-export const TreeMap = ({ graph }: Props) => {
+export const TreeMap = ({ data }: Props) => {
   const mapRef = useRef<HTMLDivElement>(null);
-  const initialized = useRef(false);
+  const [graph, setGraph] = useState<Graph | null>(null);
 
   useEffect(() => {
-    if (!mapRef.current || initialized.current) return;
+    const engine = new Engine(mapRef.current!);
+    const graphInstance = new Graph(data);
+    setGraph(graphInstance);
 
-    initialized.current = true;
+    console.log(graphInstance.model.root);
 
-    createEngine(mapRef.current).then((engine) => {
-      new Paper(engine, graph);
+    engine.init().then(() => {
+      new Paper(engine.app, graphInstance);
     });
-  }, []);
 
-  return <div ref={mapRef} className={styles.treemapContainer} />;
+    return () => {
+      engine.destroy()
+    };
+  }, [data]);
+
+  return (
+    <div className={styles.treemapContainer}>
+      {graph && <Inspector graph={graph} />}
+      <div ref={mapRef} className={styles.diagram} />
+    </div>
+  );
 };
+/* @refresh reset */

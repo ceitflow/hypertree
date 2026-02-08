@@ -6,7 +6,7 @@ import {
   GraphNodeEnum,
   OtherGraphNode,
   VirtualGraphNode
-} from '../../graph';
+} from '../graph';
 import { PaperNode } from './types';
 import { BitmapText, Graphics } from 'pixi.js';
 
@@ -83,6 +83,10 @@ export class Factory {
     return result;
   }
 
+  static createCodeLinks(node: CodeGraphNode) {
+
+  }
+
   static createNode(node: GraphNode): PaperNode[] {
     switch (node.type) {
       case GraphNodeEnum.Directory:
@@ -154,7 +158,7 @@ export class Factory {
   private static createOtherNode(node: OtherGraphNode): PaperNode[] {
     const { x, y, width, height } = node.bbox;
     const graphic = new Graphics() as PaperNode;
-    const color = node.ast.bigFile ? '#adad30' : '#d39000';
+    const color = '#d39000' // node.ast.bigFile ? '#adad30' : '#d39000';
 
     graphic.rect(0, 0, width, height).fill(color);
 

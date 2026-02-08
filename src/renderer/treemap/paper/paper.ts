@@ -1,6 +1,6 @@
 import { PaperNode } from './types';
 import { Factory } from './factory';
-import { Graph, GraphNode } from '../../graph';
+import { Graph, GraphNode } from '../graph';
 import { Application, Container, Graphics } from 'pixi.js';
 import { CreateViewport, Mouse, ScreenType } from '../../shared/screen';
 

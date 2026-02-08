@@ -66,6 +66,7 @@ export class CodeFileBuilder {
 
   constructor(file: SourceFile, analyzer: Analyzer) {
     this.id = analyzer.getRelativePath(file.fileName);
+    if (this.id === 'packages/excalidraw/components/ActiveConfirmDialog.tsx') debugger;
     const idPathSplit = this.id.split(path.sep);
     this.name = idPathSplit[idPathSplit.length - 1];
     this.depth = idPathSplit.length - 1;
