@@ -228,7 +228,7 @@ export class AspectRatioLayout {
       // push nodes if prevLast grew
       const diff = prevLast.bbox.width - cachedPrevLastWidth;
       for (let i = prevLastIdx + 1; i < node.children.length; i++) {
-        node.children[i].bbox.x += diff;
+        if (node.children[i] !== last) node.children[i].bbox.x += diff;
       }
       node.children.splice(lastIdx, 1);
       this.w = newWidth;

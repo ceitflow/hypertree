@@ -13,7 +13,7 @@ export type CodeFile = BaseNode<NodeEnum.Code> & {
   reexports: CodeFileReExport[];
 }
 
-export type CodeFileImport = {
+export type CodeFileImport = { // todo split import by types, have shared BaseImport type with common properties
   // import { A as B } from ''
   // import default from ''
   from: IdPath;

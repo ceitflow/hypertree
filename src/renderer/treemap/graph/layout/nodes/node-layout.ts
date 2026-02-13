@@ -1,6 +1,6 @@
 import { AspectRatioLayout } from './aspect-ratio-layout';
 import { eachAfter, eachBefore } from '../../../../shared/utils';
-import { DeclarationGraphNode, Graph, GraphNode, GraphNodeEnum } from '../../index';
+import { DeclarationGraphNode, GraphNode, GraphNodeEnum } from '../../index';
 
 export class NodeLayout {
   private static targetRatio = 0.844;
@@ -65,6 +65,8 @@ export class NodeLayout {
       }
     });
 
+    root.bbox.x = 0;
+    root.bbox.y = 0;
     eachBefore(root, (v) => {
       // adjusting for relative positions
       v.children.forEach((c) => {

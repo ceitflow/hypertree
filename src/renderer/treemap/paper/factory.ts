@@ -84,7 +84,19 @@ export class Factory {
   }
 
   static createCodeLinks(node: CodeGraphNode) {
+    // todo render link for each segment between visibility nodes
+  }
 
+  static createVisibilityVertices(node: DirectoryGraphNode): Graphics[] {
+    const radius = 2;
+    const result: Graphics[] = [];
+    for (const vertex of node.routeVisibilityGraph.vertices.values()) {
+      const graphic = new Graphics();
+      graphic.circle(vertex.x, vertex.y, radius).fill(vertex._debugColor);
+      graphic.zIndex = 20;
+      result.push(graphic);
+    }
+    return result;
   }
 
   static createNode(node: GraphNode): PaperNode[] {
@@ -121,7 +133,7 @@ export class Factory {
 
     const graphic = new Graphics() as PaperNode;
 
-    graphic.roundRect(0, 0, width, height, node.margin.left).fill(color);
+    graphic.roundRect(0, 0, width, height, 0).fill(color);
     graphic.x = x;
     graphic.y = y;
     graphic.rotation = 0;
@@ -134,7 +146,7 @@ export class Factory {
   private static createCodeNode(node: CodeGraphNode): PaperNode[] {
     const { x, y, width, height } = node.bbox;
     const graphic = new Graphics() as PaperNode;
-    const color = '#e24c00';
+    const color = '#866957';
 
     graphic.rect(0, 0, width, height).fill(color);
 
@@ -158,7 +170,7 @@ export class Factory {
   private static createOtherNode(node: OtherGraphNode): PaperNode[] {
     const { x, y, width, height } = node.bbox;
     const graphic = new Graphics() as PaperNode;
-    const color = '#d39000' // node.ast.bigFile ? '#adad30' : '#d39000';
+    const color = '#d39000'; // node.ast.bigFile ? '#adad30' : '#d39000';
 
     graphic.rect(0, 0, width, height).fill(color);
 
@@ -174,7 +186,7 @@ export class Factory {
   private static createDeclarationNode(node: DeclarationGraphNode): PaperNode[] {
     const { x, y, width, height } = node.bbox;
     const graphic = new Graphics() as PaperNode;
-    const color = '#866957';
+    const color = '#e24c00';
     const result: PaperNode[] = [graphic];
 
     graphic.rect(0, 0, width, height).fill(color);
@@ -191,7 +203,7 @@ export class Factory {
   private static createVirtualNode(node: VirtualGraphNode): PaperNode[] {
     const { x, y, width, height } = node.bbox;
     const graphic = new Graphics() as PaperNode;
-    const color = '#e4f1ff00';
+    const color = '#e4f1ffaa';
 
     graphic.rect(0, 0, width, height).stroke({ width: 1, color });
 

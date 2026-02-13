@@ -1,8 +1,14 @@
-import { CodeFile, DeclarationNode, Directory, OtherFile } from '@lib/ast';
+import { Edge, Point, VisibilityGraph } from './edges';
+import { CodeFile, DeclarationNode, Directory, IdPath, OtherFile } from '@lib/ast';
 
 export type ParentType = GraphNode | null;
 export type BBox = { x: number; y: number; width: number; height: number };
 export type Margin = { top: number; bottom: number; left: number; right: number };
+
+export type GraphModel = {
+  root: DirectoryGraphNode;
+  edgesRegistry: Map<IdPath, Edge[]>; // [sourceId]: GraphLink; registry of original links
+};
 
 export enum GraphNodeEnum {
   Code = 'code',
@@ -17,7 +23,7 @@ type BaseOpt = {
   children?: GraphNode[];
   area?: number; // square pixels, for calculating weighted margins
   bbox?: BBox; // includes padding
-  margin?: Margin;
+  margin?: Margin; // todo make it handled by parent container, not directly applied from every node (to avoid overlapping big gaps and remove margin near parent borders)
   padding?: Margin;
   labelPoints?: [number, number, number][]; // x,y,angle
 };
@@ -47,6 +53,31 @@ export class GraphNodeBase {
 
   getFullWidth() {
     return this.margin.left + this.bbox.width + this.margin.right;
+  }
+
+  getOrigin(): Point {
+    const { x, y } = this.bbox;
+    return { x, y };
+  }
+
+  getTopMiddle(): Point {
+    const { x, y, width } = this.bbox;
+    return { x: x + width / 2, y };
+  }
+
+  getRightMiddle(): Point {
+    const { x, y, width, height } = this.bbox;
+    return { x: x + width, y: y + height / 2 };
+  }
+
+  getBottomMiddle(): Point {
+    const { x, y, width, height } = this.bbox;
+    return { x: x + width / 2, y: y + height };
+  }
+
+  getLeftMiddle(): Point {
+    const { x, y, height } = this.bbox;
+    return { x, y: y + height / 2 };
   }
 
   fitBBoxToChildren() {
@@ -95,6 +126,11 @@ export class GraphNodeBase {
 
 export class DirectoryGraphNode extends GraphNodeBase {
   readonly type = GraphNodeEnum.Directory;
+  routeVisibilityGraph: VisibilityGraph = {
+    // for routing edges within this directory
+    rootNodeId: 0,
+    vertices: new Map()
+  };
 
   constructor(
     opt: BaseOpt,
@@ -104,7 +140,7 @@ export class DirectoryGraphNode extends GraphNodeBase {
   }
 
   static create(parent: ParentType, ast: Directory) {
-    return new DirectoryGraphNode({ parent }, ast);
+    return new DirectoryGraphNode({ parent, padding: { top: 10, right: 10, bottom: 10, left: 10 } }, ast);
   }
 }
 
@@ -121,8 +157,8 @@ export class CodeGraphNode extends GraphNodeBase {
   }
 
   static create(parent: ParentType, ast: CodeFile) {
-    const m = Math.round(Math.sqrt(ast.loc) / 2);
-    const padding = { top: Math.max(m * 2, 6), bottom: 0, left: 0, right: 0 };
+    const m = Math.round(Math.sqrt(ast.loc));
+    const padding = { top: Math.max(m, 6), bottom: 0, left: 0, right: 0 };
     return new CodeGraphNode(
       {
         parent,
@@ -191,7 +227,6 @@ export class DeclarationGraphNode extends GraphNodeBase {
       ast
     );
   }
-
 
   static createFromCodeFile(file: CodeGraphNode): DeclarationGraphNode[] {
     return file.ast.exports.map((e) => DeclarationGraphNode.create(file, e));

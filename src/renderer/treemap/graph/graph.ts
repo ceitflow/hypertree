@@ -2,17 +2,15 @@ import {
   CodeGraphNode,
   DeclarationGraphNode,
   DirectoryGraphNode,
+  GraphModel,
   GraphNode,
   OtherGraphNode,
   VirtualGraphNode
 } from './nodes';
 import mitt from 'mitt';
+import { Edge } from './edges';
 import { Layout } from './layout/layout';
-import { Directory, NodeEnum } from '@lib/ast';
-
-type GraphModel = {
-  root: DirectoryGraphNode;
-};
+import { Directory, IdPath, NodeEnum } from '@lib/ast';
 
 export class Graph {
   model: GraphModel;
@@ -20,19 +18,17 @@ export class Graph {
   emit = mitt<{ select: GraphNode | null }>();
 
   constructor(astRoot: Directory) {
-    const root = this.initialize(astRoot);
-    this.layout = new Layout(root);
-
-    this.model = {
-      root
-    };
+    this.model = this.initialize(astRoot);
+    this.layout = new Layout(this.model);
   }
 
-  private initialize(root: Directory): DirectoryGraphNode {
-    const rootNode = DirectoryGraphNode.create(null, root);
+  private initialize(astRoot: Directory): GraphModel {
+    const root = DirectoryGraphNode.create(null, astRoot);
+    const edges = new Map<IdPath, Edge[]>();
 
-    const stack: { dir: Directory; parentNode: GraphNode }[] = [{ dir: root, parentNode: rootNode }];
+    const stack: { dir: Directory; parentNode: GraphNode }[] = [{ dir: astRoot, parentNode: root }];
 
+    // copy ast tree into graph node tree
     while (stack.length > 0) {
       const { dir, parentNode } = stack.pop()!;
 
@@ -50,6 +46,10 @@ export class Graph {
           if (file.type === NodeEnum.Code) {
             fileNode = CodeGraphNode.create(virtualNode, file);
             fileNode.children = DeclarationGraphNode.createFromCodeFile(fileNode);
+            fileNode.ast.imports.forEach((imp) => {
+              if (!edges.has(file.id)) edges.set(file.id, []);
+              edges.get(file.id)!.push(Edge.create(imp, file.id, imp.from));
+            });
           } else {
             fileNode = OtherGraphNode.create(virtualNode, file);
           }
@@ -58,6 +58,6 @@ export class Graph {
         parentNode.children.push(virtualNode);
       }
     }
-    return rootNode;
+    return { root, edgesRegistry: edges };
   }
 }

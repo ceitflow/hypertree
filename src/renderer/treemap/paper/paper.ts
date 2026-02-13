@@ -1,6 +1,6 @@
 import { PaperNode } from './types';
 import { Factory } from './factory';
-import { Graph, GraphNode } from '../graph';
+import { Graph, GraphNode, GraphNodeEnum } from '../graph';
 import { Application, Container, Graphics } from 'pixi.js';
 import { CreateViewport, Mouse, ScreenType } from '../../shared/screen';
 
@@ -115,6 +115,10 @@ export class Paper {
       const nodes = Factory.createNode(n);
       const labels = Factory.createLabels(n); // todo if declaration split then show '1/2 ...'
       container.addChild(...nodes, ...labels);
+      if (n.type === GraphNodeEnum.Directory) {
+        // debug only
+        Factory.createVisibilityVertices(n).forEach(r => container.addChild(r));
+      }
     }
   }
 }

@@ -23,6 +23,7 @@ export async function AstGen(): Promise<Directory> {
   // /Users/ceitflow/WebstormProjects/hypertree/graphkit-test-repos/vue-main
   // /Users/ceitflow/WebstormProjects/paymentSavvy/chatbot-frontend
   // /Users/ceitflow/WebstormProjects/hypertree/graphkit-test-repos/excalidraw-master
+  // /Users/ceitflow/WebstormProjects/hypertree/graphkit-test-repos/pixijs-dev
   const src = '/Users/ceitflow/WebstormProjects/hypertree/graphkit-test-repos/excalidraw-master';
 
   const configPath = findConfigFile(src, sys.fileExists);

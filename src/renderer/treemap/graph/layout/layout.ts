@@ -1,14 +1,14 @@
-import { GraphNode } from '../index';
+import { GraphModel } from '../index';
+import { Router } from './router/router';
 import { NodeLayout } from './nodes/node-layout';
 
 export class Layout {
-
-  constructor(root: GraphNode) {
+  constructor(graphModel: GraphModel) {
     // todo main layout controller
     // 1. layout nodes
     // 2. draw links
     // 3. adjust nodes to make room for links
-    NodeLayout.init(root);
-    // todo add links to graph
+    NodeLayout.init(graphModel.root);
+    Router.init(graphModel);
   }
 }

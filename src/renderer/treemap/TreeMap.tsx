@@ -19,7 +19,7 @@ export const TreeMap = ({ data }: Props) => {
     const graphInstance = new Graph(data);
     setGraph(graphInstance);
 
-    console.log(graphInstance.model.root);
+    console.log(graphInstance.model);
 
     engine.init().then(() => {
       new Paper(engine.app, graphInstance);
@@ -37,4 +37,4 @@ export const TreeMap = ({ data }: Props) => {
     </div>
   );
 };
-/* @refresh reset */
+
