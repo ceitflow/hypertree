@@ -55,29 +55,9 @@ export class GraphNodeBase {
     return this.margin.left + this.bbox.width + this.margin.right;
   }
 
-  getOrigin(): Point {
-    const { x, y } = this.bbox;
-    return { x, y };
-  }
-
-  getTopMiddle(): Point {
-    const { x, y, width } = this.bbox;
-    return { x: x + width / 2, y };
-  }
-
-  getRightMiddle(): Point {
-    const { x, y, width, height } = this.bbox;
-    return { x: x + width, y: y + height / 2 };
-  }
-
-  getBottomMiddle(): Point {
-    const { x, y, width, height } = this.bbox;
-    return { x: x + width / 2, y: y + height };
-  }
-
-  getLeftMiddle(): Point {
-    const { x, y, height } = this.bbox;
-    return { x, y: y + height / 2 };
+  getCorner() {
+    const {x,y,width,height} = this.bbox;
+    return { x: x + width, y: y + height };
   }
 
   fitBBoxToChildren() {
