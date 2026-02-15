@@ -26,10 +26,56 @@ export const MockAstData = AstFactory.createDir({
               token: { category: DeclarationEnum.Class }
             })
           ]
-        })
+        }),
+        AstFactory.createCodeFile({
+          id: 'five',
+          name: 'Five.ts',
+          depth: 3,
+          loc: 300,
+          exports: [
+            AstFactory.createDeclaration({
+              id: 'five/0',
+              depth: 4,
+              name: 'Five',
+              loc: 300,
+              token: { category: DeclarationEnum.Class }
+            })
+          ]
+        }),
       ],
       dirs: []
     }),
   ],
-  files: [],
+  files: [
+    AstFactory.createCodeFile({
+      id: 'five',
+      name: 'Five.ts',
+      depth: 3,
+      loc: 300,
+      exports: [
+        AstFactory.createDeclaration({
+          id: 'five/0',
+          depth: 4,
+          name: 'Five',
+          loc: 300,
+          token: { category: DeclarationEnum.Class }
+        })
+      ]
+    }),
+    AstFactory.createCodeFile({
+      id: 'five',
+      name: 'Five.ts',
+      depth: 3,
+      loc: 300,
+      exports: [
+        AstFactory.createDeclaration({
+          id: 'five/0',
+          depth: 4,
+          name: 'Five',
+          loc: 300,
+          token: { category: DeclarationEnum.Class }
+        })
+      ]
+    }),
+  ],
 });

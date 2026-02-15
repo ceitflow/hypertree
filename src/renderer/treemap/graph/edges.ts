@@ -57,11 +57,13 @@ export class VisibilityNode {
 export class VisibilityEdge {
   source: VisibilityNodeId;
   target: VisibilityNodeId;
+  thickness: number;
   astEdges: Edge[]; // todo dijkstra to check which visibility nodes each edge follow
 
   constructor(source: VisibilityNodeId, target: VisibilityNodeId) {
     this.source = source;
     this.target = target;
+    this.thickness = 1;
     this.astEdges = [];
   }
 }

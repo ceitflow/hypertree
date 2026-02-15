@@ -38,7 +38,7 @@ export class Graph {
         stack.push({ dir: subdir, parentNode: dirNode });
       }
 
-      if (dir.files.length > 0) {
+      if (dir.files.length) {
         const virtualNode = VirtualGraphNode.create(parentNode, false);
 
         for (const file of dir.files) {
