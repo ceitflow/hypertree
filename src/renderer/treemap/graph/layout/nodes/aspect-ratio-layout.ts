@@ -1,7 +1,6 @@
 import {
   CodeGraphNode,
   DeclarationGraphNode,
-  Graph,
   GraphNode,
   GraphNodeEnum,
   OtherGraphNode,
@@ -29,9 +28,15 @@ export class AspectRatioLayout {
           : 'virtual';
     const isValidRatio = (r: number) => Math.abs(targetRatio - r) / targetRatio <= 0.1;
 
-    if (isValidRatio(this.currentRatio) || !node.children.length) {
+    if (!node.children.length) {
       return;
     }
+
+    // todo stack and then undo incrementally until isValidRatio
+    // if (row)
+    //   stack all in 1 column
+    // else
+    //   stack all in 1 row
 
     while (!isValidRatio(this.currentRatio)) {
       console.log(debugName, this.currentRatio);
@@ -59,6 +64,8 @@ export class AspectRatioLayout {
     return node.ast.loc + node.padding.top + node.padding.bottom + margins;
   }
 
+  // if too tall
+  // todo unstackChildNode method if dir or virtual column
   squashBiggestChildNode(node: GraphNode): boolean {
     const sortedByHeight = [...node.children].sort((a, b) => b.getFullHeight() - a.getFullHeight());
 
@@ -84,7 +91,6 @@ export class AspectRatioLayout {
         const newRatio = newHeight / newWidth;
 
         // if improved
-        // TODO run until hit aspect ratio or hit the limit
         if (newHeight > 10 && Math.abs(newRatio - this.targetRatio) < Math.abs(this.currentRatio - this.targetRatio)) {
           c.layoutColumns++;
           this.w = newWidth;
@@ -158,6 +164,7 @@ export class AspectRatioLayout {
     return false;
   }
 
+  // if too wide
   stackTwoSmallestChildren(node: GraphNode): boolean {
     if (node.children.length === 1) {
       console.log('too few children, skipping', 'ast' in node ? node.ast.name : 'virtual');

@@ -5,7 +5,7 @@ export type ParentType = GraphNode | null;
 export type BBox = { x: number; y: number; width: number; height: number };
 export type Margin = { top: number; bottom: number; left: number; right: number };
 
-export type GraphModel = {
+export type GraphData = {
   root: DirectoryGraphNode;
   edgesRegistry: Map<IdPath, Edge[]>; // [sourceId]: GraphLink; registry of original links
 };

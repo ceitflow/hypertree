@@ -67,6 +67,7 @@ export class NodeLayout {
 
     root.bbox.x = 0;
     root.bbox.y = 0;
+
     eachBefore(root, (v) => {
       // adjusting for relative positions
       v.children.forEach((c) => {

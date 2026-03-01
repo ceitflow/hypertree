@@ -1,9 +1,9 @@
-import { GraphModel } from '../index';
+import { GraphData } from '../index';
 import { Router } from './router/router';
 import { NodeLayout } from './nodes/node-layout';
 
 export class Layout {
-  constructor(graphModel: GraphModel) {
+  constructor(graphModel: GraphData) {
     // todo main layout controller
     // 1. layout nodes
     // 2. draw links

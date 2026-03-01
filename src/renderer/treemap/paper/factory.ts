@@ -83,17 +83,20 @@ export class Factory {
     return result;
   }
 
-  static createCodeLinks(node: CodeGraphNode) {
-    // todo render link for each segment between visibility nodes
-  }
-
   static createVisibilityVertices(node: DirectoryGraphNode): Graphics[] {
     const radius = 2;
     const result: Graphics[] = [];
-    for (const vertex of node.routeVisibilityGraph.vertices.values()) {
+    const vertices = node.routeVisibilityGraph.vertices;
+    for (const vertex of vertices.values()) {
       const graphic = new Graphics();
       graphic.circle(vertex.x, vertex.y, radius).fill(vertex._debugColor);
       graphic.zIndex = 20;
+      vertex.edges.forEach(edge => {
+        const target = vertices.get(edge.target)!;
+        const link = new Graphics();
+        link.moveTo(vertex.x, vertex.y).lineTo(target.x, target.y).stroke({ width: 1, color: 'orange' });
+        result.push(link);
+      })
       result.push(graphic);
     }
     return result;
@@ -146,7 +149,7 @@ export class Factory {
   private static createCodeNode(node: CodeGraphNode): PaperNode[] {
     const { x, y, width, height } = node.bbox;
     const graphic = new Graphics() as PaperNode;
-    const color = '#866957';
+    const color = '#4499ce';
 
     graphic.rect(0, 0, width, height).fill(color);
 
@@ -170,7 +173,7 @@ export class Factory {
   private static createOtherNode(node: OtherGraphNode): PaperNode[] {
     const { x, y, width, height } = node.bbox;
     const graphic = new Graphics() as PaperNode;
-    const color = '#d39000'; // node.ast.bigFile ? '#adad30' : '#d39000';
+    const color = '#7990a6'; // node.ast.bigFile ? '#adad30' : '#d39000';
 
     graphic.rect(0, 0, width, height).fill(color);
 
@@ -186,7 +189,7 @@ export class Factory {
   private static createDeclarationNode(node: DeclarationGraphNode): PaperNode[] {
     const { x, y, width, height } = node.bbox;
     const graphic = new Graphics() as PaperNode;
-    const color = '#e24c00';
+    const color = '#ff7e5f';
     const result: PaperNode[] = [graphic];
 
     graphic.rect(0, 0, width, height).fill(color);

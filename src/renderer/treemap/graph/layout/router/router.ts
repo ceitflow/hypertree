@@ -1,6 +1,6 @@
-import { Point, VisibilityNode } from '../../edges';
+import { Point, VisibilityEdge, VisibilityNode } from '../../edges';
 import { eachAfter } from '../../../../shared/utils';
-import { GraphModel, GraphNode, GraphNodeEnum, VirtualGraphNode } from '../../nodes';
+import { GraphData, GraphNode, GraphNodeEnum, VirtualGraphNode } from '../../nodes';
 
 type PositionData = {
   prevX: number;
@@ -14,26 +14,37 @@ const containsPoint = (arr: Point[], p: Point) =>
     return Math.floor(a.x) === Math.floor(p.x) && Math.floor(a.y) === Math.floor(p.y);
   });
 
-const getCornerPoints = (child: GraphNode, pos: PositionData) => {
+const getCornerPoints = (child: GraphNode, pos: PositionData, centerY: boolean, centerX: boolean) => {
   const { x, width, y } = child.bbox;
   const { x: cx, y: cy } = child.getCorner();
   const topOffset = (y - pos.prevY) / 2;
   const leftOffset = (x - pos.prevX) / 2;
 
+  let rightX = cx + (pos.lastX - cx) / 2; // row need vertical gutters to be centered
+  if (!centerX) rightX = Math.min(rightX, cx + child.margin.right);
+  let bottomY = cy + (pos.lastY - cy) / 2; // column need horizontals to be centered
+  if (!centerY) bottomY = Math.min(bottomY, cy + child.margin.bottom);
+
   const topLeft = new VisibilityNode(x - leftOffset, y - topOffset);
   const topMiddle = new VisibilityNode(x + width / 2, y - topOffset);
-  const topRight = new VisibilityNode(cx + (pos.lastX - cx) / 2, y - topOffset);
-  const bottomRight = new VisibilityNode(cx + (pos.lastX - cx) / 2, cy + (pos.lastY - cy) / 2);
-  const bottomLeft = new VisibilityNode(x - leftOffset, cy + (pos.lastY - cy) / 2);
+  const topRight = new VisibilityNode(rightX, y - topOffset);
+  const bottomRight = new VisibilityNode(rightX, bottomY);
+  const bottomLeft = new VisibilityNode(x - leftOffset, bottomY);
+
   return { topLeft, topMiddle, topRight, bottomRight, bottomLeft };
 };
 
 export class Router {
+  // TODO assign visibility nodes to CodeFiles
+
   // Creates visibility graph
   //  - first create vertices
   //  - then add edges between them if they are reachable
-  static init(graphModel: GraphModel) {
-    eachAfter(graphModel.root, (dir) => {
+
+  // TODO calculate total flow for all nodes, this will be padding on all sides (and make space for links)
+  static init(graphData: GraphData) {
+
+    eachAfter(graphData.root, (dir) => {
       if (dir.type !== GraphNodeEnum.Directory || !dir.children.length) {
         return;
       }
@@ -71,7 +82,8 @@ export class Router {
               bottom.push(...bot);
             }
           } else {
-            const { topLeft, topMiddle, topRight, bottomRight, bottomLeft } = getCornerPoints(child, posData);
+            const { topLeft, topMiddle, topRight, bottomRight, bottomLeft } = getCornerPoints(child, posData, false, true);
+            // TODO visibility links logic
             graph.vertices.set(topRight.id, topRight);
             graph.vertices.set(bottomRight.id, bottomRight);
 
@@ -112,7 +124,7 @@ export class Router {
             prevTopPoints = bottom;
             right.push(...r);
           } else {
-            const { topLeft, topMiddle, topRight, bottomRight, bottomLeft } = getCornerPoints(child, posData);
+            const { topLeft, topMiddle, topRight, bottomRight, bottomLeft } = getCornerPoints(child, posData, !isLast, false);
             graph.vertices.set(bottomRight.id, bottomRight);
             graph.vertices.set(bottomLeft.id, bottomLeft);
 

@@ -13,8 +13,8 @@ function App() {
 
   return (
     <div className="rootContainer">
-      {/*<TreeMap data={outputData as Directory} />*/}
-      <TreeMap data={MockAstData} />
+      <TreeMap data={outputData as Directory} />
+      {/*<TreeMap data={MockAstData} />*/}
     </div>
   );
 }

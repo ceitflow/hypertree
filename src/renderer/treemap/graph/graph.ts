@@ -2,7 +2,7 @@ import {
   CodeGraphNode,
   DeclarationGraphNode,
   DirectoryGraphNode,
-  GraphModel,
+  GraphData,
   GraphNode,
   OtherGraphNode,
   VirtualGraphNode
@@ -13,7 +13,7 @@ import { Layout } from './layout/layout';
 import { Directory, IdPath, NodeEnum } from '@lib/ast';
 
 export class Graph {
-  model: GraphModel;
+  model: GraphData;
   layout: Layout;
   emit = mitt<{ select: GraphNode | null }>();
 
@@ -22,9 +22,9 @@ export class Graph {
     this.layout = new Layout(this.model);
   }
 
-  private initialize(astRoot: Directory): GraphModel {
+  private initialize(astRoot: Directory): GraphData {
     const root = DirectoryGraphNode.create(null, astRoot);
-    const edges = new Map<IdPath, Edge[]>();
+    const edges = new Map<IdPath, Edge[]>(); // todo from and to, know total traffic for each node
 
     const stack: { dir: Directory; parentNode: GraphNode }[] = [{ dir: astRoot, parentNode: root }];
 
