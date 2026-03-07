@@ -5,7 +5,7 @@ import {
   GraphNodeEnum,
   OtherGraphNode,
   VirtualGraphNode
-} from '../../index';
+} from '../../models';
 
 export class AspectRatioLayout {
   w: number;
@@ -107,15 +107,15 @@ export class AspectRatioLayout {
 
             DeclarationGraphNode.createFromCodeFile(c).forEach((decl) => {
               const addClone = (h: number) => {
-                const cl = DeclarationGraphNode.create(c, decl.ast);
-                cl.bbox = {
-                  x: temp.columnIdx * decl.bbox.width + 1,
+                const clone = DeclarationGraphNode.create(c, decl.ast);
+                clone.bbox = {
+                  x: temp.columnIdx * decl.bbox.width,
                   y: temp.yPos + p.top,
-                  width: cl.bbox.width - 2,
+                  width: clone.bbox.width,
                   height: h
                 };
-                c.children.push(cl);
-                return cl;
+                c.children.push(clone);
+                return clone;
               };
               const { bbox, margin } = decl;
               const totalHeight = bbox.height;
@@ -149,7 +149,7 @@ export class AspectRatioLayout {
             });
           }
           // move all nodes to the right
-          const idx = node.children.indexOf(c);
+          const idx = node.children.indexOf(c as any);
           for (let i = idx + 1; i < node.children.length; i++) {
             node.children[i].bbox.x += deltaWidth;
           }
@@ -218,7 +218,7 @@ export class AspectRatioLayout {
         last.children.forEach((c) => {
           c.bbox.x = 0;
           c.bbox.y = prevLast.getFullHeight();
-          prevLast.children.push(c);
+          prevLast.children.push(c as any);
           prevLast.fitSizeToChildren();
         });
       } else {

@@ -5,10 +5,10 @@ import {
   GraphData,
   GraphNode,
   OtherGraphNode,
-  VirtualGraphNode
-} from './nodes';
+  VirtualGraphNode,
+  Edge
+} from './models';
 import mitt from 'mitt';
-import { Edge } from './edges';
 import { Layout } from './layout/layout';
 import { Directory, IdPath, NodeEnum } from '@lib/ast';
 
@@ -26,7 +26,7 @@ export class Graph {
     const root = DirectoryGraphNode.create(null, astRoot);
     const edges = new Map<IdPath, Edge[]>(); // todo from and to, know total traffic for each node
 
-    const stack: { dir: Directory; parentNode: GraphNode }[] = [{ dir: astRoot, parentNode: root }];
+    const stack: { dir: Directory; parentNode: DirectoryGraphNode }[] = [{ dir: astRoot, parentNode: root }];
 
     // copy ast tree into graph node tree
     while (stack.length > 0) {

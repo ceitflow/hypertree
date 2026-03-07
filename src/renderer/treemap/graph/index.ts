@@ -1,2 +1,2 @@
 export * from './graph';
-export * from './nodes';
+export * from './models';

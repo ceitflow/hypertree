@@ -1,22 +1,23 @@
+import { eachAfter, eachBefore } from '../../utils';
+import {  GraphNode, GraphNodeEnum } from '../../index';
 import { AspectRatioLayout } from './aspect-ratio-layout';
-import { eachAfter, eachBefore } from '../../../../shared/utils';
-import { DeclarationGraphNode, GraphNode, GraphNodeEnum } from '../../index';
 
 export class NodeLayout {
   private static targetRatio = 0.844;
 
   static init(root: GraphNode) {
+
+    // todo create visibility graph too
     eachAfter(root, (v) => {
       const { type, bbox, margin, padding, children } = v;
 
       switch (type) {
-        case GraphNodeEnum.Code: {
+        case GraphNodeEnum.Code: { // todo extract to fn layoutCodeFile(colCount: number) ?
           // layout declarations in a single column
           let tempY = padding.top;
           let marginsAddition = 0; // margins of declarations used to adjust height of code file
 
-          children.forEach((d) => {
-            const decl = d as DeclarationGraphNode;
+          children.forEach((decl) => {
             decl.bbox.x = padding.left;
             decl.bbox.y = tempY;
             tempY += decl.bbox.height + decl.margin.bottom;
@@ -37,9 +38,8 @@ export class NodeLayout {
             margin.left = m;
             padding.top = m;
           }
-          // TODO inverse margin (large get small, small get large)
           // todo polygon bboxes, will allow more compact layout
-          // children.sort((a, b) => b.area - a.area);
+          children.sort((a, b) => b.area - a.area);
 
           // layout in a single row
           let totalWidth = padding.left;
@@ -49,10 +49,7 @@ export class NodeLayout {
             child.bbox.x = totalWidth + child.margin.left;
             child.bbox.y = padding.top + child.margin.top;
             totalWidth += child.getFullWidth();
-            const height = child.getFullHeight();
-            if (height > totalHeight) {
-              totalHeight = height;
-            }
+            totalHeight = Math.max(totalHeight, child.getFullHeight());
           });
           totalWidth += padding.right;
           totalHeight += padding.top + padding.bottom;

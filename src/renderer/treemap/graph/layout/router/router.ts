@@ -1,6 +1,13 @@
-import { Point, VisibilityEdge, VisibilityNode } from '../../edges';
-import { eachAfter } from '../../../../shared/utils';
-import { GraphData, GraphNode, GraphNodeEnum, VirtualGraphNode } from '../../nodes';
+import {
+  DirectoryGraphNode,
+  GraphData,
+  GraphNode,
+  GraphNodeEnum,
+  Point,
+  VirtualGraphNode,
+  VisibilityNode
+} from '../../models';
+import { eachAfter } from '../../utils';
 
 type PositionData = {
   prevX: number;
@@ -9,10 +16,11 @@ type PositionData = {
   lastY: number;
 };
 
-const containsPoint = (arr: Point[], p: Point) =>
-  arr.find((a) => {
+const containsPoint = (arr: Point[], p: Point) => {
+  return arr.find((a) => {
     return Math.floor(a.x) === Math.floor(p.x) && Math.floor(a.y) === Math.floor(p.y);
   });
+};
 
 const getCornerPoints = (child: GraphNode, pos: PositionData, centerY: boolean, centerX: boolean) => {
   const { x, width, y } = child.bbox;
@@ -35,16 +43,16 @@ const getCornerPoints = (child: GraphNode, pos: PositionData, centerY: boolean, 
 };
 
 export class Router {
-  // TODO assign visibility nodes to CodeFiles
+  // Todo force directed layout (or sweep line), push nodes with links (visibility vertices too)
 
   // Creates visibility graph
   //  - first create vertices
   //  - then add edges between them if they are reachable
 
-  // TODO calculate total flow for all nodes, this will be padding on all sides (and make space for links)
-  static init(graphData: GraphData) {
 
-    eachAfter(graphData.root, (dir) => {
+
+  static init({ root }: GraphData) {
+    eachAfter(root, (dir) => {
       if (dir.type !== GraphNodeEnum.Directory || !dir.children.length) {
         return;
       }
@@ -56,7 +64,7 @@ export class Router {
 
       buildRow(dir, { prevX: b.x, prevY: b.y, lastX: dir.getCorner().x, lastY: dir.getCorner().y });
 
-      function buildRow({ children }: GraphNode, pos: PositionData): { bottom: Point[]; right: Point[] } {
+      function buildRow({ children }: DirectoryGraphNode | VirtualGraphNode, pos: PositionData): { bottom: Point[]; right: Point[] } {
         const bottom: Point[] = [];
         let prevRightPoints: Point[] = []; // for comparing and avoiding adding duplicates
 
@@ -81,19 +89,32 @@ export class Router {
               prevRightPoints = right;
               bottom.push(...bot);
             }
-          } else {
-            const { topLeft, topMiddle, topRight, bottomRight, bottomLeft } = getCornerPoints(child, posData, false, true);
-            // TODO visibility links logic
-            graph.vertices.set(topRight.id, topRight);
-            graph.vertices.set(bottomRight.id, bottomRight);
-
-            if (!containsPoint(prevRightPoints, topLeft)) graph.vertices.set(topLeft.id, topLeft);
-            if (!containsPoint(prevRightPoints, bottomLeft)) graph.vertices.set(bottomLeft.id, bottomLeft);
-            if (child.type === GraphNodeEnum.Directory) graph.vertices.set(topMiddle.id, topMiddle);
-
-            bottom.push(bottomLeft, bottomRight.toPoint());
-            prevRightPoints = [topRight.toPoint(), bottomRight.toPoint()];
+            continue;
           }
+
+          const { topLeft, topMiddle, topRight, bottomRight, bottomLeft } = getCornerPoints(
+            child,
+            posData,
+            false,
+            true
+          );
+          // TODO visibility links logic
+          graph.vertices.set(topRight.id, topRight);
+          graph.vertices.set(bottomRight.id, bottomRight);
+          // topRight.edges.push(new VisibilityEdge(topRight.id, bottomRight.id));
+
+          if (!containsPoint(prevRightPoints, topLeft)) {
+            graph.vertices.set(topLeft.id, topLeft);
+          }
+          if (!containsPoint(prevRightPoints, bottomLeft)) {
+            graph.vertices.set(bottomLeft.id, bottomLeft);
+          }
+          if (child.type === GraphNodeEnum.Directory) {
+            graph.vertices.set(topMiddle.id, topMiddle);
+          }
+
+          bottom.push(bottomLeft, bottomRight.toPoint());
+          prevRightPoints = [topRight.toPoint(), bottomRight.toPoint()];
         }
         return { bottom, right: prevRightPoints };
       }
@@ -124,13 +145,24 @@ export class Router {
             prevTopPoints = bottom;
             right.push(...r);
           } else {
-            const { topLeft, topMiddle, topRight, bottomRight, bottomLeft } = getCornerPoints(child, posData, !isLast, false);
+            const { topLeft, topMiddle, topRight, bottomRight, bottomLeft } = getCornerPoints(
+              child,
+              posData,
+              !isLast,
+              false
+            );
             graph.vertices.set(bottomRight.id, bottomRight);
             graph.vertices.set(bottomLeft.id, bottomLeft);
 
-            if (!containsPoint(prevTopPoints, topLeft)) graph.vertices.set(topLeft.id, topLeft);
-            if (!containsPoint(prevTopPoints, topRight)) graph.vertices.set(topRight.id, topRight);
-            if (child.type === GraphNodeEnum.Directory) graph.vertices.set(topMiddle.id, topMiddle);
+            if (!containsPoint(prevTopPoints, topLeft)) {
+              graph.vertices.set(topLeft.id, topLeft);
+            }
+            if (!containsPoint(prevTopPoints, topRight)) {
+              graph.vertices.set(topRight.id, topRight);
+            }
+            if (child.type === GraphNodeEnum.Directory) {
+              graph.vertices.set(topMiddle.id, topMiddle);
+            }
 
             right.push(topRight, bottomRight.toPoint());
             prevTopPoints = [bottomRight.toPoint(), bottomLeft.toPoint()];

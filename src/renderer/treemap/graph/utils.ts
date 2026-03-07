@@ -1,4 +1,4 @@
-import { GraphNode } from '../treemap/graph';
+import { GraphNode } from './models';
 
 export function eachAfter(root: GraphNode, callback: (node: GraphNode) => void): void {
   const nodes: GraphNode[] = [root];

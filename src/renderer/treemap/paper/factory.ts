@@ -206,7 +206,7 @@ export class Factory {
   private static createVirtualNode(node: VirtualGraphNode): PaperNode[] {
     const { x, y, width, height } = node.bbox;
     const graphic = new Graphics() as PaperNode;
-    const color = '#e4f1ffaa';
+    const color = '#e4f1ff00';
 
     graphic.rect(0, 0, width, height).stroke({ width: 1, color });
 
