@@ -1,6 +1,6 @@
 import './main.css';
 import { Directory } from '@lib/ast';
-import { TreeMap } from './treemap/TreeMap';
+import { Visualization } from './visualization/Visualization';
 import outputData from '../../resources/output.json';
 import { MockAstData } from './testing/mock-ast-data';
 
@@ -13,7 +13,7 @@ function App() {
 
   return (
     <div className="rootContainer">
-      <TreeMap data={outputData as Directory} />
+      <Visualization data={outputData as Directory} />
       {/*<TreeMap data={MockAstData} />*/}
     </div>
   );

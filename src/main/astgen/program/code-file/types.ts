@@ -6,6 +6,7 @@ export type TsNode =
   | ts.ObjectLiteralExpression
   | ts.ClassDeclaration
   | ts.FunctionDeclaration
+  | ts.ArrowFunction
   | ts.InterfaceDeclaration
   | ts.EnumDeclaration
   | ts.TypeAliasDeclaration

@@ -7,7 +7,6 @@ export class NodeLayout {
 
   static init(root: GraphNode) {
 
-    // todo create visibility graph too
     eachAfter(root, (v) => {
       const { type, bbox, margin, padding, children } = v;
 

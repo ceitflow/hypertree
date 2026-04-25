@@ -1,4 +1,4 @@
-import ts from 'typescript';
+import ts, { SyntaxKind } from 'typescript';
 import path from 'node:path';
 import { Analyzer, IO } from '../../analyzer';
 import { CodeFile, IdPath, NodeEnum } from '@lib/ast';
@@ -146,7 +146,8 @@ export class CodeFileBuilder {
       ts.isFunctionDeclaration(node) ||
       ts.isEnumDeclaration(node) ||
       ts.isInterfaceDeclaration(node) ||
-      ts.isTypeAliasDeclaration(node)
+      ts.isTypeAliasDeclaration(node) ||
+      ts.isArrowFunction(node)
     ) {
       const declaration = DeclarationFactory(node, this.analyzer, this.code.id, this.code.depth + 1);
       this.code.definitions.push(declaration);
@@ -183,7 +184,10 @@ export class CodeFileBuilder {
       // export const a = ..., b = ...;
       // const isExport = node.modifiers?.some((m) => m.kind === ts.SyntaxKind.ExportKeyword);
       node.declarationList.declarations.forEach((d) => {
-        this.pullStatement(d);
+        if (d.initializer?.kind === SyntaxKind.ArrowFunction) {
+          debugger;
+        }
+        this.pullStatement(d.initializer || d.name);
       });
       return;
     }

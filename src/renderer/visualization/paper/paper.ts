@@ -58,6 +58,24 @@ export class Paper {
     this.screen.controller.zoom.zoomToFit();
   }
 
+  private render(root: GraphNode) {
+    const container = this.container.paper;
+    container.removeChildren();
+    const stack = [root];
+
+    while (stack.length) {
+      const n = stack.pop()!;
+      stack.push(...n.children);
+      const nodes = Factory.createNode(n);
+      const labels = Factory.createLabels(n); // todo if declaration split then show '1/2 ...'
+      container.addChild(...nodes, ...labels);
+      if (n.type === GraphNodeEnum.Directory) {
+        // debug only
+        Factory.createVisibilityVertices(n).forEach(r => container.addChild(r));
+      }
+    }
+  }
+
   private addEvents() {
     // scroller
     const { background, paper } = this.container;
@@ -102,23 +120,5 @@ export class Paper {
       });
       c.on('wheel', (e) => mouse.wheel(e as WheelEvent));
     });
-  }
-
-  private render(root: GraphNode) {
-    const container = this.container.paper;
-    container.removeChildren();
-    const stack = [root];
-
-    while (stack.length) {
-      const n = stack.pop()!;
-      stack.push(...n.children);
-      const nodes = Factory.createNode(n);
-      const labels = Factory.createLabels(n); // todo if declaration split then show '1/2 ...'
-      container.addChild(...nodes, ...labels);
-      if (n.type === GraphNodeEnum.Directory) {
-        // debug only
-        Factory.createVisibilityVertices(n).forEach(r => container.addChild(r));
-      }
-    }
   }
 }

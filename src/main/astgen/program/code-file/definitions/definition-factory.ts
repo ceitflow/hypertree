@@ -108,6 +108,23 @@ export const DeclarationFactory = (
         }
       };
     }
+    case ts.SyntaxKind.ArrowFunction: {
+      const n = node as ts.ArrowFunction;
+      const name = n.parent.kind === ts.SyntaxKind.VariableDeclaration ? (n.parent as ts.VariableDeclaration).name['text'] || '' : '';
+      return {
+        id,
+        type: NodeEnum.Declaration,
+        modifier: DeclarationModifier.None,
+        name,
+        depth,
+        loc: calculateLoc(n),
+        token: {
+          category: DeclarationEnum.Function,
+          async: false,
+          generator: false
+        }
+      }
+    }
     case ts.SyntaxKind.InterfaceDeclaration: {
       const n = node as ts.InterfaceDeclaration;
       return {

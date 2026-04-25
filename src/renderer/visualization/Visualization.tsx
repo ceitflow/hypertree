@@ -1,7 +1,7 @@
 import { Graph } from './graph';
 import { Directory } from '@lib/ast';
 import { Paper } from './paper/paper';
-import styles from './TreeMap.module.css';
+import styles from './Visualization.module.css';
 import { Engine } from '../shared/engine';
 import { Inspector } from './inspector/Inspector';
 import { useEffect, useRef, useState } from 'react';
@@ -10,7 +10,7 @@ type Props = {
   data: Directory;
 };
 
-export const TreeMap = ({ data }: Props) => {
+export const Visualization = ({ data }: Props) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const [graph, setGraph] = useState<Graph | null>(null);
 
@@ -31,7 +31,7 @@ export const TreeMap = ({ data }: Props) => {
   }, [data]);
 
   return (
-    <div className={styles.treemapContainer}>
+    <div className={styles.visualizationContainer}>
       {graph && <Inspector graph={graph} />}
       <div ref={mapRef} className={styles.diagram} />
     </div>
