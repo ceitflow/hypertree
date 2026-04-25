@@ -1,4 +1,4 @@
-import { CodeFile, DeclarationEnum, DeclarationNode, Directory, NodeEnum, OtherFile } from '@lib/ast';
+import { CodeFile, DeclarationEnum, DeclarationModifier, DeclarationNode, Directory, NodeEnum, OtherFile } from '@lib/ast';
 
 export class AstFactory {
   static createCodeFile({
@@ -8,11 +8,8 @@ export class AstFactory {
     loc = 1,
     kind = 'TS',
     isExternalFile,
-    defaultExport,
-    exports = [],
-    emptyImports = [],
     imports = [],
-    reexports = []
+    definitions = []
   }: Partial<CodeFile>): CodeFile {
     const result: CodeFile = {
       type: NodeEnum.Code,
@@ -22,16 +19,11 @@ export class AstFactory {
       depth,
       loc,
       kind,
-      exports,
-      emptyImports,
       imports,
-      reexports
+      definitions
     };
     if (isExternalFile) {
       result.isExternalFile = true;
-    }
-    if (defaultExport) {
-      result.defaultExport = defaultExport;
     }
     return result;
   }
@@ -63,7 +55,7 @@ export class AstFactory {
     name = 'name',
     depth = 1,
     loc = 1,
-    referencedImportTokens = [],
+    modifier = DeclarationModifier.None,
     token = { category: DeclarationEnum.Unknown, type: 'unknown' }
   }: Partial<DeclarationNode>): DeclarationNode {
     return {
@@ -72,7 +64,7 @@ export class AstFactory {
       name,
       depth,
       loc,
-      referencedImportTokens,
+      modifier,
       token
     };
   }

@@ -8,7 +8,7 @@ export enum NodeEnum {
 }
 
 export type BaseNode<T extends NodeEnum> = {
-  id: IdPath;
+  id: IdPath; // path relative to respository source
   type: T;
   name: string,
   depth: number;

@@ -1,109 +1,106 @@
-import {
-  AsExpression,
-  CallExpression,
-  ClassDeclaration,
-  EnumDeclaration,
-  ExportSpecifier,
-  FunctionDeclaration,
-  Identifier,
-  ImportDeclaration,
-  InterfaceDeclaration,
-  isNamedImports,
-  isNamespaceImport,
-  ObjectLiteralExpression,
-  SyntaxKind,
-  TypeAliasDeclaration
-} from 'typescript';
-import {
-  CodeFileEmptyImport,
-  CodeFileImport,
-  CodeFileReExport,
-  DeclarationEnum,
-  DeclarationNode,
-  IdPath,
-  NodeEnum,
-} from '@lib/ast';
-import { Analyzer } from '../../analyzer';
-import { CodeFileBuilder } from './code-file-builder';
-import { CacheExportItem, CacheReExportItem } from './code-file-cache';
+import ts from 'typescript';
+import { TsNode } from '../types';
+import { Analyzer } from '../../../analyzer';
+import { DeclarationEnum, DeclarationModifier, DeclarationNode, IdPath, NodeEnum } from '@lib/ast';
 
-// create Export, Import and Reexport types from TS Nodes
-export const ExportFactory = (
-  node: CacheExportItem['node'],
+const calculateLoc = (node: TsNode): number => {
+  const sourceFile = node.getSourceFile();
+  const { line: startLine } = sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile));
+  const { line: endLine } = sourceFile.getLineAndCharacterOfPosition(node.end);
+  return endLine - startLine + 1;
+};
+
+const createUnknownDeclaration = (id: string, name: string, depth: number): DeclarationNode => ({
+  id,
+  type: NodeEnum.Declaration,
+  name,
+  depth,
+  loc: 0,
+  modifier: DeclarationModifier.None,
+  token: {
+    category: DeclarationEnum.Unknown,
+    type: ''
+  }
+});
+
+export const DeclarationFactory = (
+  node: TsNode,
   analyzer: Analyzer,
   id: IdPath,
   depth: number
-): DeclarationNode | undefined => {
+): DeclarationNode => {
+  const { isExport, isDefault } = analyzer.getExportDefaultFlags(node);
   switch (node.kind) {
-    case SyntaxKind.Identifier: {
-      const n = node as Identifier;
+    case ts.SyntaxKind.Identifier: {
+      const n = node as ts.Identifier;
       return {
         id,
         type: NodeEnum.Declaration,
+        modifier: DeclarationModifier.None,
         name: n.text,
         depth,
         loc: calculateLoc(n),
-        referencedImportTokens: [],
         token: {
           category: DeclarationEnum.Primitive,
           type: analyzer.evaluateType(node)?.astType as any // todo might not work without pointing to parent?
         }
       };
     }
-    case SyntaxKind.ExportSpecifier: {
-      const n = node as ExportSpecifier;
+    case ts.SyntaxKind.ExportSpecifier: {
+      const n = node as ts.ExportSpecifier;
+      const originalName = n.propertyName?.text; // defined if 'import { original as alias }'
       return {
         id,
         type: NodeEnum.Declaration,
+        modifier: DeclarationModifier.None,
         name: n.name.text,
         depth,
         loc: calculateLoc(n),
-        referencedImportTokens: [],
         token: {
           category: analyzer.evaluateType(node)?.category as any,
-          type: analyzer.evaluateType(n.name as Identifier)?.category as any
+          type: analyzer.evaluateType(n.name as ts.Identifier)?.category as any
         }
       };
     }
-    case SyntaxKind.ObjectLiteralExpression: {
-      const n = node as ObjectLiteralExpression;
+    case ts.SyntaxKind.ObjectLiteralExpression: {
+      const n = node as ts.ObjectLiteralExpression;
       return {
         id,
         type: NodeEnum.Declaration,
+        modifier: DeclarationModifier.None,
         name: '_',
         depth,
         loc: calculateLoc(n),
-        referencedImportTokens: [],
         token: {
           category: DeclarationEnum.Object,
           type: 'object'
         }
       };
     }
-    case SyntaxKind.ClassDeclaration: {
-      const n = node as ClassDeclaration;
+    case ts.SyntaxKind.ClassDeclaration: {
+      const n = node as ts.ClassDeclaration;
       return {
         id,
         type: NodeEnum.Declaration,
+        modifier: DeclarationModifier.None,
         name: n.name?.text as string,
         depth,
         loc: calculateLoc(n),
-        referencedImportTokens: [],
         token: {
           category: DeclarationEnum.Class
           // todo metadata extract using analyzer
         }
       };
     }
-    case SyntaxKind.FunctionDeclaration: {
-      const n = node as FunctionDeclaration;
+    case ts.SyntaxKind.FunctionDeclaration: {
+      const n = node as ts.FunctionDeclaration;
       return {
         id,
         type: NodeEnum.Declaration,
+        modifier: DeclarationModifier.None,
         name: n.name?.text as string,
         depth,
         loc: calculateLoc(n),
-        referencedImportTokens: [],
         token: {
           category: DeclarationEnum.Function,
           async: false,
@@ -111,45 +108,45 @@ export const ExportFactory = (
         }
       };
     }
-    case SyntaxKind.InterfaceDeclaration: {
-      const n = node as InterfaceDeclaration;
+    case ts.SyntaxKind.InterfaceDeclaration: {
+      const n = node as ts.InterfaceDeclaration;
       return {
         id,
         type: NodeEnum.Declaration,
+        modifier: DeclarationModifier.None,
         name: n.name.text,
         depth,
         loc: calculateLoc(n),
-        referencedImportTokens: [],
         token: {
           category: DeclarationEnum.TsType,
           type: 'interface'
         }
       };
     }
-    case SyntaxKind.EnumDeclaration: {
-      const n = node as EnumDeclaration;
+    case ts.SyntaxKind.EnumDeclaration: {
+      const n = node as ts.EnumDeclaration;
       return {
         id,
         type: NodeEnum.Declaration,
+        modifier: DeclarationModifier.None,
         name: n.name.text,
         depth,
         loc: calculateLoc(n),
-        referencedImportTokens: [],
         token: {
           category: DeclarationEnum.TsType,
           type: 'enum'
         }
       };
     }
-    case SyntaxKind.TypeAliasDeclaration: {
-      const n = node as TypeAliasDeclaration;
+    case ts.SyntaxKind.TypeAliasDeclaration: {
+      const n = node as ts.TypeAliasDeclaration;
       return {
         id,
         type: NodeEnum.Declaration,
+        modifier: DeclarationModifier.None,
         name: n.name.text,
         depth,
         loc: calculateLoc(n),
-        referencedImportTokens: [],
         token: {
           category: DeclarationEnum.TsType,
           type: 'typeAlias'
@@ -158,118 +155,36 @@ export const ExportFactory = (
     }
 
     // export default defineConfig()
-    case SyntaxKind.CallExpression: {
-      const n = node as CallExpression;
+    case ts.SyntaxKind.CallExpression: {
+      const n = node as ts.CallExpression;
       if (!analyzer.getSymbol(n.parent)) {
         // @ts-expect-error missing typescript type on default export, so make it a generic object
         n['kind'] = SyntaxKind.ObjectLiteralExpression;
-        return ExportFactory(n, analyzer, id, depth);
+        return DeclarationFactory(n, analyzer, id, depth);
       }
       const declaration = analyzer.getCallExpressionDeclaration(n);
       if (!declaration) {
-        console.error(`Unsupported declaration type: ${SyntaxKind[n['kind']]}`);
-        return;
+        console.error(`Unsupported declaration type: ${ts.SyntaxKind[n['kind']]}`);
+        return createUnknownDeclaration(id, '', depth);
       }
-      return ExportFactory(declaration as any, analyzer, id, depth); // feed back the return value of call expression
+      return DeclarationFactory(declaration as any, analyzer, id, depth); // feed back the return value of call expression
     }
 
     // export default {} as Something;
-    case SyntaxKind.AsExpression: {
-      const n = node as AsExpression;
-      return ExportFactory(n.expression as any, analyzer, id, depth);
+    case ts.SyntaxKind.AsExpression: {
+      const n = node as ts.AsExpression;
+      return DeclarationFactory(n.expression as any, analyzer, id, depth);
     }
 
-    default:
-      console.error(`Unsupported declaration type: ${SyntaxKind[node['kind']]}`);
+    default: {
+      console.error(`Unsupported declaration type: ${ts.SyntaxKind[node['kind']]}`);
+      return createUnknownDeclaration(id, '', depth);
+    }
   }
 };
 
-const calculateLoc = (node: CacheExportItem['node']): number => {
-  const sourceFile = node.getSourceFile();
-  const { line: startLine } = sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile));
-  const { line: endLine } = sourceFile.getLineAndCharacterOfPosition(node.end);
-  return endLine - startLine + 1;
-};
-
-export const EmptyImportFactory = (node: ImportDeclaration, analyzer: Analyzer): CodeFileEmptyImport => {
-  const { resolvedPath, isExternal } = analyzer.getResolvedImportPath(node);
-  // (!node.importClause) No import clause case (e.g., import './side-effects')
-  return {
-    type: 'empty',
-    from: resolvedPath,
-    isExternal
-  };
-};
-
-export const ImportFactory = (
-  node: ImportDeclaration,
-  analyzer: Analyzer,
-  fromNode: CodeFileBuilder
-): CodeFileImport[] => {
-  const result: CodeFileImport[] = [];
-  const importClause = node.importClause;
-  const namedBindings = importClause?.namedBindings;
-  const { resolvedPath, isExternal } = analyzer.getResolvedImportPath(node);
-
-  if (!importClause) {
-    throw new Error('Cannot build import token without from path');
-  }
-
-  // import default from '..'
-  // Note: can be mixed default and named specifiers
-  if (importClause.name) {
-    result.push({
-      from: resolvedPath,
-      token: {
-        isDefault: true,
-        name: node.importClause!.name!.text,
-        pathToDeclaration: isExternal ? resolvedPath : analyzer.getPathToOriginalNode(importClause.name)
-      },
-      isExternal
-    });
-  }
-
-  // import: import * as name from '..'
-  if (namedBindings && isNamespaceImport(namedBindings)) {
-    fromNode.fileExports.forEach((ex) =>
-      result.push({
-        from: resolvedPath,
-        token: {
-          isDefault: false,
-          name: ex.name,
-          pathToDeclaration: resolvedPath
-        },
-        isExternal
-      })
-    );
-    fromNode.fileReExports.forEach((re) =>
-      result.push({
-        from: resolvedPath,
-        token: { ...re.token },
-        isExternal
-      })
-    );
-  }
-
-  // import { a, b } from '..'
-  if (namedBindings && isNamedImports(namedBindings))
-    namedBindings.elements.forEach((element) => {
-      result.push({
-        from: resolvedPath,
-        token: {
-          isDefault: false,
-          name: element.name.text,
-          originalName: element.propertyName?.text,
-          pathToDeclaration: isExternal ? resolvedPath : analyzer.getPathToOriginalNode(element.name)
-        },
-        isExternal
-      });
-    });
-
-  return result;
-};
-
-export const ReexportFactory = (
+/*
+/*export const ReexportFactory = (
   cached: CacheReExportItem,
   analyzer: Analyzer,
   fromNode: CodeFileBuilder
@@ -362,4 +277,4 @@ export const ReexportFactory = (
     }
   }
   return result;
-};
+};*/

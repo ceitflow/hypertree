@@ -17,7 +17,7 @@ export const MockAstData = AstFactory.createDir({
           name: 'Five.ts',
           depth: 3,
           loc: 300,
-          exports: [
+          definitions: [
             AstFactory.createDeclaration({
               id: 'five/0',
               depth: 4,
@@ -32,7 +32,7 @@ export const MockAstData = AstFactory.createDir({
           name: 'Five.ts',
           depth: 3,
           loc: 300,
-          exports: [
+          definitions: [
             AstFactory.createDeclaration({
               id: 'five/0',
               depth: 4,
@@ -55,7 +55,7 @@ export const MockAstData = AstFactory.createDir({
           name: 'Five.ts',
           depth: 3,
           loc: 300,
-          exports: [
+          definitions: [
             AstFactory.createDeclaration({
               id: 'five/0',
               depth: 4,
@@ -70,7 +70,7 @@ export const MockAstData = AstFactory.createDir({
           name: 'Five.ts',
           depth: 3,
           loc: 300,
-          exports: [
+          definitions: [
             AstFactory.createDeclaration({
               id: 'five/0',
               depth: 4,
@@ -85,7 +85,7 @@ export const MockAstData = AstFactory.createDir({
           name: 'Five.ts',
           depth: 3,
           loc: 300,
-          exports: [
+          definitions: [
             AstFactory.createDeclaration({
               id: 'five/0',
               depth: 4,
@@ -105,7 +105,7 @@ export const MockAstData = AstFactory.createDir({
       name: 'Five.ts',
       depth: 3,
       loc: 300,
-      exports: [
+      definitions: [
         AstFactory.createDeclaration({
           id: 'five/0',
           depth: 4,
@@ -120,7 +120,7 @@ export const MockAstData = AstFactory.createDir({
       name: 'Five.ts',
       depth: 3,
       loc: 300,
-      exports: [
+      definitions: [
         AstFactory.createDeclaration({
           id: 'five/0',
           depth: 4,

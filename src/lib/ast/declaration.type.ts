@@ -1,15 +1,23 @@
 import { NodeEnum, BaseNode } from './id.type';
 
+export enum DeclarationModifier {
+  None,
+  Export,
+  Reexport
+}
+
 export type DeclarationNode = BaseNode<NodeEnum.Declaration> & {
   loc: number;
-  referencedImportTokens: string[];
-  token: DeclarationClass
+  // referencedImportTokens: string[];
+  modifier: DeclarationModifier;
+  token:
+    | DeclarationClass
     | DeclarationFunction
     | DeclarationPrimitive
     | DeclarationTSType
     | DeclarationObject
     | DeclarationUnknown;
-}
+};
 
 export type DeclarationClass = {
   category: DeclarationEnum.Class;
@@ -17,7 +25,7 @@ export type DeclarationClass = {
   implements?: string[];
   methods?: DeclarationFunction[];
   properties?: string[];
-}
+};
 
 export type DeclarationFunction = {
   category: DeclarationEnum.Function;
@@ -26,27 +34,28 @@ export type DeclarationFunction = {
   async: boolean;
   generator: boolean;
   // pure: boolean
-}
+};
 
 export type DeclarationPrimitive = {
   category: DeclarationEnum.Primitive;
   type: PrimitiveEnum;
-}
+};
 
 export type DeclarationTSType = {
   category: DeclarationEnum.TsType;
   type: 'interface' | 'typeAlias' | 'enum';
-}
+};
 
 export type DeclarationObject = {
   category: DeclarationEnum.Object;
   type: any;
-}
+};
 
-export type DeclarationUnknown = { // fallback
+export type DeclarationUnknown = {
+  // fallback
   category: DeclarationEnum.Unknown;
   type: string;
-}
+};
 
 export enum DeclarationEnum {
   Class = 'class',
@@ -54,7 +63,7 @@ export enum DeclarationEnum {
   Primitive = 'primitive',
   TsType = 'tsType',
   Object = 'object',
-  Unknown = 'unknown',
+  Unknown = 'unknown'
 }
 
 export enum PrimitiveEnum {
@@ -65,5 +74,5 @@ export enum PrimitiveEnum {
   BigInt,
   String,
   Symbol,
-  Array,
+  Array
 }

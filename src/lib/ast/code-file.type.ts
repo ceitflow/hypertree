@@ -6,39 +6,21 @@ export type CodeFile = BaseNode<NodeEnum.Code> & {
   isExternalFile: boolean; // node_modules
   loc: number;
   kind: keyof typeof ScriptKind;
-  defaultExport?: DeclarationNode;
-  exports: DeclarationNode[];
-  emptyImports: CodeFileEmptyImport[];
   imports: CodeFileImport[]; // add importGroups (for knowing what was in each import together)
-  reexports: CodeFileReExport[];
+  definitions: DeclarationNode[];
+  // todo support import fs = require("fs"); (is a different ast node in tsc)
 }
 
 export type CodeFileImport = { // todo split import by types, have shared BaseImport type with common properties
   // import { A as B } from ''
   // import default from ''
   from: IdPath;
-  token: {
+  // empty i.e. import from './styles.css'
+  token: 'empty' | {
     isDefault: boolean,
     name: string,
     originalName?: string,
     pathToDeclaration: IdPath
   }
   isExternal: boolean;
-}
-
-export type CodeFileEmptyImport = {
-  // import from './styles.css'
-  type: 'empty';
-  from: IdPath;
-  isExternal: boolean;
-}
-
-export type CodeFileReExport = {
-  from: IdPath;
-  token: {
-    isDefault: boolean;
-    name: string; // (export * ...) is split to this individual reexports, so it always has a name
-    originalName?: string; // if alias // todo rename to identifier
-    pathToDeclaration: IdPath;
-  }
 }

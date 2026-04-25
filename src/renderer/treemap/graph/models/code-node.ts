@@ -61,6 +61,6 @@ export class DeclarationGraphNode extends GraphNodeBase {
   }
 
   static createFromCodeFile(file: CodeGraphNode): DeclarationGraphNode[] {
-    return file.ast.exports.map((e) => DeclarationGraphNode.create(file, e));
+    return file.ast.definitions.map((e) => DeclarationGraphNode.create(file, e));
   }
 }

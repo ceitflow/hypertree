@@ -1,5 +1,5 @@
-import { Directory, IdPath, NodeEnum } from '@lib/ast';
 import { IO } from '../../analyzer';
+import { Directory, IdPath, NodeEnum } from '@lib/ast';
 
 export const CreateDirectory = (path: IdPath, depth: number): Directory => {
   const osSeparator = IO.separator;

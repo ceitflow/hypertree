@@ -1,4 +1,4 @@
-import {
+import ts, {
   CallExpression,
   createSourceFile,
   ExportDeclaration,
@@ -43,7 +43,9 @@ export class Analyzer {
     this.sourceFileIds.push(id);
   }
 
-  getProgramSrcPath = () => this.srcPath;
+  getProgramSrcPath() {
+    return this.srcPath;
+  }
 
   isExternalFile(sourceFile: SourceFile): boolean {
     return !this.sourceFileIds.find(n => n.endsWith(sourceFile.fileName));
@@ -169,5 +171,12 @@ export class Analyzer {
       }
     }
     return { astType: 'Unknown', category: 'Unknown' };
+  }
+
+  getExportDefaultFlags(node: ts.Node): { isExport: boolean; isDefault: boolean } {
+    const flags = ts.getCombinedModifierFlags(node as ts.Declaration);
+    const isExport = (flags & ts.ModifierFlags.Export) !== 0;
+    const isDefault = (flags & ts.ModifierFlags.Default) !== 0;
+    return { isExport, isDefault };
   }
 }

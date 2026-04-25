@@ -1,6 +1,6 @@
 import { ipcMain } from 'electron';
-import { readFile } from 'fs/promises';
 import { IO } from './astgen/analyzer';
+import { readFile } from 'fs/promises';
 import { AstGen } from './astgen/astgen';
 
 export function main() {
@@ -11,5 +11,17 @@ export function main() {
   ipcMain.handle('api:readGraph', async (): Promise<Record<string, unknown>> => {
     return {};
   });
-  // AstGen();
+
+  // /Users/ceitflow/WebstormProjects/koia-adminflow/adminflow
+  // /Users/ceitflow/WebstormProjects/m3/coplan-visualizer
+  // /Users/ceitflow/WebstormProjects/hypertree/graphkit-test-repos/angular/packages
+  // /Users/ceitflow/WebstormProjects/hypertree/graphkit-test-repos/vscode/src
+  // /Users/ceitflow/WebstormProjects/medusa/my-medusa-store-storefront
+  // /Users/ceitflow/WebstormProjects/hypertree/graphkit-test-repos/vue-main
+  // /Users/ceitflow/WebstormProjects/paymentSavvy/chatbot-frontend
+  // /Users/ceitflow/WebstormProjects/hypertree/graphkit-test-repos/excalidraw-master
+  // /Users/ceitflow/WebstormProjects/hypertree/graphkit-test-repos/pixijs-dev
+  // /Users/ceitflow/WebstormProjects/worldbank/ets-original
+  const ast = new AstGen();
+  // ast.run('/Users/ceitflow/WebstormProjects/hypertree/graphkit-test-repos/excalidraw-master');
 }
