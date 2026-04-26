@@ -2,14 +2,14 @@ import {
   CodeGraphNode,
   DeclarationGraphNode,
   DirectoryGraphNode,
-  GraphData,
   GraphNode,
   OtherGraphNode,
-  VirtualGraphNode,
-  Edge
+  Edge,
+  GraphData
 } from './models';
 import mitt from 'mitt';
 import { Layout } from './layout/layout';
+import { GraphNodeBase } from './models/base';
 import { Directory, IdPath, NodeEnum } from '@lib/ast';
 
 export class Graph {
@@ -23,9 +23,10 @@ export class Graph {
   }
 
   private initialize(astRoot: Directory): GraphData {
-    const root = DirectoryGraphNode.create(null, astRoot);
+    const nodes = new Map<IdPath, GraphNodeBase>();
     const edges = new Map<IdPath, Edge[]>(); // todo from and to, know total traffic for each node
-
+    const root = DirectoryGraphNode.create(null, astRoot);
+    nodes.set(root.ast.id, root);
     const stack: { dir: Directory; parentNode: DirectoryGraphNode }[] = [{ dir: astRoot, parentNode: root }];
 
     // copy ast tree into graph node tree
@@ -34,30 +35,30 @@ export class Graph {
 
       for (const subdir of dir.dirs) {
         const dirNode = DirectoryGraphNode.create(parentNode, subdir);
+        nodes.set(dirNode.ast.id, dirNode);
         parentNode.children.push(dirNode);
         stack.push({ dir: subdir, parentNode: dirNode });
       }
 
       if (dir.files.length) {
-        const virtualNode = VirtualGraphNode.create(parentNode, false);
-
         for (const file of dir.files) {
           let fileNode: GraphNode;
           if (file.type === NodeEnum.Code) {
-            fileNode = CodeGraphNode.create(virtualNode, file);
+            fileNode = CodeGraphNode.create(parentNode, file);
             fileNode.children = DeclarationGraphNode.createFromCodeFile(fileNode);
             fileNode.ast.imports.forEach((imp) => {
               if (!edges.has(file.id)) edges.set(file.id, []);
               edges.get(file.id)!.push(Edge.create(imp, file.id, imp.from));
             });
           } else {
-            fileNode = OtherGraphNode.create(virtualNode, file);
+            fileNode = OtherGraphNode.create(parentNode, file);
           }
-          virtualNode.children.push(fileNode);
+          nodes.set(fileNode.ast.id, fileNode);
+          parentNode.children.push(fileNode);
         }
-        parentNode.children.push(virtualNode);
       }
     }
-    return { root, edgesRegistry: edges };
+
+    return { root, edgesRegistry: edges, nodes };
   }
 }

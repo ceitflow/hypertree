@@ -9,7 +9,6 @@ export class OtherGraphNode extends GraphNodeBase {
   constructor(
     opt: BaseOpt,
     public ast: OtherFile,
-    public layoutColumns: number
   ) {
     super(opt);
   }
@@ -21,10 +20,8 @@ export class OtherGraphNode extends GraphNodeBase {
         parent,
         area: ast.loc,
         bbox: { x: 0, y: 0, width: OtherGraphNode.defaultWidth, height: ast.loc },
-        margin: { top: 0, bottom: 10, left: 0, right: 10 }
       },
-      ast,
-      1
+      ast
     );
   }
 }

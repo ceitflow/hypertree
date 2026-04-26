@@ -1,25 +1,14 @@
-export type ForceTreeNode = {
-  id: string;
-  children: ForceTreeNode[];
-  x?: number;
-  y?: number;
-  vx?: number;
-  vy?: number;
-  radius?: number;
-};
+import { GraphNodeBase } from '../../models/base';
 
-type SimNode = {
-  id: string;
-  ref: ForceTreeNode;
-  parent?: SimNode;
-  children: SimNode[];
-  clusterId: string;
-  depth: number;
-  radius: number;
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
+type LayoutState = {
+  x: number[];
+  y: number[];
+  vx: number[];
+  vy: number[];
+  radius: number[];
+  parentIndex: number[];
+  depth: number[];
+  clusterRoot: GraphNodeBase[];
 };
 
 export type ClusteredForceLayoutOptions = {
@@ -55,97 +44,115 @@ const DEFAULTS: Required<ClusteredForceLayoutOptions> = {
 };
 
 export function clusteredForceLayout(
-  root: ForceTreeNode,
+  nodes: GraphNodeBase[],
   options: ClusteredForceLayoutOptions = {}
-): ForceTreeNode {
+): GraphNodeBase[] {
   const cfg = { ...DEFAULTS, ...options };
-  const nodes = flattenTree(root, cfg.nodeRadius);
   if (nodes.length === 0) {
-    return root;
+    return nodes;
   }
 
-  initializePositions(nodes);
-  const clusterCenters = new Map<string, { x: number; y: number }>();
+  const state = buildLayoutState(nodes, cfg.nodeRadius);
+  initializePositions(nodes, state.x, state.y, state.depth);
+  const clusterCenters = new Map<GraphNodeBase, { x: number; y: number }>();
   const centerX = cfg.width / 2;
   const centerY = cfg.height / 2;
 
   let alpha = cfg.alpha;
   for (let i = 0; i < cfg.iterations; i++) {
-    updateClusterCenters(nodes, clusterCenters);
-    applyCenterForce(nodes, centerX, centerY, cfg.centerStrength * alpha);
-    applyChargeForce(nodes, cfg.chargeStrength * alpha);
-    applyLinkForce(nodes, cfg.linkStrength * alpha, cfg.linkDistance);
-    applyClusterForce(nodes, clusterCenters, cfg.clusterStrength * alpha);
-    applyCollisions(nodes, cfg.collisionPadding);
-    integrate(nodes, cfg.damping);
+    updateClusterCenters(state, clusterCenters);
+    applyCenterForce(state, centerX, centerY, cfg.centerStrength * alpha);
+    applyChargeForce(state, cfg.chargeStrength * alpha);
+    applyLinkForce(state, cfg.linkStrength * alpha, cfg.linkDistance);
+    applyClusterForce(state, clusterCenters, cfg.clusterStrength * alpha);
+    applyCollisions(state, cfg.collisionPadding);
+    integrate(state, cfg.damping);
     alpha *= 1 - cfg.alphaDecay;
   }
 
-  for (const n of nodes) {
-    n.ref.x = n.x;
-    n.ref.y = n.y;
-    n.ref.vx = n.vx;
-    n.ref.vy = n.vy;
+  for (let i = 0; i < nodes.length; i++) {
+    nodes[i].bbox.x = state.x[i];
+    nodes[i].bbox.y = state.y[i];
   }
-  return root;
+  return nodes;
 }
 
-function flattenTree(root: ForceTreeNode, defaultRadius: number): SimNode[] {
-  const result: SimNode[] = [];
-  const queue: Array<{
-    node: ForceTreeNode;
-    parent?: SimNode;
-    depth: number;
-    clusterId: string;
-  }> = [{ node: root, parent: undefined, depth: 0, clusterId: root.id }];
+function buildLayoutState(nodes: GraphNodeBase[], defaultRadius: number): LayoutState {
+  const nodeSet = new Set(nodes);
+  const indexByNode = new Map<GraphNodeBase, number>();
+  const length = nodes.length;
+  const x = new Array<number>(length);
+  const y = new Array<number>(length);
+  const vx = new Array<number>(length).fill(0);
+  const vy = new Array<number>(length).fill(0);
+  const radius = new Array<number>(length);
+  const parentIndex = new Array<number>(length).fill(-1);
+  const depth = new Array<number>(length);
+  const clusterRoot = new Array<GraphNodeBase>(length);
 
-  while (queue.length > 0) {
-    const { node, parent, depth, clusterId } = queue.shift() as {
-      node: ForceTreeNode;
-      parent?: SimNode;
-      depth: number;
-      clusterId: string;
-    };
+  for (let i = 0; i < length; i++) {
+    const node = nodes[i];
+    indexByNode.set(node, i);
+    x[i] = node.bbox.x;
+    y[i] = node.bbox.y;
+    radius[i] = node.radius ?? defaultRadius;
+  }
 
-    const current: SimNode = {
-      id: node.id,
-      ref: node,
-      parent,
-      children: [],
-      clusterId,
-      depth,
-      radius: node.radius ?? defaultRadius,
-      x: node.x ?? 0,
-      y: node.y ?? 0,
-      vx: node.vx ?? 0,
-      vy: node.vy ?? 0
-    };
-
+  for (let i = 0; i < length; i++) {
+    const node = nodes[i];
+    const parent = resolveParent(node, nodeSet);
     if (parent) {
-      parent.children.push(current);
+      parentIndex[i] = indexByNode.get(parent) ?? -1;
     }
-    result.push(current);
-
-    const nextChildren = node.children ?? [];
-    for (const child of nextChildren) {
-      // Cluster by first-level ancestor under root.
-      const nextCluster = depth === 0 ? child.id : clusterId;
-      queue.push({ node: child, parent: current, depth: depth + 1, clusterId: nextCluster });
-    }
+    depth[i] = getDepth(node, nodeSet);
+    clusterRoot[i] = getClusterRoot(node, nodeSet);
   }
 
-  return result;
+  return { x, y, vx, vy, radius, parentIndex, depth, clusterRoot };
 }
 
-function initializePositions(nodes: SimNode[]): void {
+function resolveParent(node: GraphNodeBase, nodeSet: Set<GraphNodeBase>): GraphNodeBase | undefined {
+  const parent = node.parent;
+  if (!parent || !nodeSet.has(parent)) {
+    return undefined;
+  }
+  return parent;
+}
+
+function getDepth(node: GraphNodeBase, nodeSet: Set<GraphNodeBase>): number {
+  let depth = 0;
+  let cursor = resolveParent(node, nodeSet);
+  while (cursor) {
+    depth += 1;
+    cursor = resolveParent(cursor, nodeSet);
+  }
+  return depth;
+}
+
+function getClusterRoot(node: GraphNodeBase, nodeSet: Set<GraphNodeBase>): GraphNodeBase {
+  let cursor = node;
+  let parent = resolveParent(cursor, nodeSet);
+  while (parent) {
+    const grandParent = resolveParent(parent, nodeSet);
+    if (!grandParent) {
+      return cursor;
+    }
+    cursor = parent;
+    parent = grandParent;
+  }
+  return node;
+}
+
+function initializePositions(nodes: GraphNodeBase[], x: number[], y: number[], depth: number[]): void {
   // Deterministic circular seeding keeps simulation stable.
-  const byDepth = new Map<number, SimNode[]>();
-  for (const n of nodes) {
-    const layer = byDepth.get(n.depth);
+  const byDepth = new Map<number, number[]>();
+  for (let i = 0; i < nodes.length; i++) {
+    const d = depth[i];
+    const layer = byDepth.get(d);
     if (layer) {
-      layer.push(n);
+      layer.push(i);
     } else {
-      byDepth.set(n.depth, [n]);
+      byDepth.set(d, [i]);
     }
   }
 
@@ -153,50 +160,48 @@ function initializePositions(nodes: SimNode[]): void {
     const ring = Math.max(1, depth) * 120;
     for (let i = 0; i < layer.length; i++) {
       const angle = (Math.PI * 2 * i) / layer.length;
-      const n = layer[i];
-      if (n.ref.x === undefined) {
-        n.x = Math.cos(angle) * ring;
-      }
-      if (n.ref.y === undefined) {
-        n.y = Math.sin(angle) * ring;
+      const nodeIndex = layer[i];
+      const node = nodes[nodeIndex];
+      if (node.bbox.x === 0 && node.bbox.y === 0) {
+        x[nodeIndex] = Math.cos(angle) * ring;
+        y[nodeIndex] = Math.sin(angle) * ring;
       }
     }
   }
 }
 
-function updateClusterCenters(nodes: SimNode[], centers: Map<string, { x: number; y: number }>): void {
-  const sums = new Map<string, { x: number; y: number; count: number }>();
-  for (const n of nodes) {
-    const prev = sums.get(n.clusterId);
+function updateClusterCenters(state: LayoutState, centers: Map<GraphNodeBase, { x: number; y: number }>): void {
+  const sums = new Map<GraphNodeBase, { x: number; y: number; count: number }>();
+  for (let i = 0; i < state.x.length; i++) {
+    const cluster = state.clusterRoot[i];
+    const prev = sums.get(cluster);
     if (prev) {
-      prev.x += n.x;
-      prev.y += n.y;
+      prev.x += state.x[i];
+      prev.y += state.y[i];
       prev.count += 1;
     } else {
-      sums.set(n.clusterId, { x: n.x, y: n.y, count: 1 });
+      sums.set(cluster, { x: state.x[i], y: state.y[i], count: 1 });
     }
   }
 
   centers.clear();
-  for (const [clusterId, sum] of sums) {
-    centers.set(clusterId, { x: sum.x / sum.count, y: sum.y / sum.count });
+  for (const [clusterRoot, sum] of sums) {
+    centers.set(clusterRoot, { x: sum.x / sum.count, y: sum.y / sum.count });
   }
 }
 
-function applyCenterForce(nodes: SimNode[], centerX: number, centerY: number, strength: number): void {
-  for (const n of nodes) {
-    n.vx += (centerX - n.x) * strength;
-    n.vy += (centerY - n.y) * strength;
+function applyCenterForce(state: LayoutState, centerX: number, centerY: number, strength: number): void {
+  for (let i = 0; i < state.x.length; i++) {
+    state.vx[i] += (centerX - state.x[i]) * strength;
+    state.vy[i] += (centerY - state.y[i]) * strength;
   }
 }
 
-function applyChargeForce(nodes: SimNode[], strength: number): void {
-  for (let i = 0; i < nodes.length; i++) {
-    const a = nodes[i];
-    for (let j = i + 1; j < nodes.length; j++) {
-      const b = nodes[j];
-      let dx = b.x - a.x;
-      let dy = b.y - a.y;
+function applyChargeForce(state: LayoutState, strength: number): void {
+  for (let i = 0; i < state.x.length; i++) {
+    for (let j = i + 1; j < state.x.length; j++) {
+      let dx = state.x[j] - state.x[i];
+      let dy = state.y[j] - state.y[i];
       const d2 = dx * dx + dy * dy + 0.01;
       const invDist = 1 / Math.sqrt(d2);
       dx *= invDist;
@@ -206,23 +211,23 @@ function applyChargeForce(nodes: SimNode[], strength: number): void {
       const fx = dx * force;
       const fy = dy * force;
 
-      a.vx -= fx;
-      a.vy -= fy;
-      b.vx += fx;
-      b.vy += fy;
+      state.vx[i] -= fx;
+      state.vy[i] -= fy;
+      state.vx[j] += fx;
+      state.vy[j] += fy;
     }
   }
 }
 
-function applyLinkForce(nodes: SimNode[], strength: number, targetDistance: number): void {
-  for (const n of nodes) {
-    if (!n.parent) {
+function applyLinkForce(state: LayoutState, strength: number, targetDistance: number): void {
+  for (let i = 0; i < state.x.length; i++) {
+    const parent = state.parentIndex[i];
+    if (parent < 0) {
       continue;
     }
 
-    const p = n.parent;
-    let dx = n.x - p.x;
-    let dy = n.y - p.y;
+    let dx = state.x[i] - state.x[parent];
+    let dy = state.y[i] - state.y[parent];
     const dist = Math.max(0.001, Math.sqrt(dx * dx + dy * dy));
     const delta = dist - targetDistance;
     dx /= dist;
@@ -230,37 +235,35 @@ function applyLinkForce(nodes: SimNode[], strength: number, targetDistance: numb
 
     const fx = dx * delta * strength;
     const fy = dy * delta * strength;
-    n.vx -= fx;
-    n.vy -= fy;
-    p.vx += fx;
-    p.vy += fy;
+    state.vx[i] -= fx;
+    state.vy[i] -= fy;
+    state.vx[parent] += fx;
+    state.vy[parent] += fy;
   }
 }
 
 function applyClusterForce(
-  nodes: SimNode[],
-  centers: Map<string, { x: number; y: number }>,
+  state: LayoutState,
+  centers: Map<GraphNodeBase, { x: number; y: number }>,
   strength: number
 ): void {
-  for (const n of nodes) {
-    const center = centers.get(n.clusterId);
+  for (let i = 0; i < state.x.length; i++) {
+    const center = centers.get(state.clusterRoot[i]);
     if (!center) {
       continue;
     }
-    n.vx += (center.x - n.x) * strength;
-    n.vy += (center.y - n.y) * strength;
+    state.vx[i] += (center.x - state.x[i]) * strength;
+    state.vy[i] += (center.y - state.y[i]) * strength;
   }
 }
 
-function applyCollisions(nodes: SimNode[], padding: number): void {
-  for (let i = 0; i < nodes.length; i++) {
-    const a = nodes[i];
-    for (let j = i + 1; j < nodes.length; j++) {
-      const b = nodes[j];
-      let dx = b.x - a.x;
-      let dy = b.y - a.y;
+function applyCollisions(state: LayoutState, padding: number): void {
+  for (let i = 0; i < state.x.length; i++) {
+    for (let j = i + 1; j < state.x.length; j++) {
+      let dx = state.x[j] - state.x[i];
+      let dy = state.y[j] - state.y[i];
       let dist = Math.sqrt(dx * dx + dy * dy);
-      const minDist = a.radius + b.radius + padding;
+      const minDist = state.radius[i] + state.radius[j] + padding;
       if (dist >= minDist) {
         continue;
       }
@@ -274,19 +277,19 @@ function applyCollisions(nodes: SimNode[], padding: number): void {
       const ox = dx * overlap * 0.5;
       const oy = dy * overlap * 0.5;
 
-      a.x -= ox;
-      a.y -= oy;
-      b.x += ox;
-      b.y += oy;
+      state.x[i] -= ox;
+      state.y[i] -= oy;
+      state.x[j] += ox;
+      state.y[j] += oy;
     }
   }
 }
 
-function integrate(nodes: SimNode[], damping: number): void {
-  for (const n of nodes) {
-    n.vx *= damping;
-    n.vy *= damping;
-    n.x += n.vx;
-    n.y += n.vy;
+function integrate(state: LayoutState, damping: number): void {
+  for (let i = 0; i < state.x.length; i++) {
+    state.vx[i] *= damping;
+    state.vy[i] *= damping;
+    state.x[i] += state.vx[i];
+    state.y[i] += state.vy[i];
   }
 }

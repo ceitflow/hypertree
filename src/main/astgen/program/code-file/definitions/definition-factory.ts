@@ -179,6 +179,7 @@ export const DeclarationFactory = (
         n['kind'] = SyntaxKind.ObjectLiteralExpression;
         return DeclarationFactory(n, analyzer, id, depth);
       }
+      // const name = (n.parent as ts.VariableDeclaration).name['text'] || '';
       const declaration = analyzer.getCallExpressionDeclaration(n);
       if (!declaration) {
         console.error(`Unsupported declaration type: ${ts.SyntaxKind[n['kind']]}`);

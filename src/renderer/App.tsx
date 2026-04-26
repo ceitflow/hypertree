@@ -13,8 +13,8 @@ function App() {
 
   return (
     <div className="rootContainer">
-      <Visualization data={outputData as Directory} />
-      {/*<TreeMap data={MockAstData} />*/}
+      {/*<Visualization data={outputData as Directory} />*/}
+      <Visualization data={MockAstData} />
     </div>
   );
 }

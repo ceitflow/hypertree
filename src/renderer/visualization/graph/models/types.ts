@@ -15,4 +15,3 @@ export type GraphNode = DirectoryGraphNode | CodeGraphNode | OtherGraphNode | De
 
 export type ParentType = GraphNode | null;
 export type BBox = { x: number; y: number; width: number; height: number };
-export type Margin = { top: number; bottom: number; left: number; right: number };

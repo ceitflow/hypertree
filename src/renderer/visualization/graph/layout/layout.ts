@@ -1,10 +1,9 @@
 import { GraphData } from '../index';
-import { Router } from './router/router';
-import { NodeLayout } from './nodes/node-layout';
+import { clusteredForceLayout } from './nodes/force';
 
 export class Layout {
   constructor(graphModel: GraphData) {
-    NodeLayout.init(graphModel.root);
+    clusteredForceLayout(Array.from(graphModel.nodes.values()));
     // Router.init(graphModel);
   }
 }

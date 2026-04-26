@@ -61,7 +61,7 @@ export class Factory {
       } else text = p[0];
     }
 
-    node.labelPoints.forEach((p) => {
+    /*node.labelPoints.forEach((p) => {
       let prefixWidth = 0;
       const dirFontSize = Math.round(Math.sqrt(node.area) * 0.4);
       if (prefix) {
@@ -78,7 +78,7 @@ export class Factory {
       }
       const label = Factory.createLabel(p[0] + prefixWidth, p[1], p[2], text, dirFontSize, false);
       result.push(label);
-    });
+    });*/
 
     return result;
   }

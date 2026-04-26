@@ -19,6 +19,6 @@ export class DirectoryGraphNode extends GraphNodeBase {
   }
 
   static create(parent: ParentType, ast: Directory) {
-    return new DirectoryGraphNode({ parent, padding: { top: 10, right: 10, bottom: 10, left: 10 } }, ast);
+    return new DirectoryGraphNode({ parent }, ast);
   }
 }
