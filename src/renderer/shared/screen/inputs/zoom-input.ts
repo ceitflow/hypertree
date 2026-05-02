@@ -58,7 +58,8 @@ export function ZoomInput({ config, transform, zoom, frameStart, viewport, exten
       const extentRect = { x: extent[0], y: extent[1], width: extent[2], height: extent[3] };
       const extentToViewportScale = Math.min(
         (viewRect.width - padding[0] * 2) / extentRect.width,
-        (viewRect.height - padding[1] * 2) / extentRect.height
+        (viewRect.height - padding[1] * 2) / extentRect.height,
+        config.zoom.max
       );
 
       zoom.input[2] = invertScaleToZoomStep(extentToViewportScale);

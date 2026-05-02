@@ -1,90 +1,95 @@
+import * as d3 from 'd3';
 import { IdPath } from '@lib/ast';
-import { Quadtree } from './quad-tree';
 import { eachBefore } from '../../utils';
-import { BBox, DirectoryGraphNode, GraphNodeBase } from '../../models';
-import { getCentroid, getEachAfterDirectories, intersection } from './util';
+import { DirectoryGraphNode, GraphNodeBase } from '../../models';
+import { getEachAfterNodes, getEncompassingSquareBBox } from './util';
 
-function jiggle() {
-  return (Math.random() - 0.5) * 1e-6;
-}
+type D3Wrapper = {
+  x?: number;
+  y?: number;
+  vx?: number;
+  vy?: number;
+} & GraphNodeBase;
 
-function updateParentBBox(dir: DirectoryGraphNode) {
-  dir.bbox = intersection(dir.children);
-  dir.radius = Math.max(dir.bbox.width, dir.bbox.height) / 2;
+function updateParentBBox(dir: GraphNodeBase) {
+  const square = getEncompassingSquareBBox(dir.children);
+  const centerX = square.x + square.width / 2;
+  const centerY = square.y + square.height / 2;
+
+  const getDst = (x: number, y: number): number => {
+    return Math.hypot(x - centerX, y - centerY);
+  };
+
+  let radius = 0;
+  dir.children.forEach(({ bbox: { x, y, width, height } }) => {
+    const topLeft = getDst(x, y);
+    const topRight = getDst(x + width, y);
+    const bottomLeft = getDst(x, y + height);
+    const bottomRight = getDst(x + width, y + height);
+    if (topLeft > radius) radius = topLeft;
+    if (topRight > radius) radius = topRight;
+    if (bottomLeft > radius) radius = bottomLeft;
+    if (bottomRight > radius) radius = bottomRight;
+  });
+
+  dir.radius = radius;
+  dir.bbox = { x: centerX - radius, y: centerY - radius, width: 2 * radius, height: 2 * radius };
 }
 
 export function clusteredBubblesLayout(root: GraphNodeBase, nodes: Map<IdPath, GraphNodeBase>): void {
-  const strength = 1;
-  const iterations = 300;
-  const sortedDirs = getEachAfterDirectories(root);
+  const iterations = 500;
+  const sortedNodes = getEachAfterNodes(root);
 
-  for (let i = sortedDirs.length - 1; i >= 0; i--) {
-    const dir = sortedDirs[i];
+  for (let i = sortedNodes.length - 1; i >= 0; i--) {
+    const dir = sortedNodes[i];
     if (!dir.children.length) return;
     updateParentBBox(dir);
     force(dir, iterations);
     updateParentBBox(dir);
   }
+  // translate all to positive coordinates
+  const rootDx = root.bbox.x < 0 ? root.bbox.x : 0;
+  const rootDy = root.bbox.y < 0 ? root.bbox.y : 0;
+  eachBefore(root, (n) => {
+    const node = n as D3Wrapper;
+    node.bbox.x -= rootDx;
+    node.bbox.y -= rootDy;
+    delete node.x;
+    delete node.y;
+    delete node.vx;
+    delete node.vy;
+  });
+  return;
 }
 
-function force(dir: DirectoryGraphNode, iterations: number): void {
-  if (!dir.parent) { // if root node
-    // translate all to positive coordinates
-    const rootDx = dir.bbox.x < 0 ? dir.bbox.x : 0;
-    const rootDy = dir.bbox.y < 0 ? dir.bbox.y : 0;
-    eachBefore(dir, (n) => {
-      n.bbox.x -= rootDx;
-      n.bbox.y -= rootDy;
-    });
-    return;
-  }
+function force(dir: GraphNodeBase, iterations: number): void {
+  const nodes = dir.children as D3Wrapper[];
+  const simulation = d3
+    .forceSimulation(nodes)
+    .force('x', d3.forceX().strength(0.01))
+    .force('y', d3.forceY().strength(0.01))
+    .force(
+      'collide',
+      d3
+        .forceCollide<D3Wrapper>()
+        .radius((d) => d.radius)
+        .iterations(3)
+    )
+    .stop();
 
   for (let i = 0; i < iterations; i++) {
-    // forceCluster();
-    forceCollide(dir);
+    simulation.tick();
 
-    for (let i = dir.children.length - 1; i >= 0; i--) {
-      const child = dir.children[i];
+    for (let i = nodes.length - 1; i >= 0; i--) {
+      const node = nodes[i];
+      const dx = node.bbox.x - node.x!;
+      const dy = node.bbox.y - node.y!;
       // translating children and its children recursively
-      eachBefore(child, (n) => {
-        n.bbox.x += child.vx;
-        n.bbox.y += child.vy;
+      eachBefore(node, (c) => {
+        const child = c as D3Wrapper;
+        child.bbox.x -= dx;
+        child.bbox.y -= dy;
       });
-    }
-  }
-}
-
-function forceCluster(nodes: GraphNodeBase[]) {
-  const strength = 0.2;
-
-  for (let i = nodes.length - 1; i >= 0; i--) {
-    const node = nodes[i];
-    const { x, y } = getCentroid(node.parent);
-    node.vx -= (node.bbox.x - x) * strength;
-    node.vy -= (node.bbox.y - y) * strength;
-  }
-}
-
-function forceCollide(dir: DirectoryGraphNode) {
-  const quadtree = new Quadtree(dir.bbox, dir.children);
-
-  for (let i = dir.children.length - 1; i >= 0; i--) {
-    const node = dir.children[i];
-
-    for (const overlappingNode of quadtree.retrieve(node)) {
-      const r = node.radius + overlappingNode.radius;
-      const x = node.bbox.x - overlappingNode.bbox.x;
-      const y = node.bbox.y - overlappingNode.bbox.y;
-      let distance = Math.hypot(x, y);
-      if (distance < r) {
-        distance = (distance - r) / (distance || 1);
-        const dx = x * distance || jiggle();
-        const dy = y * distance || jiggle();
-        node.vx += -dx;
-        node.vy += -dy;
-        overlappingNode.vx += dx;
-        overlappingNode.vy += dy;
-      }
     }
   }
 }

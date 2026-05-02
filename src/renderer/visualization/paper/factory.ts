@@ -13,7 +13,10 @@ import { BitmapText, Graphics } from 'pixi.js';
 export class Factory {
   static createLabels(node: GraphNode) {
     if (node.type === GraphNodeEnum.Directory) {
-      return this.createDirLabels(node);
+      const { x, y, width, height } = node.bbox;
+      const dirFontSize = Math.round(Math.sqrt(node.radius));
+      const text = node.parent ? node.parent['ast'].name + '/' + node.ast.name : node.ast.name
+      return [this.createLabel(x + width / 2, y + 4, 0, text, dirFontSize)];
     } else if (node.type === GraphNodeEnum.Virtual) {
       return [];
     } else {
@@ -48,41 +51,6 @@ export class Factory {
     return label;
   }
 
-  private static createDirLabels(node: DirectoryGraphNode) {
-    const result: BitmapText[] = [];
-    let text = node.ast.name;
-    let prefix: string;
-
-    if (node.ast.depth !== 0) {
-      const p = node.ast.id.split('/').slice(-2);
-      if (p.length === 2) {
-        prefix = p[0];
-        text = '/' + p[1];
-      } else text = p[0];
-    }
-
-    /*node.labelPoints.forEach((p) => {
-      let prefixWidth = 0;
-      const dirFontSize = Math.round(Math.sqrt(node.area) * 0.4);
-      if (prefix) {
-        const prefixLabel = Factory.createLabel(
-          p[0],
-          p[1] + dirFontSize / 6,
-          p[2],
-          prefix,
-          (dirFontSize * 2) / 3,
-          true
-        );
-        result.push(prefixLabel);
-        prefixWidth = prefixLabel.width;
-      }
-      const label = Factory.createLabel(p[0] + prefixWidth, p[1], p[2], text, dirFontSize, false);
-      result.push(label);
-    });*/
-
-    return result;
-  }
-
   static createNode(node: GraphNode): PaperNode[] {
     switch (node.type) {
       case GraphNodeEnum.Directory:
@@ -99,7 +67,7 @@ export class Factory {
   }
 
   private static createDirectoryNode(node: DirectoryGraphNode): PaperNode[] {
-    const color = [
+    const color = !node.parent ? 'transparent' :[
       '#333333',
       '#404040',
       '#4d4d4d',
@@ -113,11 +81,13 @@ export class Factory {
       '#b3b3b3',
       '#c0c0c0'
     ][Math.min(node.ast.depth, 11)];
-    const { x, y } = node.bbox;
+    const { x, y, width, height } = node.bbox;
 
     const graphic = new Graphics() as PaperNode;
+    // graphic.pivot.set(node.radius, node.radius);
 
-    graphic.circle(0, 0, node.radius).fill(color);
+    graphic.circle(width / 2, height / 2, node.radius).fill(color);
+    // graphic.rect(0, 0, width, height).fill(color);
     graphic.x = x;
     graphic.y = y;
     graphic.rotation = 0;
@@ -128,11 +98,13 @@ export class Factory {
   }
 
   private static createCodeNode(node: CodeGraphNode): PaperNode[] {
-    const { x, y } = node.bbox;
+    const { x, y, width, height } = node.bbox;
     const graphic = new Graphics() as PaperNode;
     const color = '#4499ce';
+    // graphic.pivot.set(node.radius, node.radius);
 
-    graphic.circle(0, 0, node.radius).fill(color);
+    graphic.circle(width / 2, height / 2, node.radius).fill(color);
+    // graphic.rect(0, 0, width, height).fill(color);
 
     if (node.ast.kind === 'JS') {
       graphic.stroke({
@@ -152,11 +124,11 @@ export class Factory {
   }
 
   private static createOtherNode(node: OtherGraphNode): PaperNode[] {
-    const { x, y } = node.bbox;
+    const { x, y, width, height } = node.bbox;
     const graphic = new Graphics() as PaperNode;
     const color = '#7990a6'; // node.ast.bigFile ? '#adad30' : '#d39000';
 
-    graphic.circle(0, 0, node.radius).fill(color);
+    graphic.circle(width / 2, height / 2, node.radius).fill(color);
 
     graphic.x = x;
     graphic.y = y;
@@ -168,12 +140,12 @@ export class Factory {
   }
 
   private static createDeclarationNode(node: DeclarationGraphNode): PaperNode[] {
-    const { x, y } = node.bbox;
+    const { x, y, width, height } = node.bbox;
     const graphic = new Graphics() as PaperNode;
     const color = '#ff7e5f';
     const result: PaperNode[] = [graphic];
 
-    graphic.circle(0, 0, node.radius).fill(color);
+    graphic.circle(width / 2, height / 2, node.radius).fill(color);
 
     graphic.x = x;
     graphic.y = y;
@@ -185,11 +157,11 @@ export class Factory {
   }
 
   private static createVirtualNode(node: VirtualGraphNode): PaperNode[] {
-    const { x, y } = node.bbox;
+    const { x, y, width, height } = node.bbox;
     const graphic = new Graphics() as PaperNode;
     const color = '#e4f1ff00';
 
-    graphic.circle(0, 0, node.radius).stroke({ width: 1, color });
+    graphic.circle(width / 2, height / 2, node.radius).fill(color);
 
     graphic.x = x;
     graphic.y = y;

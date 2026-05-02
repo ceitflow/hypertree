@@ -52,7 +52,7 @@ export class Paper {
     //   c.x += dx;
     //   c.y += dy;
     // });
-    paper.pivot.set(paper.width / 2, paper.height / 2);
+    // paper.pivot.set(dx, dy);
     this.screen.transformer.updateExtentArea({ x: 0, y: 0, width: paper.width, height: paper.height });
     const newZoom = this.screen.controller.zoom.zoomToFit();
     console.log('map size: ', paper.getSize(), 'zoom', newZoom);
