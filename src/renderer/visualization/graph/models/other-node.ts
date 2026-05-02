@@ -17,9 +17,9 @@ export class OtherGraphNode extends GraphNodeBase {
     // if (ast.bigFile) bbox.height = 10;
     return new OtherGraphNode(
       {
+        id: ast.id,
         parent,
-        area: ast.loc,
-        bbox: { x: 0, y: 0, width: OtherGraphNode.defaultWidth, height: ast.loc },
+        area: ast.loc
       },
       ast
     );

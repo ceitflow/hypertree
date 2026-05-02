@@ -5,7 +5,7 @@ import {
   GraphNode,
   OtherGraphNode,
   Edge,
-  GraphData
+  GraphData, GraphNodeEnum
 } from './models';
 import mitt from 'mitt';
 import { Layout } from './layout/layout';
@@ -54,6 +54,9 @@ export class Graph {
             fileNode = OtherGraphNode.create(parentNode, file);
           }
           nodes.set(fileNode.ast.id, fileNode);
+          fileNode.children.forEach((c) => {
+            if (c.type === GraphNodeEnum.Declaration) nodes.set(c.ast.id, c);
+          });
           parentNode.children.push(fileNode);
         }
       }

@@ -8,13 +8,13 @@ export class VirtualGraphNode extends GraphNodeBase {
     super(opt);
   }
 
-  static create(parent: ParentType) {
+  static create(id: string, parent: ParentType) {
     return new VirtualGraphNode(
       {
+        id,
         parent,
         children: [] as GraphNode[],
-        area: 0,
-        bbox: { x: 0, y: 0, width: 0, height: 0 }
+        area: 0
       }
     );
   }

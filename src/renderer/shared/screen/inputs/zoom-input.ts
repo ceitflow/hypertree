@@ -53,7 +53,7 @@ export function ZoomInput({ config, transform, zoom, frameStart, viewport, exten
       zoom.active = true;
     },
 
-    zoomToFit: (padding: Vector2 = [0, 0], animated = false, ignoreZoomConstraint = true) => {
+    zoomToFit: (padding: Vector2 = [0, 0], animated = false) => {
       const viewRect = { x: viewport[0], y: viewport[1], width: viewport[2], height: viewport[3] };
       const extentRect = { x: extent[0], y: extent[1], width: extent[2], height: extent[3] };
       const extentToViewportScale = Math.min(
@@ -66,6 +66,7 @@ export function ZoomInput({ config, transform, zoom, frameStart, viewport, exten
       transform[0] = -(extentRect.width * extentToViewportScale - viewRect.width) / 2;
       transform[1] = -(extentRect.height * extentToViewportScale - viewRect.height) / 2;
       transform[2] = extentToViewportScale;
+      return extentToViewportScale;
     },
 
     nextFrame: () => {

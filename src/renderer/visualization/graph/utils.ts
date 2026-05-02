@@ -1,9 +1,9 @@
-import { GraphNode } from './models';
+import { GraphNodeBase } from './models';
 
-export function eachAfter(root: GraphNode, callback: (node: GraphNode) => void): void {
-  const nodes: GraphNode[] = [root];
-  const next: GraphNode[] = [];
-  let node: GraphNode | undefined;
+export function eachAfter(root: GraphNodeBase, callback: (node: GraphNodeBase) => void): void {
+  const nodes: GraphNodeBase[] = [root];
+  const next: GraphNodeBase[] = [];
+  let node: GraphNodeBase | undefined;
 
   while (nodes.length) {
     node = nodes.pop()!;
@@ -13,9 +13,9 @@ export function eachAfter(root: GraphNode, callback: (node: GraphNode) => void):
   while (next.length) callback(next.pop()!);
 }
 
-export function eachBefore(root: GraphNode, callback: (node: GraphNode) => void): void {
-  const nodes: GraphNode[] = [root];
-  let node: GraphNode | undefined;
+export function eachBefore(root: GraphNodeBase, callback: (node: GraphNodeBase) => void): void {
+  const nodes: GraphNodeBase[] = [root];
+  let node: GraphNodeBase | undefined;
 
   while (nodes.length) {
     node = nodes.pop()!;

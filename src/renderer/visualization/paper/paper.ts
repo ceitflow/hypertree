@@ -52,10 +52,10 @@ export class Paper {
       c.x += dx;
       c.y += dy;
     });
-    console.log('map size: ', paper.getSize());
     paper.pivot.set(paper.width / 2, paper.height / 2);
     this.screen.transformer.updateExtentArea({ x: 0, y: 0, width: paper.width, height: paper.height });
-    this.screen.controller.zoom.zoomToFit();
+    const newZoom = this.screen.controller.zoom.zoomToFit();
+    console.log('map size: ', paper.getSize(), 'zoom', newZoom);
   }
 
   private render(root: GraphNode) {
@@ -67,12 +67,8 @@ export class Paper {
       const n = stack.pop()!;
       stack.push(...n.children);
       const nodes = Factory.createNode(n);
-      const labels = Factory.createLabels(n); // todo if declaration split then show '1/2 ...'
+      const labels = Factory.createLabels(n);
       container.addChild(...nodes, ...labels);
-      if (n.type === GraphNodeEnum.Directory) {
-        // debug only
-        Factory.createVisibilityVertices(n).forEach(r => container.addChild(r));
-      }
     }
   }
 

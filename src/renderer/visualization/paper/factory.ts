@@ -132,11 +132,11 @@ export class Factory {
       '#b3b3b3',
       '#c0c0c0'
     ][Math.min(node.ast.depth, 11)];
-    const { x, y, width, height } = node.bbox;
+    const { x, y } = node.bbox;
 
     const graphic = new Graphics() as PaperNode;
 
-    graphic.roundRect(0, 0, width, height, 0).fill(color);
+    graphic.circle(0, 0, node.radius).fill(color);
     graphic.x = x;
     graphic.y = y;
     graphic.rotation = 0;
@@ -147,11 +147,11 @@ export class Factory {
   }
 
   private static createCodeNode(node: CodeGraphNode): PaperNode[] {
-    const { x, y, width, height } = node.bbox;
+    const { x, y } = node.bbox;
     const graphic = new Graphics() as PaperNode;
     const color = '#4499ce';
 
-    graphic.rect(0, 0, width, height).fill(color);
+    graphic.circle(0, 0, node.radius).fill(color);
 
     if (node.ast.kind === 'JS') {
       graphic.stroke({
@@ -171,11 +171,11 @@ export class Factory {
   }
 
   private static createOtherNode(node: OtherGraphNode): PaperNode[] {
-    const { x, y, width, height } = node.bbox;
+    const { x, y } = node.bbox;
     const graphic = new Graphics() as PaperNode;
     const color = '#7990a6'; // node.ast.bigFile ? '#adad30' : '#d39000';
 
-    graphic.rect(0, 0, width, height).fill(color);
+    graphic.circle(0, 0, node.radius).fill(color);
 
     graphic.x = x;
     graphic.y = y;
@@ -187,12 +187,12 @@ export class Factory {
   }
 
   private static createDeclarationNode(node: DeclarationGraphNode): PaperNode[] {
-    const { x, y, width, height } = node.bbox;
+    const { x, y } = node.bbox;
     const graphic = new Graphics() as PaperNode;
     const color = '#ff7e5f';
     const result: PaperNode[] = [graphic];
 
-    graphic.rect(0, 0, width, height).fill(color);
+    graphic.circle(0, 0, node.radius).fill(color);
 
     graphic.x = x;
     graphic.y = y;
@@ -204,11 +204,11 @@ export class Factory {
   }
 
   private static createVirtualNode(node: VirtualGraphNode): PaperNode[] {
-    const { x, y, width, height } = node.bbox;
+    const { x, y } = node.bbox;
     const graphic = new Graphics() as PaperNode;
     const color = '#e4f1ff00';
 
-    graphic.rect(0, 0, width, height).stroke({ width: 1, color });
+    graphic.circle(0, 0, node.radius).stroke({ width: 1, color });
 
     graphic.x = x;
     graphic.y = y;

@@ -17,14 +17,9 @@ export class CodeGraphNode extends GraphNodeBase {
   static create(parent: ParentType, ast: CodeFile) {
     return new CodeGraphNode(
       {
+        id: ast.id,
         parent,
-        area: ast.loc,
-        bbox: {
-          x: 0,
-          y: 0,
-          width: CodeGraphNode.defaultWidth,
-          height: ast.loc
-        },
+        area: ast.loc
       },
       ast
     );
@@ -45,9 +40,9 @@ export class DeclarationGraphNode extends GraphNodeBase {
   static create(parent: CodeGraphNode, ast: DeclarationNode) {
     return new DeclarationGraphNode(
       {
+        id: ast.id,
         parent,
-        area: ast.loc,
-        bbox: { x: 0, y: 0, width: CodeGraphNode.defaultWidth, height: ast.loc },
+        area: ast.loc
       },
       ast
     );
