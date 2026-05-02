@@ -1,4 +1,4 @@
-import { BBox, GraphNodeBase, ParentType } from '../../models';
+import { BBox, DirectoryGraphNode, GraphNodeBase, ParentType } from '../../models';
 
 export function getCentroid(parent: ParentType) {
   const bbox = !parent ? { x: 0, y: 0, width: 0, height: 0 } : intersection(parent.children);
@@ -38,6 +38,19 @@ export function getEachAfterNodes(root: GraphNodeBase): GraphNodeBase[] {
   while (nodes.length) {
     node = nodes.pop()!;
     next.push(node);
+    for (let i = 0; i < node.children.length; i++) nodes.push(node.children[i]);
+  }
+  return next;
+}
+
+export function getEachAfterDirectories(root: GraphNodeBase): DirectoryGraphNode[] {
+  const nodes: GraphNodeBase[] = [root];
+  const next: DirectoryGraphNode[] = [];
+  let node: GraphNodeBase | undefined;
+
+  while (nodes.length) {
+    node = nodes.pop()!;
+    if (node instanceof DirectoryGraphNode) next.push(node);
     for (let i = 0; i < node.children.length; i++) nodes.push(node.children[i]);
   }
   return next;

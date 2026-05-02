@@ -21,15 +21,17 @@ export class Quadtree {
   objects: QuadTreeBounds[];
   leaves: Quadtree[];
 
-  constructor(bounds: BBox, max_objects = 20, max_levels = 4, level = 0) {
+  constructor(bounds: BBox, objects: QuadTreeBounds[], max_objects = 20, max_levels = 4, level = 0) {
     this.max_objects = max_objects;
     this.max_levels = max_levels;
 
     this.level = level;
     this.bounds = bounds;
 
-    this.objects = []; // rects
+    this.objects = [];
     this.leaves = [];
+
+    objects.forEach((o) => this.insert(o));
   }
 
   /**
@@ -95,6 +97,7 @@ export class Quadtree {
         width: subWidth,
         height: subHeight
       },
+      [],
       this.max_objects,
       this.max_levels,
       nextLevel
@@ -108,6 +111,7 @@ export class Quadtree {
         width: subWidth,
         height: subHeight
       },
+      [],
       this.max_objects,
       this.max_levels,
       nextLevel
@@ -121,6 +125,7 @@ export class Quadtree {
         width: subWidth,
         height: subHeight
       },
+      [],
       this.max_objects,
       this.max_levels,
       nextLevel
@@ -134,6 +139,7 @@ export class Quadtree {
         width: subWidth,
         height: subHeight
       },
+      [],
       this.max_objects,
       this.max_levels,
       nextLevel
@@ -181,31 +187,32 @@ export class Quadtree {
 
   /**
    * Return all objects that could collide with the given object
-   * @param {Rect} pRect      bounds of the object to be checked ({ x, y, width, height })
-   * @return {Rect[]}         array with all detected objects
-   * @memberof Quadtree
+
    */
-  retrieve(pRect: BBox): QuadTreeBounds[] {
-    const indexes = this.getIndex(pRect);
-    const result: { [id: string]: QuadTreeBounds } = {};
+  retrieve(query: GraphNodeBase): Set<QuadTreeBounds> {
+    const bbox = query.bbox;
+    const indexes = this.getIndex(bbox);
+    const result = new Set<QuadTreeBounds>();
+
+    const isValid = (obj: GraphNodeBase) => obj !== query && obj.parent === query.parent && intersects(bbox, obj.bbox);
+
     this.objects.forEach((obj) => {
-      if (intersects(pRect, obj.bbox)) {
-        result[obj.id] = obj;
+      if (isValid(obj)) {
+        result.add(obj);
       }
     });
 
     // recursion
     if (this.leaves.length) {
       for (let i = 0; i < indexes.length; i++) {
-        this.leaves[indexes[i]].retrieve(pRect).forEach((l) => {
-          if (intersects(pRect, l.bbox)) {
-            result[l.id] = l;
+        this.leaves[indexes[i]].retrieve(query).forEach((l) => {
+          if (isValid(l)) {
+            result.add(l);
           }
         });
       }
     }
-
-    return Object.values(result);
+    return result;
   }
 
   clear(): void {

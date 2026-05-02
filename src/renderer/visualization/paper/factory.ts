@@ -83,25 +83,6 @@ export class Factory {
     return result;
   }
 
-  static createVisibilityVertices(node: DirectoryGraphNode): Graphics[] {
-    const radius = 2;
-    const result: Graphics[] = [];
-    const vertices = node.routeVisibilityGraph.vertices;
-    for (const vertex of vertices.values()) {
-      const graphic = new Graphics();
-      graphic.circle(vertex.x, vertex.y, radius).fill(vertex._debugColor);
-      graphic.zIndex = 20;
-      vertex.edges.forEach(edge => {
-        const target = vertices.get(edge.target)!;
-        const link = new Graphics();
-        link.moveTo(vertex.x, vertex.y).lineTo(target.x, target.y).stroke({ width: 1, color: 'orange' });
-        result.push(link);
-      })
-      result.push(graphic);
-    }
-    return result;
-  }
-
   static createNode(node: GraphNode): PaperNode[] {
     switch (node.type) {
       case GraphNodeEnum.Directory:

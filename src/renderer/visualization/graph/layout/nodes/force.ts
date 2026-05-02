@@ -1,101 +1,90 @@
 import { IdPath } from '@lib/ast';
 import { Quadtree } from './quad-tree';
 import { eachBefore } from '../../utils';
-import { GraphNodeBase } from '../../models';
-import { getCentroid, getEachAfterNodes, intersection } from './util';
+import { BBox, DirectoryGraphNode, GraphNodeBase } from '../../models';
+import { getCentroid, getEachAfterDirectories, intersection } from './util';
+
+function jiggle() {
+  return (Math.random() - 0.5) * 1e-6;
+}
+
+function updateParentBBox(dir: DirectoryGraphNode) {
+  dir.bbox = intersection(dir.children);
+  dir.radius = Math.max(dir.bbox.width, dir.bbox.height) / 2;
+}
 
 export function clusteredBubblesLayout(root: GraphNodeBase, nodes: Map<IdPath, GraphNodeBase>): void {
-  let alpha = 1;
-  const alphaMin = 0.001;
-  const iterations = 500;
-  const alphaDecay = 1 - Math.pow(alphaMin, 1 / iterations);
-  const alphaTarget = 0;
-  const velocityDecay = 0.6;
-  const sortedNodes = getEachAfterNodes(root);
+  const strength = 1;
+  const iterations = 300;
+  const sortedDirs = getEachAfterDirectories(root);
 
-  // init
-  for (let i = sortedNodes.length - 1; i >= 0; i--) {
-    const node = sortedNodes[i];
-    if (node.children.length) {
-      node.bbox = intersection(node.children);
-      node.radius = Math.max(node.bbox.width, node.bbox.height) / 2;
-    }
+  for (let i = sortedDirs.length - 1; i >= 0; i--) {
+    const dir = sortedDirs[i];
+    if (!dir.children.length) return;
+    updateParentBBox(dir);
+    force(dir, iterations);
+    updateParentBBox(dir);
+  }
+}
+
+function force(dir: DirectoryGraphNode, iterations: number): void {
+  if (!dir.parent) { // if root node
+    // translate all to positive coordinates
+    const rootDx = dir.bbox.x < 0 ? dir.bbox.x : 0;
+    const rootDy = dir.bbox.y < 0 ? dir.bbox.y : 0;
+    eachBefore(dir, (n) => {
+      n.bbox.x -= rootDx;
+      n.bbox.y -= rootDy;
+    });
+    return;
   }
 
   for (let i = 0; i < iterations; i++) {
-    alpha += (alphaTarget - alpha) * alphaDecay;
-    forceCluster();
-    forceCollide();
+    // forceCluster();
+    forceCollide(dir);
 
-    for (let i = sortedNodes.length - 1; i >= 0; i--) {
-      const node = sortedNodes[i];
-      const dx = node.vx *= velocityDecay;
-      const dy = node.vy *= velocityDecay;
-      // translating parent and its children together
-      eachBefore(node, c => {
-        c.bbox.x += dx;
-        c.bbox.y += dy;
+    for (let i = dir.children.length - 1; i >= 0; i--) {
+      const child = dir.children[i];
+      // translating children and its children recursively
+      eachBefore(child, (n) => {
+        n.bbox.x += child.vx;
+        n.bbox.y += child.vy;
       });
+    }
+  }
+}
 
-      if (node.children.length) {
-        node.bbox = intersection(node.children);
-        node.radius = Math.max(node.bbox.width, node.bbox.height) / 2;
+function forceCluster(nodes: GraphNodeBase[]) {
+  const strength = 0.2;
+
+  for (let i = nodes.length - 1; i >= 0; i--) {
+    const node = nodes[i];
+    const { x, y } = getCentroid(node.parent);
+    node.vx -= (node.bbox.x - x) * strength;
+    node.vy -= (node.bbox.y - y) * strength;
+  }
+}
+
+function forceCollide(dir: DirectoryGraphNode) {
+  const quadtree = new Quadtree(dir.bbox, dir.children);
+
+  for (let i = dir.children.length - 1; i >= 0; i--) {
+    const node = dir.children[i];
+
+    for (const overlappingNode of quadtree.retrieve(node)) {
+      const r = node.radius + overlappingNode.radius;
+      const x = node.bbox.x - overlappingNode.bbox.x;
+      const y = node.bbox.y - overlappingNode.bbox.y;
+      let distance = Math.hypot(x, y);
+      if (distance < r) {
+        distance = (distance - r) / (distance || 1);
+        const dx = x * distance || jiggle();
+        const dy = y * distance || jiggle();
+        node.vx += -dx;
+        node.vy += -dy;
+        overlappingNode.vx += dx;
+        overlappingNode.vy += dy;
       }
-    }
-  }
-
-  // finish adjusting
-  const rootDx = root.bbox.x < 0 ? root.bbox.x : 0;
-  const rootDy = root.bbox.y < 0 ? root.bbox.y : 0;
-  for (let i = sortedNodes.length - 1; i >= 0; i--) {
-    const node = sortedNodes[i];
-    node.bbox.x -= rootDx;
-    node.bbox.y -= rootDy;
-  }
-
-  function forceCluster() {
-    const strength = 0 * alpha;
-
-    for (let i = sortedNodes.length - 1; i >= 0; i--) {
-      const node = sortedNodes[i];
-      const { x, y } = getCentroid(node.parent);
-      node.vx -= (node.bbox.x - x) * strength;
-      node.vy -= (node.bbox.y - y) * strength;
-    }
-  }
-
-  function forceCollide() {
-    const alpha = 1; // fixed for greater rigidity!
-    const paddingSameParent = 2;
-    const padding = 6;
-
-    const quadtree = new Quadtree(root.bbox);
-    for (let i = sortedNodes.length - 1; i >= 0; i--) {
-      quadtree.insert(sortedNodes[i]);
-    }
-
-    for (let i = sortedNodes.length - 1; i >= 0; i--) {
-      const node = sortedNodes[i];
-      if (node === root) continue;
-
-      // todo collide only children of the same parent
-      quadtree.retrieve(node.bbox).forEach((query) => {
-        if (query === node || query === node.parent || query.parent !== node.parent) return;
-
-        const r = node.radius + query.radius + (node.parent?.id === query.parent?.id ? paddingSameParent : padding);
-        let x = node.bbox.x - query.bbox.x;
-        let y = node.bbox.y - query.bbox.y;
-        let distance = Math.hypot(x, y);
-        if (distance < r) {
-          distance = ((distance - r) / (distance || 1)) * alpha;
-          const dx = (x * distance) || Math.random();
-          const dy = y * distance || Math.random();
-          node.vx -= dx;
-          node.vy -= dy;
-          query.vx += dx;
-          query.vy += dy;
-        }
-      });
     }
   }
 }

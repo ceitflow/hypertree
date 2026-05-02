@@ -48,10 +48,10 @@ export class Paper {
     const { paper } = this.container;
     const dx = paper.width / 2;
     const dy = paper.height / 2;
-    paper.children.forEach((c) => {
-      c.x += dx;
-      c.y += dy;
-    });
+    // paper.children.forEach((c) => {
+    //   c.x += dx;
+    //   c.y += dy;
+    // });
     paper.pivot.set(paper.width / 2, paper.height / 2);
     this.screen.transformer.updateExtentArea({ x: 0, y: 0, width: paper.width, height: paper.height });
     const newZoom = this.screen.controller.zoom.zoomToFit();
