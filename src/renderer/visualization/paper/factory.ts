@@ -14,14 +14,14 @@ export class Factory {
   static createLabels(node: GraphNode) {
     if (node.type === GraphNodeEnum.Directory) {
       const { x, y, width, height } = node.bbox;
-      const dirFontSize = Math.round(Math.sqrt(node.radius));
-      const text = node.parent ? node.parent['ast'].name + '/' + node.ast.name : node.ast.name
+      const dirFontSize = Math.round(Math.sqrt(node.radius) * 2);
+      const text = node.parent ? node.parent['ast'].name + '/' + node.ast.name : node.ast.name;
       return [this.createLabel(x + width / 2, y + 4, 0, text, dirFontSize)];
     } else if (node.type === GraphNodeEnum.Virtual) {
       return [];
     } else {
-      const { x, y } = node.bbox;
-      return [this.createLabel(x, y, 0, node.ast.name, 5)];
+      const { x, y, width, height } = node.bbox;
+      return [this.createLabel(x + width / 2, y + height / 2, 0, node.ast.name, 5)];
     }
   }
 
@@ -67,20 +67,22 @@ export class Factory {
   }
 
   private static createDirectoryNode(node: DirectoryGraphNode): PaperNode[] {
-    const color = !node.parent ? 'transparent' :[
-      '#333333',
-      '#404040',
-      '#4d4d4d',
-      '#595959',
-      '#666666',
-      '#737373',
-      '#808080',
-      '#8c8c8c',
-      '#999999',
-      '#a6a6a6',
-      '#b3b3b3',
-      '#c0c0c0'
-    ][Math.min(node.ast.depth, 11)];
+    const color = !node.parent
+      ? 'transparent'
+      : [
+          '#031623',
+          '#041d2d',
+          '#052437',
+          '#062a40',
+          '#082f49', // sky-950
+          '#093a54',
+          '#0a425f',
+          '#0c4a6e', // sky-900
+          '#0a4f66',
+          '#095570',
+          '#085a7a',
+          '#075985', // sky-800
+        ][Math.min(node.ast.depth, 11)];
     const { x, y, width, height } = node.bbox;
 
     const graphic = new Graphics() as PaperNode;

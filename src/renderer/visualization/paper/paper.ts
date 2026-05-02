@@ -23,7 +23,7 @@ export class Paper {
       background,
       paper: new Container({ label: 'paper', zIndex: 2, parent: engine.stage })
     };
-    this.screen = CreateViewport(this.engine, this.container.paper, { zoom: { min: 0.03 } });
+    this.screen = CreateViewport(this.engine, this.container.paper, { zoom: { min: 0.007 } });
 
     // auto resize
     const resizeObserver = new ResizeObserver(entries => {

@@ -23,5 +23,5 @@ export function main() {
   // /Users/ceitflow/WebstormProjects/hypertree/graphkit-test-repos/pixijs-dev
   // /Users/ceitflow/WebstormProjects/worldbank/ets-original
   const ast = new AstGen();
-  // ast.run('/Users/ceitflow/WebstormProjects/koia-adminflow/adminflow');
+  // ast.run('/Users/ceitflow/WebstormProjects/hypertree/graphkit-test-repos/angular/packages');
 }

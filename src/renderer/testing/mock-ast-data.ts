@@ -18,13 +18,13 @@ export const MockAstData = AstFactory.createDir({
           depth: 3,
           loc: 300,
           definitions: [
-            // AstFactory.createDeclaration({
-            //   id: 'NebulaForge/engine/OrbitPlanner.ts/OrbitPlanner',
-            //   depth: 4,
-            //   name: 'OrbitPlanner',
-            //   loc: 300,
-            //   token: { category: DeclarationEnum.Class }
-            // })
+            AstFactory.createDeclaration({
+              id: 'NebulaForge/engine/OrbitPlanner.ts/OrbitPlanner',
+              depth: 4,
+              name: 'OrbitPlanner',
+              loc: 300,
+              token: { category: DeclarationEnum.Class }
+            })
           ]
         }),
         AstFactory.createCodeFile({
@@ -33,13 +33,13 @@ export const MockAstData = AstFactory.createDir({
           depth: 3,
           loc: 300,
           definitions: [
-            // AstFactory.createDeclaration({
-            //   id: 'NebulaForge/engine/GravityWell.ts/GravityWell',
-            //   depth: 4,
-            //   name: 'GravityWell',
-            //   loc: 300,
-            //   token: { category: DeclarationEnum.Class }
-            // })
+            AstFactory.createDeclaration({
+              id: 'NebulaForge/engine/GravityWell.ts/GravityWell',
+              depth: 4,
+              name: 'GravityWell',
+              loc: 300,
+              token: { category: DeclarationEnum.Class }
+            })
           ]
         }),
       ],
@@ -56,13 +56,13 @@ export const MockAstData = AstFactory.createDir({
           depth: 3,
           loc: 300,
           definitions: [
-            // AstFactory.createDeclaration({
-            //   id: 'NebulaForge/ui/GalaxyPanel.ts/GalaxyPanel',
-            //   depth: 4,
-            //   name: 'GalaxyPanel',
-            //   loc: 300,
-            //   token: { category: DeclarationEnum.Class }
-            // })
+            AstFactory.createDeclaration({
+              id: 'NebulaForge/ui/GalaxyPanel.ts/GalaxyPanel',
+              depth: 4,
+              name: 'GalaxyPanel',
+              loc: 300,
+              token: { category: DeclarationEnum.Class }
+            })
           ]
         }),
         AstFactory.createCodeFile({
@@ -71,13 +71,13 @@ export const MockAstData = AstFactory.createDir({
           depth: 3,
           loc: 300,
           definitions: [
-            // AstFactory.createDeclaration({
-            //   id: 'NebulaForge/ui/StarLegend.ts/StarLegend',
-            //   depth: 4,
-            //   name: 'StarLegend',
-            //   loc: 300,
-            //   token: { category: DeclarationEnum.Class }
-            // })
+            AstFactory.createDeclaration({
+              id: 'NebulaForge/ui/StarLegend.ts/StarLegend',
+              depth: 4,
+              name: 'StarLegend',
+              loc: 300,
+              token: { category: DeclarationEnum.Class }
+            })
           ]
         }),
         AstFactory.createCodeFile({
@@ -86,13 +86,13 @@ export const MockAstData = AstFactory.createDir({
           depth: 3,
           loc: 300,
           definitions: [
-            // AstFactory.createDeclaration({
-            //   id: 'NebulaForge/ui/CometBadge.ts/CometBadge',
-            //   depth: 4,
-            //   name: 'CometBadge',
-            //   loc: 300,
-            //   token: { category: DeclarationEnum.Class }
-            // })
+            AstFactory.createDeclaration({
+              id: 'NebulaForge/ui/CometBadge.ts/CometBadge',
+              depth: 4,
+              name: 'CometBadge',
+              loc: 300,
+              token: { category: DeclarationEnum.Class }
+            })
           ]
         }),
       ],
@@ -106,13 +106,13 @@ export const MockAstData = AstFactory.createDir({
       depth: 3,
       loc: 300,
       definitions: [
-        // AstFactory.createDeclaration({
-        //   id: 'NebulaForge/AppShell.ts/AppShell',
-        //   depth: 4,
-        //   name: 'AppShell',
-        //   loc: 300,
-        //   token: { category: DeclarationEnum.Class }
-        // })
+        AstFactory.createDeclaration({
+          id: 'NebulaForge/AppShell.ts/AppShell',
+          depth: 4,
+          name: 'AppShell',
+          loc: 300,
+          token: { category: DeclarationEnum.Class }
+        })
       ]
     }),
     AstFactory.createCodeFile({
@@ -121,13 +121,13 @@ export const MockAstData = AstFactory.createDir({
       depth: 3,
       loc: 300,
       definitions: [
-        // AstFactory.createDeclaration({
-        //   id: 'NebulaForge/LaunchConfig.ts/LaunchConfig',
-        //   depth: 4,
-        //   name: 'LaunchConfig',
-        //   loc: 300,
-        //   token: { category: DeclarationEnum.Class }
-        // })
+        AstFactory.createDeclaration({
+          id: 'NebulaForge/LaunchConfig.ts/LaunchConfig',
+          depth: 4,
+          name: 'LaunchConfig',
+          loc: 300,
+          token: { category: DeclarationEnum.Class }
+        })
       ]
     }),
   ],
