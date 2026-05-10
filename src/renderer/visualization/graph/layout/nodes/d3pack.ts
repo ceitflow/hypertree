@@ -2,10 +2,16 @@ import { HierarchyCircularNode } from 'd3';
 import { GraphNodeBase } from '../../models';
 
 export function d3pack() {
+  const MIN_PADDING = 5;
+  const MIN_RADIUS = 20;
   const padding = (n: HierarchyCircularNode<GraphNodeBase>) => {
-    // if (n.data.id === 'packages/excalidraw') return 200;
-    return Math.round(Math.sqrt(n.r));
+    return Math.max(Math.round(Math.sqrt(n.r || 1)), MIN_PADDING);
   };
+  const radiusLeaf = (n: HierarchyCircularNode<GraphNodeBase>) => {
+    if (!n.children) {
+      n.r = Math.round(n.data.area / 2) + MIN_RADIUS;
+    }
+  }
   const zeroPadding = () => 0;
   const random = lcg();
 
@@ -23,12 +29,6 @@ export function d3pack() {
   }
 
   return pack;
-}
-
-function radiusLeaf(node: HierarchyCircularNode<GraphNodeBase>) {
-  if (!node.children) {
-    node.r = node.data.radius;
-  }
 }
 
 function translateChild(node: HierarchyCircularNode<GraphNodeBase>) {
@@ -115,7 +115,7 @@ function Node(circle) {
   this.previous = null;
 }
 
-export function packSiblingsRandom(circles, random) {
+export function packSiblingsRandom(circles: HierarchyCircularNode<GraphNodeBase>[], random) {
   if (!(n = (circles = array(circles)).length)) return 0;
 
   var a, b, c, n, aa, ca, i, j, k, sj, sk;

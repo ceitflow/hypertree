@@ -20,8 +20,8 @@ export function main() {
   // /Users/ceitflow/WebstormProjects/hypertree/graphkit-test-repos/vue-main
   // /Users/ceitflow/WebstormProjects/paymentSavvy/chatbot-frontend
   // /Users/ceitflow/WebstormProjects/hypertree/graphkit-test-repos/excalidraw-master
-  // /Users/ceitflow/WebstormProjects/hypertree/graphkit-test-repos/pixijs-dev
+  // /Users/ceitflow/WebstormProjects/hypertree/graphkit-test-repos/pixijs
   // /Users/ceitflow/WebstormProjects/worldbank/ets-original
   const ast = new AstGen();
-  // ast.run('/Users/ceitflow/WebstormProjects/hypertree/graphkit-test-repos/excalidraw-master');
+  // ast.run('/Users/ceitflow/WebstormProjects/hypertree/graphkit-test-repos/pixijs');
 }

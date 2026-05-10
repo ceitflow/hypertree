@@ -3,14 +3,16 @@ import { IdPath } from '@lib/ast';
 import { d3pack } from './d3pack';
 import { eachBefore } from '../../utils';
 import { HierarchyCircularNode } from 'd3';
-import { GraphNodeBase } from '../../models';
+import { GraphNodeBase, GraphNodeEnum } from '../../models';
 
 export function clusteredBubblesLayout(root: GraphNodeBase, nodes: Map<IdPath, GraphNodeBase>): void {
   const circlePacking = d3pack()(
     d3
       .hierarchy(root, (d) => (d.children.length ? d.children : null))
-      .sum((d) => (d.children.length > 0 ? 0 : Math.max(1, d.area)))
-      .sort((a, b) => (b.value ?? 0) - (a.value ?? 0)) as HierarchyCircularNode<GraphNodeBase>
+      .sum((d) => (d.area))
+      .sort((a, b) => {
+        return a.data.type === GraphNodeEnum.Virtual ? -1 : ((b.value ?? 0) - (a.value ?? 0)) // file group first
+      }) as HierarchyCircularNode<GraphNodeBase>
   );
   circlePacking.each((h) => {
     const node = h.data;

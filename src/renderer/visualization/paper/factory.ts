@@ -81,23 +81,17 @@ export class Factory {
     }
   }
 
+  /** Dark fills: hue walks cyan → violet (~14°/step) so depths don’t melt into one navy, without full-rainbow noise. */
+  private static directoryDepthColor(depth: number): string {
+    const d = Math.min(Math.max(depth, 0), 11);
+    const hue = 185 + d * 24;
+    const sat = 52;
+    const light = 14 + d * 10;
+    return `hsl(${hue}, ${sat}%, ${light}%)`;
+  }
+
   private static createDirectoryNode(node: DirectoryGraphNode): PaperNode[] {
-    const color = !node.parent
-      ? 'transparent'
-      : [
-          '#031623',
-          '#041d2d',
-          '#052437',
-          '#062a40',
-          '#082f49', // sky-950
-          '#093a54',
-          '#0a425f',
-          '#0c4a6e', // sky-900
-          '#0a4f66',
-          '#095570',
-          '#085a7a',
-          '#075985', // sky-800
-        ][Math.min(node.ast.depth, 11)];
+    const color = this.directoryDepthColor(node.ast.depth);
     const { x, y, width, height } = node.bbox;
 
     const graphic = new Graphics() as PaperNode;
@@ -176,7 +170,7 @@ export class Factory {
   private static createVirtualNode(node: VirtualGraphNode): PaperNode[] {
     const { x, y, width, height } = node.bbox;
     const graphic = new Graphics() as PaperNode;
-    const color = '#00ff0033';
+    const color = '#ff000033';
 
     graphic.circle(width / 2, height / 2, node.radius).fill(color);
 
