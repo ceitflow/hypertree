@@ -2,7 +2,10 @@ import { HierarchyCircularNode } from 'd3';
 import { GraphNodeBase } from '../../models';
 
 export function d3pack() {
-  const padding = (n: HierarchyCircularNode<GraphNodeBase>) => Math.round(Math.sqrt(n.r));
+  const padding = (n: HierarchyCircularNode<GraphNodeBase>) => {
+    // if (n.data.id === 'packages/excalidraw') return 200;
+    return Math.round(Math.sqrt(n.r));
+  };
   const zeroPadding = () => 0;
   const random = lcg();
 
@@ -42,6 +45,7 @@ function packChildrenRandom(padding: (n: HierarchyCircularNode<GraphNodeBase>) =
       const children = node.children;
       const p = padding(node);
 
+      // todo comment out for loops to get parent padding only. For loops are inner (children) padding
       if (p) for (let i = 0; i < children.length; ++i) children[i].r += p;
       const e = packSiblingsRandom(children, random);
       if (p) for (let i = 0; i < children.length; ++i) children[i].r -= p;

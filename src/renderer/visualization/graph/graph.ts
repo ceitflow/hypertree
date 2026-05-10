@@ -5,11 +5,13 @@ import {
   GraphNode,
   OtherGraphNode,
   Edge,
-  GraphData, GraphNodeEnum
+  GraphData,
+  GraphNodeEnum,
+  VirtualGraphNode,
+  GraphNodeBase
 } from './models';
 import mitt from 'mitt';
 import { Layout } from './layout/layout';
-import { GraphNodeBase } from './models/base';
 import { Directory, IdPath, NodeEnum } from '@lib/ast';
 
 export class Graph {
@@ -41,23 +43,28 @@ export class Graph {
       }
 
       if (dir.files.length) {
+        let parent: GraphNode = parentNode;
+        if (dir.dirs.length) { // wrap files in virtual node if there are other dirs
+          parent = VirtualGraphNode.create(`/${parentNode.id}`, parentNode);
+          parentNode.children.push(parent);
+        }
         for (const file of dir.files) {
           let fileNode: GraphNode;
           if (file.type === NodeEnum.Code) {
-            fileNode = CodeGraphNode.create(parentNode, file);
+            fileNode = CodeGraphNode.create(parent, file);
             fileNode.children = DeclarationGraphNode.createFromCodeFile(fileNode);
             fileNode.ast.imports.forEach((imp) => {
               if (!edges.has(file.id)) edges.set(file.id, []);
               edges.get(file.id)!.push(Edge.create(imp, file.id, imp.from));
             });
           } else {
-            fileNode = OtherGraphNode.create(parentNode, file);
+            fileNode = OtherGraphNode.create(parent, file);
           }
           nodes.set(fileNode.ast.id, fileNode);
           fileNode.children.forEach((c) => {
             if (c.type === GraphNodeEnum.Declaration) nodes.set(c.ast.id, c);
           });
-          parentNode.children.push(fileNode);
+          parent.children.push(fileNode);
         }
       }
     }

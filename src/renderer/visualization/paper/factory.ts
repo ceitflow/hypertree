@@ -176,7 +176,7 @@ export class Factory {
   private static createVirtualNode(node: VirtualGraphNode): PaperNode[] {
     const { x, y, width, height } = node.bbox;
     const graphic = new Graphics() as PaperNode;
-    const color = '#e4f1ff00';
+    const color = '#00ff0033';
 
     graphic.circle(width / 2, height / 2, node.radius).fill(color);
 
