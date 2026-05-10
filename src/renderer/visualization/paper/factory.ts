@@ -51,6 +51,21 @@ export class Factory {
     return label;
   }
 
+  static createLinks(node: GraphNode): Graphics[] {
+    const { x, y, width, height } = node.bbox;
+    const px = x + width / 2;
+    const py = y + height / 2;
+    const links: Graphics[] = [];
+    for (const child of node.children) {
+      const cx = child.bbox.x + child.bbox.width / 2;
+      const cy = child.bbox.y + child.bbox.height / 2;
+      const line = new Graphics({ eventMode: 'none' });
+      line.moveTo(px, py).lineTo(cx, cy).stroke({ width: 1, color: '#888888' });
+      links.push(line);
+    }
+    return links;
+  }
+
   static createNode(node: GraphNode): PaperNode[] {
     switch (node.type) {
       case GraphNodeEnum.Directory:

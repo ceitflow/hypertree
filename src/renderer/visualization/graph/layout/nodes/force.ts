@@ -1,40 +1,25 @@
 import * as d3 from 'd3';
 import { IdPath } from '@lib/ast';
+import { d3pack } from './d3pack';
 import { eachBefore } from '../../utils';
-import { CodeGraphNode, GraphNodeBase } from '../../models';
+import { HierarchyCircularNode } from 'd3';
+import { GraphNodeBase } from '../../models';
 
 export function clusteredBubblesLayout(root: GraphNodeBase, nodes: Map<IdPath, GraphNodeBase>): void {
-  const padding = 0.02;
-  const pack = d3.pack<GraphNodeBase>().padding(padding);
-  let smallestCodeRadius: GraphNodeBase | undefined = undefined;
-  eachBefore(root, (n) => {
-    if (n instanceof CodeGraphNode && (!smallestCodeRadius || n.radius < smallestCodeRadius.radius))
-      smallestCodeRadius = n;
-  });
-
-  const circlePacking = pack(
+  const circlePacking = d3pack()(
     d3
       .hierarchy(root, (d) => (d.children.length ? d.children : null))
       .sum((d) => (d.children.length > 0 ? 0 : Math.max(1, d.area)))
-      .sort((a, b) => (b.value ?? 0) - (a.value ?? 0))
+      .sort((a, b) => (b.value ?? 0) - (a.value ?? 0)) as HierarchyCircularNode<GraphNodeBase>
   );
-
-  let scale = 1;
-  circlePacking.each((h) => {
-    if (h.data === smallestCodeRadius) {
-      scale = (h.data.radius) / (h.r)
-      console.log(scale, h.r);
-    }
-  });
-
   circlePacking.each((h) => {
     const node = h.data;
-    const r = h.r * scale;
+    const r = Math.floor(h.r) || 1;
 
     node.radius = r;
     node.bbox = {
-      x: h.x * scale - r,
-      y: h.y * scale - r,
+      x: h.x - r,
+      y: h.y - r,
       width: r * 2,
       height: r * 2
     };

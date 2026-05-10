@@ -17,7 +17,7 @@ const defaultConfig: ScreenConfig = {
     animEaseFn: Ease.outBack,
   },
   drag: {
-    limitToViewport: true,
+    limitToViewport: false,
     animDurationMs: 0,
     animEaseFn: Ease.outQuint,
   },
@@ -36,7 +36,7 @@ const defaultConfig: ScreenConfig = {
     durationMultiplier: 1,
     turboVelocityThreshold: 14,
     minVelocity: 1,
-    limitToViewport: true,
+    limitToViewport: false,
     animEaseFn: Ease.outQuint,
   },
 }
