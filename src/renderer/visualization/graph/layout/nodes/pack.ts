@@ -5,7 +5,7 @@ import { eachBefore } from '../../utils';
 import { HierarchyCircularNode } from 'd3';
 import { GraphNodeBase, GraphNodeEnum } from '../../models';
 
-export function clusteredBubblesLayout(root: GraphNodeBase, nodes: Map<IdPath, GraphNodeBase>): void {
+export function clusteredBubblesLayout(root: GraphNodeBase): void {
   const circlePacking = d3pack()(
     d3
       .hierarchy(root, (d) => (d.children.length ? d.children : null))

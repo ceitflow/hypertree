@@ -1,10 +1,9 @@
-import { GraphNodeBase } from '../models/base';
-import { GraphData, GraphNodeEnum } from '../index';
-import { clusteredBubblesLayout } from './nodes/force';
+import { GraphData } from '../index';
+import { clusteredBubblesLayout } from './nodes/pack';
 
 export class Layout {
   constructor(graphModel: GraphData) {
-    clusteredBubblesLayout(graphModel.root, graphModel.nodes);
+    clusteredBubblesLayout(graphModel.root);
     // Router.init(graphModel);
   }
 }
