@@ -12,16 +12,38 @@ import { BitmapText, Graphics } from 'pixi.js';
 
 export class Factory {
   static createLabels(node: GraphNode) {
-    if (node.type === GraphNodeEnum.Directory) {
-      const { x, y, width, height } = node.bbox;
-      const dirFontSize = Math.round(Math.sqrt(node.radius) * 2);
-      const text = node.parent ? node.parent['ast'].name + '/' + node.ast.name : node.ast.name;
-      return [this.createLabel(x + width / 2, y + 4, 0, text, dirFontSize)];
-    } else if (node.type === GraphNodeEnum.Virtual) {
-      return [];
-    } else {
-      const { x, y, width, height } = node.bbox;
-      return [this.createLabel(x + width / 2, y + height / 2, 0, node.ast.name, 5)];
+    switch (node.type) {
+      case GraphNodeEnum.Directory: {
+        const { x, y, width, height } = node.bbox;
+        const dirFontSize = Math.round(Math.sqrt(node.radius) * 2);
+        const text = node.parent ? node.parent['ast'].name + '/' + node.ast.name : node.ast.name;
+        return [this.createLabel(x + width / 2, y + 4, 0, text, dirFontSize)];
+      }
+
+      case GraphNodeEnum.Virtual: {
+        return [];
+      }
+
+      case GraphNodeEnum.Code: {
+        const cn = node as CodeGraphNode;
+        const { x, y, width, height } = cn.bbox;
+        const fontSize = Math.round(Math.sqrt(cn.radius) * 2);
+        return [this.createLabel(x + width / 2, y - fontSize, 0, cn.ast.name, fontSize)];
+      }
+
+      case GraphNodeEnum.Other: {
+        const cn = node as OtherGraphNode;
+        const { x, y, width, height } = cn.bbox;
+        const fontSize = Math.round(Math.sqrt(cn.radius) * 2);
+        return [this.createLabel(x + width / 2, y + height / 2, 0, cn.ast.name, fontSize)];
+      }
+
+      case GraphNodeEnum.Declaration: {
+        const dn = node as DeclarationGraphNode;
+        const { x, y, width, height } = dn.bbox;
+        const fontSize = Math.max(3, Math.min(8, Math.round(dn.parent.radius / 14)));
+        return [this.createLabel(x + width / 2, y + height / 2, 0, node.ast.name, fontSize)];
+      }
     }
   }
 
@@ -92,12 +114,12 @@ export class Factory {
 
   private static createDirectoryNode(node: DirectoryGraphNode): PaperNode[] {
     const color = this.directoryDepthColor(node.ast.depth);
-    const { x, y, width, height } = node.bbox;
+    const { x, y } = node.bbox;
 
     const graphic = new Graphics() as PaperNode;
     // graphic.pivot.set(node.radius, node.radius);
 
-    graphic.circle(width / 2, height / 2, node.radius).fill(color);
+    graphic.circle(node.radius, node.radius, node.radius).fill(color);
     // graphic.rect(0, 0, width, height).fill(color);
     graphic.x = x;
     graphic.y = y;
@@ -152,11 +174,18 @@ export class Factory {
 
   private static createDeclarationNode(node: DeclarationGraphNode): PaperNode[] {
     const { x, y, width, height } = node.bbox;
+    const parent = node.parent;
     const graphic = new Graphics() as PaperNode;
-    const color = '#ff7e5f';
     const result: PaperNode[] = [graphic];
 
-    graphic.circle(width / 2, height / 2, node.radius).fill(color);
+    graphic.rect(0, 0, width, height).fill('#ff7e5f');
+
+    const pcx = parent.bbox.x + parent.bbox.width / 2;
+    const pcy = parent.bbox.y + parent.bbox.height / 2;
+    const mask = new Graphics({ eventMode: 'none' });
+    mask.circle(pcx - x, pcy - y, parent.radius).fill('white');
+    graphic.addChild(mask);
+    graphic.mask = mask;
 
     graphic.x = x;
     graphic.y = y;
@@ -169,8 +198,8 @@ export class Factory {
 
   private static createVirtualNode(node: VirtualGraphNode): PaperNode[] {
     const { x, y, width, height } = node.bbox;
-    const graphic = new Graphics() as PaperNode;
-    const color = '#ff000033';
+    const graphic = new Graphics({ zIndex: 10 }) as PaperNode;
+    const color = '#ff000088';
 
     graphic.circle(width / 2, height / 2, node.radius).fill(color);
 

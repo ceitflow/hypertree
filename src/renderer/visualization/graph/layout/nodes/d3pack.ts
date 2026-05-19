@@ -1,11 +1,11 @@
 import { HierarchyCircularNode } from 'd3';
-import { GraphNodeBase } from '../../models';
+import { GraphNodeBase, GraphNodeEnum } from '../../models';
 
 export function d3pack() {
-  const MIN_PADDING = 5;
+  const MIN_PADDING = 15;
   const MIN_RADIUS = 20;
   const padding = (n: HierarchyCircularNode<GraphNodeBase>) => {
-    return Math.max(Math.round(Math.sqrt(n.r || 1)), MIN_PADDING);
+    return Math.max(Math.round(Math.sqrt(n.value || 1) * 2), MIN_PADDING);
   };
   const radiusLeaf = (n: HierarchyCircularNode<GraphNodeBase>) => {
     if (!n.children) {
