@@ -80,19 +80,18 @@ export function clusteredBubblesLayout(root: GraphNodeBase): void {
   });
 }
 
-const FORCE_TICKS = 100;
+const FORCE_TICKS = 200;
 const FORCE_COLLIDE_PAD = 4;
 
 function centerVirtualChildrenWithForce(root: GraphNodeBase): void {
   eachAfter(root, (dir) => {
     if (dir.type !== GraphNodeEnum.Directory) return;
-    const virtual = dir.children.find((c) => c.type === GraphNodeEnum.Virtual);
-    // if (!virtual) return;
 
     const dirCenter = getNodeCenter(dir);
+
     const children: ForceLayoutNode[] = dir.children.map((child) => {
       const center = getNodeCenter(child);
-      const isVirtual = child === virtual;
+      const isVirtual = child.type === GraphNodeEnum.Virtual;
       return {
         node: child,
         x: center.x,
@@ -114,17 +113,17 @@ function centerVirtualChildrenWithForce(root: GraphNodeBase): void {
           .iterations(3)
           .strength(2)
       )
-      .force('charge', d3.forceManyBody<ForceLayoutNode>().strength(-1))
-      // .force(
-      //   'radial',
-      //   d3
-      //     .forceRadial<ForceLayoutNode>(
-      //       (d) => (d.isVirtual ? 0 : d.r + minOrbit),
-      //       cx,
-      //       cy
-      //     )
-      //     .strength((d) => (d.isVirtual ? 0 : 0.85))
-      // )
+      .force('charge', d3.forceManyBody<ForceLayoutNode>().strength(-2))
+      .force(
+        'radial',
+        d3
+          .forceRadial<ForceLayoutNode>(
+            (d) => (d.isVirtual ? 0 : d.r + 4),
+            dirCenter.x,
+            dirCenter.y
+          )
+          .strength((d) => (d.isVirtual ? 0 : 0.85))
+      )
       .stop();
 
     for (let i = 0; i < FORCE_TICKS; i++) {
