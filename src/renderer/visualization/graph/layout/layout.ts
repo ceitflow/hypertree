@@ -1,9 +1,10 @@
 import { GraphData } from '../index';
-import { clusteredBubblesLayout } from './nodes/pack';
+import { Treemap } from './nodes/treemap';
 
 export class Layout {
   constructor(graphModel: GraphData) {
-    clusteredBubblesLayout(graphModel.root);
+    Treemap(graphModel.root);
+    // clusteredBubblesLayout(graphModel.root);
     // Router.init(graphModel);
   }
 }

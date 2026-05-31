@@ -20,6 +20,33 @@
   white-space: nowrap;
 }
 
+.children-list {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  max-height: 40%;
+  padding: 0.5rem;
+  gap: 0.125rem;
+  font-size: 0.8rem;
+  color: #333;
+  background-color: #fffaf0;
+  border-bottom: 1px solid #ffe0b2;
+  overflow: auto;
+}
+
+.child-item {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.child-type {
+  color: #999;
+  font-style: italic;
+  font-size: 0.75rem;
+}
+
 .editor-wrapper {
   flex: 1;
   height: 100%;

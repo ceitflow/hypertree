@@ -4,9 +4,8 @@ import { BBox, GraphNodeBase } from '../../models';
  * Quadtree Constructor
  * @class Quadtree
  * @param {Rect} bounds                 bounds of the node ({ x, y, width, height })
- * @param {number} [max_objects=10]     (optional) max objects a node can hold before splitting into 4 subnodes (default: 10)
- * @param {number} [max_levels=4]       (optional) total max levels inside root Quadtree (default: 4)
- * @param {number} [level=0]            (optional) depth level, required for subnodes (default: 0)
+ * @param {number} [max_objects=10]     (optional) max objects a node can hold before splitting into 4 subnodes
+ * @param {number} [max_levels=4]       (optional) total max levels inside root Quadtree
  */
 
 type QuadTreeBounds = GraphNodeBase;
@@ -21,7 +20,7 @@ export class Quadtree {
   objects: QuadTreeBounds[];
   leaves: Quadtree[];
 
-  constructor(bounds: BBox, objects: QuadTreeBounds[], max_objects = 20, max_levels = 4, level = 0) {
+  constructor(bounds: BBox, objects: QuadTreeBounds[], max_objects = 16, max_levels = 4, level = 0) {
     this.max_objects = max_objects;
     this.max_levels = max_levels;
 

@@ -11,8 +11,8 @@
 
 .openFolderButton {
   position: fixed;
-  top: 24px;
-  left: 12px;
+  top: 0px;
+  left: 600px;
   z-index: 10000;
   padding: 8px 14px;
   font: inherit;

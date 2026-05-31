@@ -22,6 +22,10 @@ function getFilePath(node: GraphNode): string | null {
   }
 }
 
+function getChildName(child: GraphNode): string {
+  return child.type === GraphNodeEnum.Virtual ? 'virtual' : child.ast.name;
+}
+
 type Props = {
   graph: Graph;
 }
@@ -30,10 +34,12 @@ export const Inspector = ({ graph }: Props) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const [label, setLabel] = useState<string | null>(null);
+  const [children, setChildren] = useState<GraphNode[] | null>(null);
 
   useEffect(() => {
     const onSelect = async (node: GraphNode | null) => {
       setLabel(node ? getLabel(node) : null);
+      setChildren(node && (node.type === GraphNodeEnum.Directory || node.type === GraphNodeEnum.Virtual) ? (node.children as GraphNode[]) : null);
 
       const view = viewRef.current;
       if (!view) return;
@@ -83,6 +89,16 @@ export const Inspector = ({ graph }: Props) => {
   return (
     <div className={styles.inspectorContainer}>
       <span className={styles.selectedId}>{label || '—'}</span>
+      {children && (
+        <div className={styles.childrenList}>
+          {children.map((child) => (
+            <span key={child.id} className={styles.childItem}>
+              {getChildName(child)} <em className={styles.childType}>({child.type})</em>
+            </span>
+          ))}
+          {children.length === 0 && <span className={styles.childItem}>(empty)</span>}
+        </div>
+      )}
       <div ref={containerRef} className={styles.editorWrapper} />
     </div>
   );
