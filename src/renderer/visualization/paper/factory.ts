@@ -15,7 +15,7 @@ export class Factory {
     switch (node.type) {
       case GraphNodeEnum.Directory: {
         const { x, y, width, height } = node.bbox;
-        const dirFontSize = Math.max(node.margin / 2, 16);
+        const dirFontSize = Math.max(Math.round(Math.sqrt(node.area)), 32);
         const text = node.parent ? node.parent['ast'].name + '/' + node.ast.name : node.ast.name;
         return [this.createLabel(x + width / 2, y, 0, text, dirFontSize)];
       }
@@ -86,18 +86,30 @@ export class Factory {
   }
 
   static createNode(node: GraphNode): PaperNode[] {
+    let result: PaperNode[] = [];
+
     switch (node.type) {
       case GraphNodeEnum.Directory:
-        return this.createDirectoryNode(node);
+        result = this.createDirectoryNode(node);
+        break;
       case GraphNodeEnum.Code:
-        return this.createCodeNode(node);
+        result = this.createCodeNode(node);
+        break;
       case GraphNodeEnum.Other:
-        return this.createOtherNode(node);
+        result = this.createOtherNode(node);
+        break;
       case GraphNodeEnum.Declaration:
-        return this.createDeclarationNode(node);
+        result = this.createDeclarationNode(node);
+        break;
       case GraphNodeEnum.Virtual:
-        return this.createVirtualNode(node);
+        result = this.createVirtualNode(node);
+        break;
     }
+
+    if (node.header) {
+      // todo render additional data
+    }
+    return result;
   }
 
   private static directoryDepthColor(depth: number): string {

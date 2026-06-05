@@ -18,6 +18,7 @@ export function addDirectoryHeader(n: GraphNodeBase): void {
   });
 
   n.children.unshift(header);
+  n.header = header;
   n.bbox.height += header.bbox.height;
 }
 
@@ -38,5 +39,6 @@ export function addCodeHeader(n: GraphNodeBase): void {
   });
 
   n.children.unshift(header);
+  n.header = header;
   n.bbox.height += header.bbox.height;
 }

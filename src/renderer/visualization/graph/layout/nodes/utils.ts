@@ -23,11 +23,11 @@ export function getRowHeight(row: GraphNodeBase[], padding = 0): number {
 }
 
 export function getSlotWidth(node: GraphNodeBase, padding = 0): number {
-  return node.bbox.width + (node.margin + padding) * 2;
+  return node.bbox.width + node.margin.left + node.margin.right + padding * 2;
 }
 
 export function getSlotHeight(node: GraphNodeBase, padding = 0): number {
-  return node.bbox.height + (node.margin + padding) * 2;
+  return node.bbox.height + node.margin.top + node.margin.bottom + padding * 2;
 }
 
 // Move nodes across the boundary between two vertically adjacent rows so their

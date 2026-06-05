@@ -76,6 +76,7 @@ export const Inspector = ({ graph }: Props) => {
         basicSetup,
         EditorState.readOnly.of(true),
         EditorView.editable.of(false),
+        EditorView.lineWrapping,
       ],
     });
     viewRef.current = view;
