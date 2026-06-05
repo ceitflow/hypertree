@@ -15,7 +15,7 @@ export class Factory {
     switch (node.type) {
       case GraphNodeEnum.Directory: {
         const { x, y, width, height } = node.bbox;
-        const dirFontSize = Math.round(Math.sqrt(node.area));
+        const dirFontSize = Math.round(Math.sqrt(node.area) / 2);
         const text = node.parent ? node.parent['ast'].name + '/' + node.ast.name : node.ast.name;
         return [this.createLabel(x + width / 2, y + 4, 0, text, dirFontSize)];
       }

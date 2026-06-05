@@ -6,6 +6,39 @@ const size = 120;
 const margin = 24;
 const padding = 48;
 
+export function QuantizedTreemap(root: GraphNodeBase) {
+  eachAfter(root, (n) => {
+    // preprocessing
+    if (n.type === GraphNodeEnum.Code || n.type === GraphNodeEnum.Other) {
+      n.bbox.width = size;
+      n.bbox.height = size;
+      n.area = size;
+      return;
+    } else if (n.type === GraphNodeEnum.Directory || n.type === GraphNodeEnum.Virtual) {
+      n.area = n.children.reduce((sum, child) => sum + child.area, 0);
+
+      if (n.children.length === 0) {
+        n.bbox.x = 0;
+        n.bbox.y = 0;
+        n.bbox.width = 0;
+        n.bbox.height = 0;
+        return;
+      }
+
+      // 1. rows layout
+      const nodeRows = wrapIntoRows(n.children);
+
+      // 2. post-process fill up the top rows first
+      // if (n.id === 'src/pages/home') debugger;
+      const packedRows = fillRowsTopDown(nodeRows, getContainerSize(nodeRows, margin).width);
+      n.bbox.x = 0;
+      n.bbox.y = 0;
+      n.bbox.width = packedRows.width;
+      n.bbox.height = packedRows.height;
+    }
+  });
+}
+
 function wrapIntoRows(children: GraphNode[]): GraphNode[][] {
   const aspectRatio = (rows: GraphNode[][]): number => {
     const { width, height } = getContainerSize(rows, margin);
@@ -94,37 +127,4 @@ function fillRowsTopDown(
   const { width, height } = getContainerSize(result, margin);
 
   return { rows: result, width: width + padding * 2, height: height + padding * 2 };
-}
-
-export function QuantizedTreemap(root: GraphNodeBase) {
-  eachAfter(root, (n) => {
-    // preprocessing
-    if (n.type === GraphNodeEnum.Code || n.type === GraphNodeEnum.Other) {
-      n.bbox.width = size;
-      n.bbox.height = size;
-      n.area = size;
-      return;
-    } else if (n.type === GraphNodeEnum.Directory || n.type === GraphNodeEnum.Virtual) {
-      n.area = n.children.reduce((sum, child) => sum + child.area, 0);
-
-      if (n.children.length === 0) {
-        n.bbox.x = 0;
-        n.bbox.y = 0;
-        n.bbox.width = 0;
-        n.bbox.height = 0;
-        return;
-      }
-
-      // 1. rows layout
-      // if (n.id === '/src/ui/templates' && n.type === GraphNodeEnum.Virtual) debugger;
-      const nodeRows = wrapIntoRows(n.children);
-
-      // 2. post-process fill up the top rows first
-      const packedRows = fillRowsTopDown(nodeRows, getContainerSize(nodeRows, margin).width);
-      n.bbox.x = 0;
-      n.bbox.y = 0;
-      n.bbox.width = packedRows.width;
-      n.bbox.height = packedRows.height;
-    }
-  });
 }
