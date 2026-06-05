@@ -22,7 +22,7 @@ export function QuantizedTreemap(root: GraphNodeBase) {
       case GraphNodeEnum.Virtual: {
         n.area = n.children.reduce((sum, child) => sum + child.area, 0);
         n.padding = 20;
-        n.margin = n.type === GraphNodeEnum.Directory ? Math.max(400 - n.depth * 40, 40) : 0;
+        n.margin = n.type === GraphNodeEnum.Directory ? Math.round(Math.sqrt(n.area)) : 0;
 
         if (n.children.length === 0) {
           n.bbox.x = 0;
