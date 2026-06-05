@@ -18,40 +18,104 @@ export function QuantizedTreemap(root: GraphNodeBase) {
         break;
       }
       case GraphNodeEnum.Code:
-      case GraphNodeEnum.Directory:
       case GraphNodeEnum.Virtual: {
         n.area = n.children.reduce((sum, child) => sum + child.area, 0);
-        n.padding = 20;
-        n.margin = n.type === GraphNodeEnum.Directory ? Math.round(Math.sqrt(n.area)) : 0;
+        n.padding = 40;
+        n.margin = 0;
 
         if (n.children.length === 0) {
-          n.bbox.x = 0;
-          n.bbox.y = 0;
+          n.bbox.width = size;
+          n.bbox.height = size;
+          n.area = size;
+          return;
+        }
+        // 1. rows layout
+        const nodeRows = wrapIntoRows(n.children);
+
+        // 2. post-process fill up the top rows first
+        const packedRows = fillRowsTopDown(nodeRows, getContainerSize(nodeRows).width, n.padding);
+        n.rows = packedRows.rows;
+        n.bbox.width = packedRows.width;
+        n.bbox.height = packedRows.height;
+        break;
+      }
+      case GraphNodeEnum.Directory: {
+        n.area = n.children.reduce((sum, child) => sum + child.area, 0);
+        n.padding = 40;
+        n.margin = Math.round(Math.sqrt(n.area));
+
+        if (n.children.length === 0) {
           n.bbox.width = size;
           n.bbox.height = size;
           n.area = size;
           return;
         }
 
+        // pull the virtual container for files first
+        let virtual: GraphNodeBase | null = null;
+        const originalChildren = n.children;
+        if (n.children[0].type === GraphNodeEnum.Virtual) {
+          virtual = n.children[0];
+          n.children = n.children.slice(1);
+        }
+
         // 1. rows layout
         const nodeRows = wrapIntoRows(n.children);
 
         // 2. post-process fill up the top rows first
-        // if (n.id === 'src/pages/home') debugger;
         const packedRows = fillRowsTopDown(nodeRows, getContainerSize(nodeRows).width, n.padding);
-        n.bbox.x = 0;
-        n.bbox.y = 0;
+        n.rows = packedRows.rows;
         n.bbox.width = packedRows.width;
         n.bbox.height = packedRows.height;
-        break;
 
-        // todo 2.5 skyline packing algorithm approach, check row line and see if a node can be pushed into it
+        if (virtual) {
+          placeVirtualOnTop(n, virtual);
+          n.children = originalChildren;
+        }
+        break;
       }
     }
   });
 }
 
+function placeVirtualOnTop(parent: GraphNodeBase, virtual: GraphNodeBase): void {
+  const whitespace = virtual.margin + parent.padding;
+
+  // If the directory ended up wider than the virtual, re-pack the virtual's rows
+  const innerMaxWidth = parent.bbox.width - whitespace * 2;
+  if (virtual.rows.length > 1 && innerMaxWidth > virtual.bbox.width) {
+    const repacked = fillRowsTopDown(virtual.rows, innerMaxWidth, virtual.padding);
+    virtual.rows = repacked.rows;
+    virtual.bbox.width = repacked.width;
+    virtual.bbox.height = repacked.height;
+  }
+
+  const width = Math.max(parent.bbox.width, virtual.bbox.width + whitespace * 2);
+  virtual.bbox.width = width - whitespace * 2;
+  const virtualRowHeight = virtual.bbox.height + whitespace * 2;
+
+  // Move the virtual (and its subtree) into the top-left content slot.
+  const diffX = whitespace - virtual.bbox.x;
+  const diffY = whitespace - virtual.bbox.y;
+  eachBefore(virtual, (descendant) => {
+    descendant.bbox.x += diffX;
+    descendant.bbox.y += diffY;
+  });
+
+  // Push every other child (and its subtree) below the virtual row.
+  parent.children.forEach((child) => {
+    eachBefore(child, (descendant) => {
+      descendant.bbox.y += virtualRowHeight;
+    });
+  });
+
+  parent.bbox.width = width;
+  parent.bbox.height += virtualRowHeight;
+}
+
 function wrapIntoRows(children: GraphNodeBase[]): GraphNodeBase[][] {
+  if (children.length === 0) return [];
+
   const aspectRatio = (rows: GraphNodeBase[][]): number => {
     const { width, height } = getContainerSize(rows);
     return Math.max(width, height) / Math.min(width, height);
@@ -124,18 +188,19 @@ function fillRowsTopDown(
   // calculate positions
   let y = 0;
   result.forEach((row) => {
+    const rowHeight = getRowHeight(row, padding);
     let x = 0;
     row.forEach((child) => {
-      const space = child.margin + padding;
-      const diffX = x + space - child.bbox.x;
-      const diffY = y + space - child.bbox.y;
+      const whitespace = child.margin + padding;
+      const diffX = x + whitespace - child.bbox.x;
+      const diffY = y + whitespace - child.bbox.y;
       eachBefore(child, (descendant) => {
         descendant.bbox.x += diffX;
         descendant.bbox.y += diffY;
       });
-      x += child.bbox.width + space * 2;
+      x += child.bbox.width + whitespace * 2;
     });
-    y += getRowHeight(row, padding);
+    y += rowHeight;
   });
 
   const { width, height } = getContainerSize(result, padding);

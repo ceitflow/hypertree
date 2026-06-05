@@ -21,6 +21,7 @@ export class GraphNodeBase {
   public margin: number;
   public padding: number;
   public bbox: BBox;
+  public rows: GraphNodeBase[][];
   readonly type!: GraphNodeEnum;
 
   constructor(opt: BaseOpt) {
@@ -37,5 +38,6 @@ export class GraphNodeBase {
       width: 1,
       height: 1
     };
+    this.rows = [];
   }
 }
