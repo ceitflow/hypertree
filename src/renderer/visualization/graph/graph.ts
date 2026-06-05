@@ -28,6 +28,7 @@ export class Graph {
     const nodes = new Map<IdPath, GraphNodeBase>();
     const edges = new Map<IdPath, Edge[]>(); // todo from and to, know total traffic for each node
     const root = DirectoryGraphNode.create(null, astRoot);
+    root.depth = 0;
     nodes.set(root.ast.id, root);
     const stack: { dir: Directory; parentNode: DirectoryGraphNode }[] = [{ dir: astRoot, parentNode: root }];
 
@@ -37,6 +38,7 @@ export class Graph {
 
       for (const subdir of dir.dirs) {
         const dirNode = DirectoryGraphNode.create(parentNode, subdir);
+        dirNode.depth = parentNode.depth + 1;
         nodes.set(dirNode.ast.id, dirNode);
         parentNode.children.push(dirNode);
         stack.push({ dir: subdir, parentNode: dirNode });
@@ -46,6 +48,7 @@ export class Graph {
         let parent: GraphNode = parentNode;
         if (dir.dirs.length) { // wrap files in virtual node if there are other dirs
           parent = VirtualGraphNode.create(`/${parentNode.id}`, parentNode);
+          parent.depth = parentNode.depth + 1;
           parentNode.children.push(parent);
         }
         for (const file of dir.files) {
@@ -60,9 +63,13 @@ export class Graph {
           } else {
             fileNode = OtherGraphNode.create(parent, file);
           }
+          fileNode.depth = parent.depth + 1;
           nodes.set(fileNode.ast.id, fileNode);
           fileNode.children.forEach((c) => {
-            if (c.type === GraphNodeEnum.Declaration) nodes.set(c.ast.id, c);
+            if (c.type === GraphNodeEnum.Declaration) {
+              c.depth = fileNode.depth + 1;
+              nodes.set(c.ast.id, c);
+            }
           });
           parent.children.push(fileNode);
         }

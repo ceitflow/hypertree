@@ -1,52 +1,64 @@
 import { eachAfter, eachBefore } from '../../utils';
-import { GraphNode, GraphNodeBase, GraphNodeEnum } from '../../models';
+import { GraphNodeBase, GraphNodeEnum } from '../../models';
 import { alignRows, getContainerSize, getRowHeight, getRowWidth } from './utils';
 
 const size = 120;
-const margin = 24;
-const padding = 48;
 
 export function QuantizedTreemap(root: GraphNodeBase) {
   eachAfter(root, (n) => {
     // preprocessing
-    if (n.type === GraphNodeEnum.Code || n.type === GraphNodeEnum.Other) {
-      n.bbox.width = size;
-      n.bbox.height = size;
-      n.area = size;
-      return;
-    } else if (n.type === GraphNodeEnum.Directory || n.type === GraphNodeEnum.Virtual) {
-      n.area = n.children.reduce((sum, child) => sum + child.area, 0);
+    switch (n.type) {
+      case GraphNodeEnum.Declaration:
+      case GraphNodeEnum.Other: {
+        n.bbox.width = size;
+        n.bbox.height = size;
+        n.area = size;
+        n.margin = 0;
+        n.padding = 0;
+        break;
+      }
+      case GraphNodeEnum.Code:
+      case GraphNodeEnum.Directory:
+      case GraphNodeEnum.Virtual: {
+        n.area = n.children.reduce((sum, child) => sum + child.area, 0);
+        n.padding = 20;
+        n.margin = n.type === GraphNodeEnum.Directory ? Math.max(400 - n.depth * 40, 40) : 0;
 
-      if (n.children.length === 0) {
+        if (n.children.length === 0) {
+          n.bbox.x = 0;
+          n.bbox.y = 0;
+          n.bbox.width = size;
+          n.bbox.height = size;
+          n.area = size;
+          return;
+        }
+
+        // 1. rows layout
+        const nodeRows = wrapIntoRows(n.children);
+
+        // 2. post-process fill up the top rows first
+        // if (n.id === 'src/pages/home') debugger;
+        const packedRows = fillRowsTopDown(nodeRows, getContainerSize(nodeRows).width, n.padding);
         n.bbox.x = 0;
         n.bbox.y = 0;
-        n.bbox.width = 0;
-        n.bbox.height = 0;
-        return;
+        n.bbox.width = packedRows.width;
+        n.bbox.height = packedRows.height;
+        break;
+
+        // todo 2.5 skyline packing algorithm approach, check row line and see if a node can be pushed into it
       }
-
-      // 1. rows layout
-      const nodeRows = wrapIntoRows(n.children);
-
-      // 2. post-process fill up the top rows first
-      // if (n.id === 'src/pages/home') debugger;
-      const packedRows = fillRowsTopDown(nodeRows, getContainerSize(nodeRows, margin).width);
-      n.bbox.x = 0;
-      n.bbox.y = 0;
-      n.bbox.width = packedRows.width;
-      n.bbox.height = packedRows.height;
     }
   });
 }
 
-function wrapIntoRows(children: GraphNode[]): GraphNode[][] {
-  const aspectRatio = (rows: GraphNode[][]): number => {
-    const { width, height } = getContainerSize(rows, margin);
+function wrapIntoRows(children: GraphNodeBase[]): GraphNodeBase[][] {
+  const aspectRatio = (rows: GraphNodeBase[][]): number => {
+    const { width, height } = getContainerSize(rows);
     return Math.max(width, height) / Math.min(width, height);
   };
 
-  const rows: GraphNode[][] = [children.slice()];
-  let best: GraphNode[][] = [children.slice()];
+  const rows: GraphNodeBase[][] = [children.slice()];
+  let best: GraphNodeBase[][] = [children.slice()];
   let tempAspectRatio = aspectRatio(rows);
 
   while (true) {
@@ -54,7 +66,7 @@ function wrapIntoRows(children: GraphNode[]): GraphNode[][] {
     if (source.length < 2) {
       break;
     }
-    const next: GraphNode[] = [];
+    const next: GraphNodeBase[] = [];
     rows.push(next);
 
     while (source.length > 1) {
@@ -62,7 +74,7 @@ function wrapIntoRows(children: GraphNode[]): GraphNode[][] {
 
       // rebalance previous rows
       for (let i = rows.length - 2; i >= 1; i--) {
-        alignRows(rows[i - 1], rows[i], margin);
+        alignRows(rows[i - 1], rows[i]);
       }
 
       const currentAspectRatio = aspectRatio(rows);
@@ -73,7 +85,7 @@ function wrapIntoRows(children: GraphNode[]): GraphNode[][] {
 
       // The new (bottom) row is now wider than the one above it: pulling more
       // would only worsen the aspect ratio, so break off a fresh row.
-      if (getRowWidth(next, margin) > getRowWidth(source, margin)) {
+      if (getRowWidth(next) > getRowWidth(source)) {
         break;
       }
     }
@@ -87,16 +99,17 @@ function wrapIntoRows(children: GraphNode[]): GraphNode[][] {
 }
 
 function fillRowsTopDown(
-  rows: GraphNode[][],
-  maxWidth: number
-): { rows: GraphNode[][]; width: number; height: number } {
-  const result: GraphNode[][] = [];
-  let current: GraphNode[] = [];
+  rows: GraphNodeBase[][],
+  maxWidth: number,
+  padding: number
+): { rows: GraphNodeBase[][]; width: number; height: number } {
+  const result: GraphNodeBase[][] = [];
+  let current: GraphNodeBase[] = [];
 
   // break rows
   for (const row of rows) {
     for (const child of row) {
-      if (current.length === 0 || getRowWidth([...current, child], margin) <= maxWidth) {
+      if (current.length === 0 || getRowWidth([...current, child]) <= maxWidth) {
         current.push(child); // if fits in a row
       } else {
         result.push(current); // if doesn't fit, leave it as is
@@ -109,22 +122,23 @@ function fillRowsTopDown(
   }
 
   // calculate positions
-  let y = padding;
+  let y = 0;
   result.forEach((row) => {
-    let x = padding;
+    let x = 0;
     row.forEach((child) => {
-      const diffX = x - child.bbox.x;
-      const diffY = y - child.bbox.y;
+      const space = child.margin + padding;
+      const diffX = x + space - child.bbox.x;
+      const diffY = y + space - child.bbox.y;
       eachBefore(child, (descendant) => {
         descendant.bbox.x += diffX;
         descendant.bbox.y += diffY;
       });
-      x += child.bbox.width + margin;
+      x += child.bbox.width + space * 2;
     });
-    y += getRowHeight(row) + margin;
+    y += getRowHeight(row, padding);
   });
 
-  const { width, height } = getContainerSize(result, margin);
+  const { width, height } = getContainerSize(result, padding);
 
-  return { rows: result, width: width + padding * 2, height: height + padding * 2 };
+  return { rows: result, width, height };
 }

@@ -15,9 +15,9 @@ export class Factory {
     switch (node.type) {
       case GraphNodeEnum.Directory: {
         const { x, y, width, height } = node.bbox;
-        const dirFontSize = Math.round(Math.sqrt(node.area) / 2);
+        const dirFontSize = Math.max(node.margin / 2, 16);
         const text = node.parent ? node.parent['ast'].name + '/' + node.ast.name : node.ast.name;
-        return [this.createLabel(x + width / 2, y + 4, 0, text, dirFontSize)];
+        return [this.createLabel(x + width / 2, y, 0, text, dirFontSize)];
       }
 
       case GraphNodeEnum.Virtual: {
@@ -26,19 +26,19 @@ export class Factory {
 
       case GraphNodeEnum.Code: {
         const { x, y, width, height } = node.bbox;
-        const fontSize = Math.round(Math.sqrt(node.area) * 2);
+        const fontSize = 20
         return [this.createLabel(x + width / 2, y - fontSize, 0, node.ast.name, fontSize)];
       }
 
       case GraphNodeEnum.Other: {
         const { x, y, width, height } = node.bbox;
-        const fontSize = Math.round(Math.sqrt(node.area) * 2);
+        const fontSize = 20
         return [this.createLabel(x + width / 2, y + height / 2, 0, node.ast.name, fontSize)];
       }
 
       case GraphNodeEnum.Declaration: {
         const { x, y, width, height } = node.bbox;
-        const fontSize = Math.max(3, Math.min(8, Math.round(node.parent.area / 14)));
+        const fontSize = 20
         return [this.createLabel(x + width / 2, y + height / 2, 0, node.ast.name, fontSize)];
       }
     }

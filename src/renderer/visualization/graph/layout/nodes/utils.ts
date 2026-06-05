@@ -1,37 +1,43 @@
-import { GraphNode } from '../../models';
+import { GraphNodeBase, Size } from '../../models';
 
-export function getContainerSize(rows: GraphNode[][], margin: number): { width: number; height: number } {
+export function getContainerSize(rows: GraphNodeBase[][], padding = 0): Size {
   let width = 0;
   let height = 0;
-  rows.forEach((row, i) => {
-    width = Math.max(width, getRowWidth(row, margin));
-    height += getRowHeight(row);
-    if (i > 0) height += margin;
+  rows.forEach((row) => {
+    width = Math.max(width, getRowWidth(row, padding));
+    height += getRowHeight(row, padding);
   });
-  return { width, height };
+  return { width, height }
 }
 
-export function getRowWidth(row: GraphNode[], margin: number): number {
-  if (row.length === 0) return 0;
-  let width = -margin;
-  for (const child of row) width += child.bbox.width + margin;
+export function getRowWidth(row: GraphNodeBase[], padding = 0): number {
+  let width = 0;
+  for (const child of row) width += getSlotWidth(child, padding);
   return width;
 }
 
-export function getRowHeight(row: GraphNode[]): number {
+export function getRowHeight(row: GraphNodeBase[], padding = 0): number {
   let height = 0;
-  for (const child of row) height = Math.max(height, child.bbox.height);
+  for (const child of row) height = Math.max(height, getSlotHeight(child, padding));
   return height;
+}
+
+export function getSlotWidth(node: GraphNodeBase, padding = 0): number {
+  return node.bbox.width + (node.margin + padding) * 2;
+}
+
+export function getSlotHeight(node: GraphNodeBase, padding = 0): number {
+  return node.bbox.height + (node.margin + padding) * 2;
 }
 
 // Move nodes across the boundary between two vertically adjacent rows so their
 // widths become as equal as possible.
-export function alignRows(upper: GraphNode[], lower: GraphNode[], margin: number): void {
-  const widthDiff = () => Math.abs(getRowWidth(upper, margin) - getRowWidth(lower, margin));
+export function alignRows(upper: GraphNodeBase[], lower: GraphNodeBase[]): void {
+  const widthDiff = () => Math.abs(getRowWidth(upper) - getRowWidth(lower));
 
   while (true) {
     const before = widthDiff();
-    if (getRowWidth(upper, margin) >= getRowWidth(lower, margin)) {
+    if (getRowWidth(upper) >= getRowWidth(lower)) {
       if (upper.length <= 1) break;
       const node = upper.pop()!;
       lower.unshift(node);

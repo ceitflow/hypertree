@@ -6,6 +6,9 @@ export type BaseOpt = {
   parent?: ParentType;
   children?: GraphNode[];
   area?: number;
+  depth?: number;
+  margin?: number;
+  padding?: number;
   bbox?: BBox;
 };
 
@@ -14,6 +17,9 @@ export class GraphNodeBase {
   public parent: ParentType;
   public children: GraphNode[];
   public area: number;
+  public depth: number;
+  public margin: number;
+  public padding: number;
   public bbox: BBox;
   readonly type!: GraphNodeEnum;
 
@@ -22,6 +28,9 @@ export class GraphNodeBase {
     this.parent = opt.parent || null;
     this.children = opt.children || [];
     this.area = opt.area || 0;
+    this.depth = opt.depth || 0;
+    this.margin = opt.margin || 0;
+    this.padding = opt.padding || 0;
     this.bbox = {
       x: opt.bbox?.x ?? 0,
       y: opt.bbox?.y ?? 0,
