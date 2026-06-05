@@ -3,6 +3,7 @@ import { GraphNode, GraphNodeEnum, ParentType } from './types';
 
 export class VirtualGraphNode extends GraphNodeBase {
   readonly type = GraphNodeEnum.Virtual;
+  public isHeader = false;
 
   constructor(opt: BaseOpt) {
     super(opt);

@@ -1,3 +1,4 @@
+import { addHeader } from './header';
 import { eachAfter, eachBefore } from '../../utils';
 import { GraphNodeBase, GraphNodeEnum } from '../../models';
 import { alignRows, getContainerSize, getRowHeight, getRowWidth } from './utils';
@@ -37,6 +38,10 @@ export function QuantizedTreemap(root: GraphNodeBase) {
         n.rows = packedRows.rows;
         n.bbox.width = packedRows.width;
         n.bbox.height = packedRows.height;
+
+        if (n.type === GraphNodeEnum.Code) {
+          addHeader(n, 40);
+        }
         break;
       }
       case GraphNodeEnum.Directory: {
@@ -72,6 +77,7 @@ export function QuantizedTreemap(root: GraphNodeBase) {
           placeVirtualOnTop(n, virtual);
           n.children = originalChildren;
         }
+        addHeader(n, Math.max(Math.round(n.bbox.height * 0.05), 300));
         break;
       }
     }

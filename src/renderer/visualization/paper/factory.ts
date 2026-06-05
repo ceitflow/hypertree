@@ -26,19 +26,19 @@ export class Factory {
 
       case GraphNodeEnum.Code: {
         const { x, y, width, height } = node.bbox;
-        const fontSize = 20
-        return [this.createLabel(x + width / 2, y - fontSize, 0, node.ast.name, fontSize)];
+        const fontSize = 24;
+        return [this.createLabel(x + width / 2, y, 0, node.ast.name, fontSize)];
       }
 
       case GraphNodeEnum.Other: {
         const { x, y, width, height } = node.bbox;
-        const fontSize = 20
+        const fontSize = 20;
         return [this.createLabel(x + width / 2, y + height / 2, 0, node.ast.name, fontSize)];
       }
 
       case GraphNodeEnum.Declaration: {
         const { x, y, width, height } = node.bbox;
-        const fontSize = 20
+        const fontSize = 20;
         return [this.createLabel(x + width / 2, y + height / 2, 0, node.ast.name, fontSize)];
       }
     }
@@ -195,7 +195,7 @@ export class Factory {
   private static createVirtualNode(node: VirtualGraphNode): PaperNode[] {
     const { x, y, width, height } = node.bbox;
     const graphic = new Graphics() as PaperNode;
-    const color = '#ff000088';
+    const color = node.isHeader ? this.directoryDepthColor(node.depth) : '#ff000088';
 
     // graphic.circle(width / 2, height / 2, node.radius).fill(color);
     graphic.rect(0, 0, width, height).fill(color);
