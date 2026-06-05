@@ -1,10 +1,9 @@
 import { GraphData } from '../index';
-import { Treemap } from './nodes/treemap';
+import { QuantizedTreemap } from './nodes/quantized-treemap';
 
 export class Layout {
   constructor(graphModel: GraphData) {
-    Treemap(graphModel.root);
-    // clusteredBubblesLayout(graphModel.root);
+    QuantizedTreemap(graphModel.root);
     // Router.init(graphModel);
   }
 }

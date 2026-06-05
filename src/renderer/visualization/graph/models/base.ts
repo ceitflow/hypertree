@@ -16,8 +16,6 @@ export class GraphNodeBase {
   public area: number;
   public bbox: BBox;
   readonly type!: GraphNodeEnum;
-  public treeMapValue: number;
-  public depth: number;
 
   constructor(opt: BaseOpt) {
     this.id = opt.id;
@@ -30,7 +28,5 @@ export class GraphNodeBase {
       width: 1,
       height: 1
     };
-    this.treeMapValue = 0;
-    this.depth = 0;
   }
 }
