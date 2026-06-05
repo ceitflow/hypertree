@@ -4,6 +4,7 @@ import { GraphNode, GraphNodeBase, GraphNodeEnum } from '../../models';
 
 const size = 120;
 const margin = 24;
+const padding = 48;
 
 function wrapIntoRows(children: GraphNode[]): GraphNode[][] {
   const aspectRatio = (rows: GraphNode[][]): number => {
@@ -49,10 +50,14 @@ function wrapIntoRows(children: GraphNode[]): GraphNode[][] {
 
 export function QuantizedTreemap(root: GraphNodeBase) {
   eachAfter(root, (n) => {
+    // preprocessing
     if (n.type === GraphNodeEnum.Code || n.type === GraphNodeEnum.Other) {
       n.bbox.width = size;
       n.bbox.height = size;
+      n.area = size;
     } else if (n.type === GraphNodeEnum.Directory || n.type === GraphNodeEnum.Virtual) {
+      n.area = n.children.reduce((sum, child) => sum + child.area, 0);
+
       if (n.children.length === 0) {
         n.bbox.x = 0;
         n.bbox.y = 0;
@@ -61,11 +66,12 @@ export function QuantizedTreemap(root: GraphNodeBase) {
         return;
       }
 
-      const rows = wrapIntoRows(n.children);
+      // 1. rows layout
+      const nodeRows = wrapIntoRows(n.children);
 
-      let y = 0;
-      rows.forEach((row) => {
-        let x = 0;
+      let y = padding;
+      nodeRows.forEach((row) => {
+        let x = padding;
         row.forEach((child) => {
           const diffX = x - child.bbox.x;
           const diffY = y - child.bbox.y;
@@ -78,11 +84,14 @@ export function QuantizedTreemap(root: GraphNodeBase) {
         y += getRowHeight(row) + margin;
       });
 
-      const { width, height } = getContainerSize(rows, margin);
+      const { width, height } = getContainerSize(nodeRows, margin);
       n.bbox.x = 0;
       n.bbox.y = 0;
-      n.bbox.width = width;
-      n.bbox.height = height;
+      n.bbox.width = width + padding * 2;
+      n.bbox.height = height + padding * 2;
     }
+
+    // 2. aspect ratio optimizer
+
   });
 }

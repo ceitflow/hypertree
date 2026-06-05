@@ -15,7 +15,7 @@ export class Factory {
     switch (node.type) {
       case GraphNodeEnum.Directory: {
         const { x, y, width, height } = node.bbox;
-        const dirFontSize = Math.round(Math.sqrt(node.area) * 2);
+        const dirFontSize = Math.round(Math.sqrt(node.area));
         const text = node.parent ? node.parent['ast'].name + '/' + node.ast.name : node.ast.name;
         return [this.createLabel(x + width / 2, y + 4, 0, text, dirFontSize)];
       }
@@ -25,23 +25,20 @@ export class Factory {
       }
 
       case GraphNodeEnum.Code: {
-        const cn = node as CodeGraphNode;
-        const { x, y, width, height } = cn.bbox;
-        const fontSize = Math.round(Math.sqrt(cn.area) * 2);
-        return [this.createLabel(x + width / 2, y - fontSize, 0, cn.ast.name, fontSize)];
+        const { x, y, width, height } = node.bbox;
+        const fontSize = Math.round(Math.sqrt(node.area) * 2);
+        return [this.createLabel(x + width / 2, y - fontSize, 0, node.ast.name, fontSize)];
       }
 
       case GraphNodeEnum.Other: {
-        const cn = node as OtherGraphNode;
-        const { x, y, width, height } = cn.bbox;
-        const fontSize = Math.round(Math.sqrt(cn.area) * 2);
-        return [this.createLabel(x + width / 2, y + height / 2, 0, cn.ast.name, fontSize)];
+        const { x, y, width, height } = node.bbox;
+        const fontSize = Math.round(Math.sqrt(node.area) * 2);
+        return [this.createLabel(x + width / 2, y + height / 2, 0, node.ast.name, fontSize)];
       }
 
       case GraphNodeEnum.Declaration: {
-        const dn = node as DeclarationGraphNode;
-        const { x, y, width, height } = dn.bbox;
-        const fontSize = Math.max(3, Math.min(8, Math.round(dn.parent.area / 14)));
+        const { x, y, width, height } = node.bbox;
+        const fontSize = Math.max(3, Math.min(8, Math.round(node.parent.area / 14)));
         return [this.createLabel(x + width / 2, y + height / 2, 0, node.ast.name, fontSize)];
       }
     }
