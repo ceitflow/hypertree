@@ -23,3 +23,36 @@ export function getRowHeight(row: GraphNode[]): number {
   for (const child of row) height = Math.max(height, child.bbox.height);
   return height;
 }
+
+// Move nodes across the boundary between two vertically adjacent rows so their
+// widths become as equal as possible. Mutates both arrays in place. Order is
+// preserved: the boundary only ever shifts by moving the last node of `upper`
+// down to the front of `lower`, or the first node of `lower` up to the end of
+// `upper`. The width difference is V-shaped in the boundary position, so a
+// greedy single-node walk reaches the optimum. Never empties a row.
+export function alignRows(upper: GraphNode[], lower: GraphNode[], margin: number): void {
+  const diff = () => Math.abs(getRowWidth(upper, margin) - getRowWidth(lower, margin));
+
+  while (true) {
+    const before = diff();
+    if (getRowWidth(upper, margin) >= getRowWidth(lower, margin)) {
+      if (upper.length <= 1) break;
+      const node = upper.pop()!;
+      lower.unshift(node);
+      if (diff() >= before) {
+        lower.shift();
+        upper.push(node);
+        break;
+      }
+    } else {
+      if (lower.length <= 1) break;
+      const node = lower.shift()!;
+      upper.push(node);
+      if (diff() >= before) {
+        upper.pop();
+        lower.unshift(node);
+        break;
+      }
+    }
+  }
+}

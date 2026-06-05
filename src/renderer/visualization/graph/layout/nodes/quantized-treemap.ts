@@ -1,6 +1,6 @@
 import { eachAfter, eachBefore } from '../../utils';
-import { getContainerSize, getRowHeight, getRowWidth } from './utils';
 import { GraphNode, GraphNodeBase, GraphNodeEnum } from '../../models';
+import { alignRows, getContainerSize, getRowHeight, getRowWidth } from './utils';
 
 const size = 120;
 const margin = 24;
@@ -9,27 +9,32 @@ const padding = 48;
 function wrapIntoRows(children: GraphNode[]): GraphNode[][] {
   const aspectRatio = (rows: GraphNode[][]): number => {
     const { width, height } = getContainerSize(rows, margin);
-    if (width === 0 || height === 0) return Infinity;
     return Math.max(width, height) / Math.min(width, height);
   };
 
   const rows: GraphNode[][] = [children.slice()];
-  let best: GraphNode[][] = rows.map((row) => row.slice());
-  let bestCost = aspectRatio(rows);
+  let best: GraphNode[][] = [children.slice()];
+  let tempAspectRatio = aspectRatio(rows);
 
   while (true) {
     const source = rows[rows.length - 1];
-    if (source.length <= 1) break;
-
+    if (source.length < 2) {
+      break;
+    }
     const next: GraphNode[] = [];
     rows.push(next);
 
     while (source.length > 1) {
       next.unshift(source.pop()!);
 
-      const cost = aspectRatio(rows);
-      if (cost < bestCost) {
-        bestCost = cost;
+      // rebalance previous rows
+      for (let i = rows.length - 2; i >= 1; i--) {
+        alignRows(rows[i - 1], rows[i], margin);
+      }
+
+      const currentAspectRatio = aspectRatio(rows);
+      if (currentAspectRatio < tempAspectRatio) {
+        tempAspectRatio = currentAspectRatio;
         best = rows.map((row) => row.slice());
       }
 
@@ -67,6 +72,7 @@ export function QuantizedTreemap(root: GraphNodeBase) {
       }
 
       // 1. rows layout
+      // if (n.id === '/src/ui/templates' && n.type === GraphNodeEnum.Virtual) debugger;
       const nodeRows = wrapIntoRows(n.children);
 
       let y = padding;
@@ -92,6 +98,5 @@ export function QuantizedTreemap(root: GraphNodeBase) {
     }
 
     // 2. aspect ratio optimizer
-
   });
 }
