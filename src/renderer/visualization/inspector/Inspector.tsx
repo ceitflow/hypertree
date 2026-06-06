@@ -3,7 +3,7 @@ import { EditorState } from '@codemirror/state';
 import { useEffect, useRef, useState } from 'react';
 import { EditorView, basicSetup } from 'codemirror';
 import { Graph, GraphNode, GraphNodeEnum } from '../graph';
-import { getChildName, getLabel, loadFile, setDoc } from './inspector.utils';
+import { getChildName, getLabel, lineHighlighter, loadFile, setDoc } from './inspector.utils';
 
 type Props = {
   graph: Graph;
@@ -22,7 +22,13 @@ export const Inspector = ({ graph }: Props) => {
     const view = new EditorView({
       parent,
       doc: '',
-      extensions: [basicSetup, EditorState.readOnly.of(true), EditorView.editable.of(false), EditorView.lineWrapping]
+      extensions: [
+        basicSetup,
+        EditorState.readOnly.of(true),
+        EditorView.editable.of(false),
+        EditorView.lineWrapping,
+        lineHighlighter
+      ]
     });
     viewRef.current = view;
 
@@ -61,8 +67,7 @@ export const Inspector = ({ graph }: Props) => {
 
         case GraphNodeEnum.Declaration:
           setChildren(null);
-          console.log(node.ast.startLine, node.ast.endLine)
-          await loadFile(view, rootId, node.parent.ast.id, node.ast.startLine);
+          await loadFile(view, rootId, node.parent.ast.id, { start: node.ast.startLine, end: node.ast.endLine });
           break;
       }
     };
