@@ -3,7 +3,6 @@ import { BaseOpt, GraphNodeBase } from './base';
 import { GraphNodeEnum, ParentType } from './types';
 
 export class OtherGraphNode extends GraphNodeBase {
-  static defaultWidth = 60;
   readonly type = GraphNodeEnum.Other;
 
   constructor(
@@ -18,6 +17,7 @@ export class OtherGraphNode extends GraphNodeBase {
     return new OtherGraphNode(
       {
         id: ast.id,
+        name: ast.name,
         parent,
         area: ast.loc
       },

@@ -4,6 +4,7 @@ import { BBox, GraphNode, GraphNodeEnum, Margin, ParentType } from './types';
 
 export type BaseOpt = {
   id: IdPath;
+  name: string;
   parent?: ParentType;
   children?: GraphNode[];
   area?: number;
@@ -15,6 +16,7 @@ export type BaseOpt = {
 
 export class GraphNodeBase {
   public id: IdPath;
+  public name: string;
   public parent: ParentType;
   public children: GraphNode[];
   public area: number;
@@ -28,6 +30,7 @@ export class GraphNodeBase {
 
   constructor(opt: BaseOpt) {
     this.id = opt.id;
+    this.name = opt.name;
     this.parent = opt.parent || null;
     this.children = opt.children || [];
     this.area = opt.area || 0;

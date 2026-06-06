@@ -18,6 +18,7 @@ export class CodeGraphNode extends GraphNodeBase {
     return new CodeGraphNode(
       {
         id: ast.id,
+        name: ast.name,
         parent,
         area: ast.loc
       },
@@ -41,6 +42,7 @@ export class DeclarationGraphNode extends GraphNodeBase {
     return new DeclarationGraphNode(
       {
         id: ast.id,
+        name: ast.name,
         parent,
         area: ast.loc
       },

@@ -2,9 +2,8 @@ import { eachBefore } from '../../../utils';
 import { GraphNode, GraphNodeBase, VirtualGraphNode } from '../../../models';
 
 export function addDirectoryHeader(n: GraphNodeBase): void {
-  const header = VirtualGraphNode.create(`${n.id}/header`, n as GraphNode);
+  const header = VirtualGraphNode.create(`${n.id}/header`, n as GraphNode, true);
   header.depth = n.depth;
-  header.isHeader = true;
   header.bbox.x = 0;
   header.bbox.y = 0;
   header.bbox.width = n.bbox.width;
@@ -23,9 +22,8 @@ export function addDirectoryHeader(n: GraphNodeBase): void {
 }
 
 export function addCodeHeader(n: GraphNodeBase): void {
-  const header = VirtualGraphNode.create(`${n.id}/header`, n as GraphNode);
+  const header = VirtualGraphNode.create(`${n.id}/header`, n as GraphNode, true);
   header.depth = n.depth;
-  header.isHeader = true;
   header.bbox.x = 0;
   header.bbox.y = 0;
   header.bbox.width = n.bbox.width;

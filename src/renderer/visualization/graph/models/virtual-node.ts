@@ -9,14 +9,17 @@ export class VirtualGraphNode extends GraphNodeBase {
     super(opt);
   }
 
-  static create(id: string, parent: ParentType) {
-    return new VirtualGraphNode(
+  static create(id: string, parent: ParentType, isHeader: boolean): VirtualGraphNode {
+    const node = new VirtualGraphNode(
       {
         id,
+        name: isHeader ? '' : `files ${parent ? parent.name : ''}`,
         parent,
         children: [] as GraphNode[],
-        area: 0
+        area: 0,
       }
     );
+    node.isHeader = isHeader;
+    return node;
   }
 }

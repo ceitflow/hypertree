@@ -12,48 +12,62 @@ import { BitmapText, Graphics } from 'pixi.js';
 
 export class Factory {
   static createLabels(node: GraphNode) {
+    if (!node.name) return [];
+
     switch (node.type) {
       case GraphNodeEnum.Directory: {
         const { x, y, width, height } = node.bbox;
-        const dirFontSize = Math.max(Math.round(Math.sqrt(node.area)), 32);
-        const text = node.parent ? node.parent['ast'].name + '/' + node.ast.name : node.ast.name;
-        return [this.createLabel(x + width / 2, y, 0, text, dirFontSize)];
+        const dirFontSize = Math.max(Math.round(Math.sqrt(node.area)), 120);
+        const text = node.parent ? node.parent.name + '/' + node.name : node.name;
+        return [this.createLabel(x, y, 0, text, dirFontSize, width)];
       }
 
       case GraphNodeEnum.Virtual: {
-        return [];
+        const { x, y, width, height } = node.bbox;
+        const fontSize = 24;
+        return [this.createLabel(x, y, 0, node.name, fontSize, width)];
       }
 
       case GraphNodeEnum.Code: {
         const { x, y, width, height } = node.bbox;
         const fontSize = 24;
-        return [this.createLabel(x + width / 2, y, 0, node.ast.name, fontSize)];
+        return [this.createLabel(x, y, 0, node.name, fontSize, width)];
       }
 
       case GraphNodeEnum.Other: {
         const { x, y, width, height } = node.bbox;
         const fontSize = 20;
-        return [this.createLabel(x + width / 2, y + height / 2, 0, node.ast.name, fontSize)];
+        return [this.createLabel(x + width / 2, y + height / 2, 0, node.name, fontSize, width)];
       }
 
       case GraphNodeEnum.Declaration: {
         const { x, y, width, height } = node.bbox;
         const fontSize = 20;
-        return [this.createLabel(x + width / 2, y + height / 2, 0, node.ast.name, fontSize)];
+        return [this.createLabel(x, y, 0, node.name, fontSize, width)];
       }
     }
   }
 
-  private static createLabel(x: number, y: number, angle: number, text: string, fontSize: number, dim = false) {
+  private static createLabel(
+    x: number,
+    y: number,
+    angle: number,
+    text: string,
+    fontSize: number,
+    maxWidth: number
+  ) {
     const label = new BitmapText({
       label: text,
       text,
       zIndex: 10,
       style: {
         fontFamily: 'sans-serif',
-        fontWeight: dim ? 'normal' : 'bold',
+        fontWeight: 'bold',
         fontSize,
-        fill: dim ? '#bbbbbb' : '#ffffff'
+        fill: '#ffffff',
+        ...(maxWidth && maxWidth > 0
+          ? { wordWrap: true, wordWrapWidth: maxWidth, breakWords: true, align: 'center' as const }
+          : {})
       }
     });
     let radians = angle < 0 ? 2 * Math.PI + angle : angle;
@@ -132,7 +146,7 @@ export class Factory {
     graphic.x = x;
     graphic.y = y;
     graphic.rotation = 0;
-    graphic.label = node.ast.name;
+    graphic.label = node.name;
     graphic.interactive = true;
     graphic.node = node;
     return [graphic];
@@ -157,7 +171,7 @@ export class Factory {
     graphic.x = x;
     graphic.y = y;
     graphic.rotation = 0;
-    graphic.label = node.ast.name;
+    graphic.label = node.name;
     graphic.interactive = true;
     graphic.node = node;
     return [graphic];
@@ -174,7 +188,7 @@ export class Factory {
     graphic.x = x;
     graphic.y = y;
     graphic.rotation = 0;
-    graphic.label = node.ast.name;
+    graphic.label = node.name;
     graphic.interactive = true;
     graphic.node = node;
     return [graphic];
@@ -198,7 +212,7 @@ export class Factory {
     graphic.x = x;
     graphic.y = y;
     graphic.rotation = 0;
-    graphic.label = node.ast.name;
+    graphic.label = node.name;
     graphic.interactive = true;
     graphic.node = node;
     return result;
