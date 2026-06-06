@@ -46,8 +46,8 @@ export function QuantizedTreemap(root: GraphNodeBase) {
       }
       case GraphNodeEnum.Directory: {
         n.area = n.children.reduce((sum, child) => sum + child.area, 0);
-        n.padding = 40;
         const dirMargin = Math.round(Math.sqrt(n.area));
+        n.padding = Math.round(Math.sqrt(n.area) / 2);
         n.margin = { left: dirMargin, top: 0, right: dirMargin, bottom: 0 };
 
         if (n.children.length === 0) {

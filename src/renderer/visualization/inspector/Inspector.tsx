@@ -1,34 +1,13 @@
 import styles from './Inspector.module.css';
-import { ApiService } from '../../api.service';
 import { EditorState } from '@codemirror/state';
 import { useEffect, useRef, useState } from 'react';
 import { EditorView, basicSetup } from 'codemirror';
 import { Graph, GraphNode, GraphNodeEnum } from '../graph';
-
-function getLabel(node: GraphNode): string {
-  if (node.type === GraphNodeEnum.Virtual) return node.parent!['ast'].name + ' virtual';
-  return `${node.ast.id} ${node.ast['loc'] ? node.ast['loc'] : ''} loc`
-}
-
-function getFilePath(node: GraphNode): string | null {
-  switch (node.type) {
-    case GraphNodeEnum.Code:
-    case GraphNodeEnum.Other:
-      return node.ast.id;
-    case GraphNodeEnum.Declaration:
-      return node.parent.ast.id;
-    default:
-      return null;
-  }
-}
-
-function getChildName(child: GraphNode): string {
-  return child.type === GraphNodeEnum.Virtual ? 'virtual' : child.ast.name;
-}
+import { getChildName, getLabel, loadFile, setDoc } from './inspector.utils';
 
 type Props = {
   graph: Graph;
-}
+};
 
 export const Inspector = ({ graph }: Props) => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -37,47 +16,13 @@ export const Inspector = ({ graph }: Props) => {
   const [children, setChildren] = useState<GraphNode[] | null>(null);
 
   useEffect(() => {
-    const onSelect = async (node: GraphNode | null) => {
-      setLabel(node ? getLabel(node) : null);
-      setChildren(node && (node.type === GraphNodeEnum.Directory || node.type === GraphNodeEnum.Virtual) ? (node.children as GraphNode[]) : null);
-
-      const view = viewRef.current;
-      if (!view) return;
-
-      const filePath = node ? getFilePath(node) : null;
-      if (!filePath) {
-        view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: '' } });
-        return;
-      }
-
-      try {
-        const content = await ApiService.readFile(graph.model.root.ast.id, filePath);
-        if (viewRef.current === view) {
-          view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: content } });
-        }
-      } catch {
-        if (viewRef.current === view) {
-          view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: `// Failed to load ${filePath}` } });
-        }
-      }
-    };
-    graph.emit.on('select', onSelect);
-    return () => graph.emit.off('select', onSelect);
-  }, []);
-
-  useEffect(() => {
     const parent = containerRef.current;
     if (!parent) return;
 
     const view = new EditorView({
       parent,
       doc: '',
-      extensions: [
-        basicSetup,
-        EditorState.readOnly.of(true),
-        EditorView.editable.of(false),
-        EditorView.lineWrapping,
-      ],
+      extensions: [basicSetup, EditorState.readOnly.of(true), EditorView.editable.of(false), EditorView.lineWrapping]
     });
     viewRef.current = view;
 
@@ -85,6 +30,44 @@ export const Inspector = ({ graph }: Props) => {
       view.destroy();
       viewRef.current = null;
     };
+  }, []);
+
+  useEffect(() => {
+    const onSelect = async (node: GraphNode | null) => {
+      const view = viewRef.current!;
+      const rootId = graph.model.root.ast.id;
+
+      if (!node) {
+        setLabel(null);
+        setChildren(null);
+        setDoc(view, '');
+        return;
+      }
+
+      setLabel(getLabel(node));
+
+      switch (node.type) {
+        case GraphNodeEnum.Directory:
+        case GraphNodeEnum.Virtual:
+          setChildren(node.children as GraphNode[]);
+          setDoc(view, '');
+          break;
+
+        case GraphNodeEnum.Code:
+        case GraphNodeEnum.Other:
+          setChildren(null);
+          await loadFile(view, rootId, node.ast.id);
+          break;
+
+        case GraphNodeEnum.Declaration:
+          setChildren(null);
+          console.log(node.ast.startLine, node.ast.endLine)
+          await loadFile(view, rootId, node.parent.ast.id, node.ast.startLine);
+          break;
+      }
+    };
+    graph.emit.on('select', onSelect);
+    return () => graph.emit.off('select', onSelect);
   }, []);
 
   return (

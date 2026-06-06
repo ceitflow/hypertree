@@ -3,11 +3,11 @@ import { TsNode } from '../types';
 import { Analyzer } from '../../../analyzer';
 import { DeclarationEnum, DeclarationModifier, DeclarationNode, IdPath, NodeEnum } from '@lib/ast';
 
-const calculateLoc = (node: TsNode): number => {
+const calculateLoc = (node: TsNode): { startLine: number; endLine: number; loc: number } => {
   const sourceFile = node.getSourceFile();
   const { line: startLine } = sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile));
   const { line: endLine } = sourceFile.getLineAndCharacterOfPosition(node.end);
-  return endLine - startLine + 1;
+  return { startLine, endLine, loc: endLine - startLine + 1 };
 };
 
 const createUnknownDeclaration = (id: string, name: string, depth: number): DeclarationNode => ({
@@ -16,6 +16,8 @@ const createUnknownDeclaration = (id: string, name: string, depth: number): Decl
   name,
   depth,
   loc: 0,
+  startLine: 0,
+  endLine: 0,
   modifier: DeclarationModifier.None,
   token: {
     category: DeclarationEnum.Unknown,
@@ -39,7 +41,7 @@ export const DeclarationFactory = (
         modifier: DeclarationModifier.None,
         name: n.text,
         depth,
-        loc: calculateLoc(n),
+        ...calculateLoc(n),
         token: {
           category: DeclarationEnum.Primitive,
           type: analyzer.evaluateType(node)?.astType as any // todo might not work without pointing to parent?
@@ -55,7 +57,7 @@ export const DeclarationFactory = (
         modifier: DeclarationModifier.None,
         name: n.name.text,
         depth,
-        loc: calculateLoc(n),
+        ...calculateLoc(n),
         token: {
           category: analyzer.evaluateType(node)?.category as any,
           type: analyzer.evaluateType(n.name as ts.Identifier)?.category as any
@@ -70,7 +72,7 @@ export const DeclarationFactory = (
         modifier: DeclarationModifier.None,
         name: '_',
         depth,
-        loc: calculateLoc(n),
+        ...calculateLoc(n),
         token: {
           category: DeclarationEnum.Object,
           type: 'object'
@@ -85,7 +87,7 @@ export const DeclarationFactory = (
         modifier: DeclarationModifier.None,
         name: n.name?.text as string,
         depth,
-        loc: calculateLoc(n),
+        ...calculateLoc(n),
         token: {
           category: DeclarationEnum.Class
           // todo metadata extract using analyzer
@@ -100,7 +102,7 @@ export const DeclarationFactory = (
         modifier: DeclarationModifier.None,
         name: n.name?.text as string,
         depth,
-        loc: calculateLoc(n),
+        ...calculateLoc(n),
         token: {
           category: DeclarationEnum.Function,
           async: false,
@@ -117,7 +119,7 @@ export const DeclarationFactory = (
         modifier: DeclarationModifier.None,
         name,
         depth,
-        loc: calculateLoc(n),
+        ...calculateLoc(n),
         token: {
           category: DeclarationEnum.Function,
           async: false,
@@ -133,7 +135,7 @@ export const DeclarationFactory = (
         modifier: DeclarationModifier.None,
         name: n.name.text,
         depth,
-        loc: calculateLoc(n),
+        ...calculateLoc(n),
         token: {
           category: DeclarationEnum.TsType,
           type: 'interface'
@@ -148,7 +150,7 @@ export const DeclarationFactory = (
         modifier: DeclarationModifier.None,
         name: n.name.text,
         depth,
-        loc: calculateLoc(n),
+        ...calculateLoc(n),
         token: {
           category: DeclarationEnum.TsType,
           type: 'enum'
@@ -163,7 +165,7 @@ export const DeclarationFactory = (
         modifier: DeclarationModifier.None,
         name: n.name.text,
         depth,
-        loc: calculateLoc(n),
+        ...calculateLoc(n),
         token: {
           category: DeclarationEnum.TsType,
           type: 'typeAlias'

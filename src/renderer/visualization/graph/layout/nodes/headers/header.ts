@@ -7,7 +7,7 @@ export function addDirectoryHeader(n: GraphNodeBase): void {
   header.bbox.x = 0;
   header.bbox.y = 0;
   header.bbox.width = n.bbox.width;
-  header.bbox.height = Math.max(Math.round(n.bbox.height * 0.05), 300);
+  header.bbox.height = Math.max(Math.round(n.bbox.height * 0.03), 300);
 
   // push every existing child down to make room for the header
   n.children.forEach((child) => {

@@ -55,6 +55,8 @@ export class AstFactory {
     name = 'name',
     depth = 1,
     loc = 1,
+    startLine = 0,
+    endLine = 0,
     modifier = DeclarationModifier.None,
     token = { category: DeclarationEnum.Unknown, type: 'unknown' }
   }: Partial<DeclarationNode>): DeclarationNode {
@@ -64,6 +66,8 @@ export class AstFactory {
       name,
       depth,
       loc,
+      startLine,
+      endLine,
       modifier,
       token
     };
