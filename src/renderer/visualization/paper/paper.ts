@@ -65,7 +65,9 @@ export class Paper {
 
     while (stack.length) {
       const n = stack.pop()!;
-      stack.push(...n.children);
+      if (n.type !== GraphNodeEnum.Code) {
+        stack.push(...n.children);
+      }
       const nodes = Factory.createNode(n);
       const labels = Factory.createLabels(n);
       container.addChild(...nodes, ...labels);

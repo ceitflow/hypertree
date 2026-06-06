@@ -127,9 +127,19 @@ export class Factory {
   }
 
   private static directoryDepthColor(depth: number): string {
-    const d = Math.min(Math.max(depth, 0), 11);
-    const hue = 185 + d * 24;
-    const sat = 52;
+    const firstBand = 8;
+    if (depth <= firstBand) {
+      // blue/teal palette for the first 12 depth levels (0-11)
+      const d = depth;
+      const hue = 185 + d * 24;
+      const sat = 52;
+      const light = 14 + d * 9;
+      return `hsl(${hue}, ${sat}%, ${light}%)`;
+    }
+    // yellow palette for depths beyond first one
+    const d = depth - firstBand;
+    const hue = 20 + d * 2;
+    const sat = 70;
     const light = 14 + d * 11;
     return `hsl(${hue}, ${sat}%, ${light}%)`;
   }
@@ -154,14 +164,15 @@ export class Factory {
 
   private static createCodeNode(node: CodeGraphNode): PaperNode[] {
     const { x, y, width, height } = node.bbox;
+    const { linesShape, loc } = node.ast;
+    const headerHeight = node.header?.bbox.height || 0;
     const graphic = new Graphics() as PaperNode;
-    const color = '#4499ce';
 
-    // graphic.circle(width / 2, height / 2, node.radius).fill(color);
-    graphic.rect(0, 0, width, height).fill(color);
+    graphic.rect(0, 0, width, height).fill('#07256177');
+    graphic.addChild(this.createLinesShapeGraphic(headerHeight, width, height - headerHeight, linesShape, loc));
 
     if (node.ast.kind === 'JS') {
-      graphic.stroke({
+      graphic.rect(0, 0, width, height).stroke({
         width: 10,
         alignment: 1,
         color: 'gold',
@@ -175,6 +186,35 @@ export class Factory {
     graphic.interactive = true;
     graphic.node = node;
     return [graphic];
+  }
+
+  private static createLinesShapeGraphic(
+    y: number,
+    width: number,
+    height: number,
+    linesShape: number[],
+    loc: number
+  ): Graphics {
+    const shape = new Graphics({ eventMode: 'none' });
+    shape.y = y;
+
+    let maxCol = 1;
+    for (let i = 1; i < linesShape.length; i += 2) {
+      maxCol = Math.max(maxCol, linesShape[i]);
+    }
+
+    const sx = width / maxCol;
+    const lineH = height / loc;
+
+    for (let line = 0; line < loc; line++) {
+      const start = linesShape[line * 2] ?? 0;
+      const end = linesShape[line * 2 + 1] ?? 0;
+      if (end <= start) continue;
+      shape.rect(start * sx, line * lineH, (end - start) * sx, lineH);
+    }
+    shape.fill('#4499ce');
+
+    return shape;
   }
 
   private static createOtherNode(node: OtherGraphNode): PaperNode[] {
