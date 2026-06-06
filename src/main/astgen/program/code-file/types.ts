@@ -11,4 +11,6 @@ export type TsNode =
   | ts.EnumDeclaration
   | ts.TypeAliasDeclaration
   | ts.CallExpression
-  | ts.AsExpression;
+  | ts.AsExpression
+  | ts.FunctionTypeNode
+  | ts.ConstructorTypeNode;

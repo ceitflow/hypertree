@@ -57,7 +57,7 @@ export class AstGen {
     const configFile = ts.readConfigFile(configPath, ts.sys.readFile);
     const compilerOptions = ts.parseJsonConfigFileContent(configFile.config, ts.sys, src);
     compilerOptions.options.allowJs = true;
-    compilerOptions.options.checkJs = true;
+    compilerOptions.options.checkJs = false;
     const compiler = ts.createProgram(compilerOptions.fileNames, compilerOptions.options);
     return compiler;
   }

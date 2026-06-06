@@ -1,4 +1,4 @@
-import ts, { SyntaxKind } from 'typescript';
+import ts from 'typescript';
 import path from 'node:path';
 import { Analyzer, IO } from '../../analyzer';
 import { CodeFile, IdPath, NodeEnum } from '@lib/ast';
@@ -24,12 +24,43 @@ export class CodeFileBuilder {
       isExternalFile: analyzer.isExternalFile(sourceFile),
       kind: ts.ScriptKind[sourceFile['scriptKind'] as number] as keyof typeof ts.ScriptKind,
       loc: sourceFile.getLineAndCharacterOfPosition(sourceFile.end).line + 1,
+      linesShape: this.calculateLinesShape(),
       imports: [],
       definitions: []
     };
   }
 
+  private calculateLinesShape(): number[] {
+    const lineStarts = this.sourceFile.getLineStarts();
+    const text = this.sourceFile.text;
+    const shape: number[] = [];
+
+    const isWhitespace = (ch: string) => ch === ' ' || ch === '\t' || ch === '\n' || ch === '\r';
+
+    for (let line = 0; line < lineStarts.length; line++) {
+      let lineStart = lineStarts[line];
+      let lineEnd = line + 1 < lineStarts.length ? lineStarts[line + 1] : text.length;
+      // omit trailing whitespace (line breaks included)
+      while (lineEnd > lineStart && isWhitespace(text[lineEnd - 1])) {
+        lineEnd--;
+      }
+      // omit leading whitespace, so start points at the first real char on the line
+      while (lineStart < lineEnd && isWhitespace(text[lineStart])) {
+        lineStart++;
+      }
+      // convert absolute offsets to per-line character positions (0 = first column on the left)
+      const start = this.sourceFile.getLineAndCharacterOfPosition(lineStart).character;
+      const end = this.sourceFile.getLineAndCharacterOfPosition(lineEnd).character;
+      shape.push(start, end);
+    }
+
+    return shape;
+  }
+
   buildDefinitions() {
+    if (this.code.name === 'next.config.js') {
+      console.log('wtf')
+    }
     this.sourceFile.statements.forEach((node) => {
       this.pullStatement(node);
     });
@@ -147,7 +178,9 @@ export class CodeFileBuilder {
       ts.isEnumDeclaration(node) ||
       ts.isInterfaceDeclaration(node) ||
       ts.isTypeAliasDeclaration(node) ||
-      ts.isArrowFunction(node)
+      ts.isArrowFunction(node) ||
+      ts.isCallExpression(node) ||
+      ts.isObjectLiteralExpression(node)
     ) {
       const declaration = DeclarationFactory(node, this.analyzer, this.code.id, this.code.depth + 1);
       this.code.definitions.push(declaration);
@@ -184,9 +217,6 @@ export class CodeFileBuilder {
       // export const a = ..., b = ...;
       // const isExport = node.modifiers?.some((m) => m.kind === ts.SyntaxKind.ExportKeyword);
       node.declarationList.declarations.forEach((d) => {
-        if (d.initializer?.kind === SyntaxKind.ArrowFunction) {
-          debugger;
-        }
         this.pullStatement(d.initializer || d.name);
       });
       return;

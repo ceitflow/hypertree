@@ -66,11 +66,13 @@ export const DeclarationFactory = (
     }
     case ts.SyntaxKind.ObjectLiteralExpression: {
       const n = node as ts.ObjectLiteralExpression;
+      const parentName = (n.parent as ts.NamedDeclaration | undefined)?.name;
+      const name = parentName && ts.isIdentifier(parentName) ? parentName.text : '';
       return {
         id,
         type: NodeEnum.Declaration,
         modifier: DeclarationModifier.None,
-        name: '_',
+        name,
         depth,
         ...calculateLoc(n),
         token: {
@@ -176,24 +178,56 @@ export const DeclarationFactory = (
     // export default defineConfig()
     case ts.SyntaxKind.CallExpression: {
       const n = node as ts.CallExpression;
-      if (!analyzer.getSymbol(n.parent)) {
-        // @ts-expect-error missing typescript type on default export, so make it a generic object
-        n['kind'] = SyntaxKind.ObjectLiteralExpression;
-        return DeclarationFactory(n, analyzer, id, depth);
-      }
-      // const name = (n.parent as ts.VariableDeclaration).name['text'] || '';
+      // if (!analyzer.getSymbol(n.parent)) {
+      //   const literal = ts.SyntaxKind.ObjectLiteralExpression;
+      //   // @ts-expect-error missing typescript type on default export, so make it a generic object
+      //   n['kind'] = literal;
+      //   return DeclarationFactory(n, analyzer, id, depth);
+      // }
+
       const declaration = analyzer.getCallExpressionDeclaration(n);
       if (!declaration) {
         console.error(`Unsupported declaration type: ${ts.SyntaxKind[n['kind']]}`);
         return createUnknownDeclaration(id, '', depth);
       }
-      return DeclarationFactory(declaration as any, analyzer, id, depth); // feed back the return value of call expression
+      // feed back the return value of call expression
+      const returnValue = DeclarationFactory(declaration as any, analyzer, id, depth);
+      return {
+        id,
+        type: NodeEnum.Declaration,
+        modifier: DeclarationModifier.None,
+        name: (n.parent as ts.VariableDeclaration).name['text'] || returnValue.name,
+        depth,
+        ...calculateLoc(n),
+        token: returnValue.token
+      }
     }
 
     // export default {} as Something;
     case ts.SyntaxKind.AsExpression: {
       const n = node as ts.AsExpression;
       return DeclarationFactory(n.expression as any, analyzer, id, depth);
+    }
+
+    // declare const x: <T>(...) => ...;  (bare function/constructor signature type)
+    case ts.SyntaxKind.FunctionType:
+    case ts.SyntaxKind.ConstructorType: {
+      const n = node as ts.FunctionTypeNode | ts.ConstructorTypeNode;
+      const parentName = (n.parent as ts.NamedDeclaration | undefined)?.name;
+      const name = parentName && ts.isIdentifier(parentName) ? parentName.text : '';
+      return {
+        id,
+        type: NodeEnum.Declaration,
+        modifier: DeclarationModifier.None,
+        name,
+        depth,
+        ...calculateLoc(n),
+        token: {
+          category: DeclarationEnum.Function,
+          async: false,
+          generator: false
+        }
+      };
     }
 
     default: {

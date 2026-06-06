@@ -1,7 +1,7 @@
 import { eachAfter, eachBefore } from '../../utils';
-import { GraphNodeBase, GraphNodeEnum } from '../../models';
 import { addCodeHeader, addDirectoryHeader } from './headers/header';
 import { alignRows, getContainerSize, getRowHeight, getRowWidth } from './utils';
+import { DeclarationGraphNode, GraphNodeBase, GraphNodeEnum } from '../../models';
 
 const size = 120;
 
@@ -9,7 +9,14 @@ export function QuantizedTreemap(root: GraphNodeBase) {
   eachAfter(root, (n) => {
     // preprocessing
     switch (n.type) {
-      case GraphNodeEnum.Declaration:
+      case GraphNodeEnum.Declaration: {
+        n.bbox.width = size;
+        n.bbox.height = Math.max(size, (n as DeclarationGraphNode).ast.loc * 9);
+        n.area = Math.max(n.bbox.width, n.bbox.height);
+        n.margin = { left: 0, top: 0, right: 0, bottom: 0 };
+        n.padding = 0;
+        break;
+      }
       case GraphNodeEnum.Other: {
         n.bbox.width = size;
         n.bbox.height = size;
@@ -57,14 +64,6 @@ export function QuantizedTreemap(root: GraphNodeBase) {
           return;
         }
 
-        // pull the virtual container for files first
-        let virtual: GraphNodeBase | null = null;
-        const originalChildren = n.children;
-        if (n.children[0].type === GraphNodeEnum.Virtual) {
-          virtual = n.children[0];
-          n.children = n.children.slice(1);
-        }
-
         // 1. rows layout
         const nodeRows = wrapIntoRows(n.children);
 
@@ -74,10 +73,6 @@ export function QuantizedTreemap(root: GraphNodeBase) {
         n.bbox.width = packedRows.width;
         n.bbox.height = packedRows.height;
 
-        if (virtual) {
-          placeVirtualOnTop(n, virtual);
-          n.children = originalChildren;
-        }
         addDirectoryHeader(n);
         break;
       }
@@ -179,40 +174,4 @@ function fillRowsTopDown(
   const { width, height } = getContainerSize(result, padding);
 
   return { rows: result, width, height };
-}
-
-function placeVirtualOnTop(parent: GraphNodeBase, virtual: GraphNodeBase): void {
-  const whitespaceX = virtual.margin.left + parent.padding;
-  const whitespaceY = virtual.margin.top + parent.padding;
-
-  // If the directory ended up wider than the virtual, re-pack the virtual's rows
-  const innerMaxWidth = parent.bbox.width - whitespaceX * 2;
-  if (virtual.rows.length > 1 && innerMaxWidth > virtual.bbox.width) {
-    const repacked = fillRowsTopDown(virtual.rows, innerMaxWidth, virtual.padding);
-    virtual.rows = repacked.rows;
-    virtual.bbox.width = repacked.width;
-    virtual.bbox.height = repacked.height;
-  }
-
-  const width = Math.max(parent.bbox.width, virtual.bbox.width + whitespaceX * 2);
-  virtual.bbox.width = width - whitespaceX * 2;
-  const virtualRowHeight = virtual.bbox.height + whitespaceY * 2;
-
-  // Move the virtual (and its subtree) into the top-left content slot.
-  const diffX = whitespaceX - virtual.bbox.x;
-  const diffY = whitespaceY - virtual.bbox.y;
-  eachBefore(virtual, (descendant) => {
-    descendant.bbox.x += diffX;
-    descendant.bbox.y += diffY;
-  });
-
-  // Push every other child (and its subtree) below the virtual row.
-  parent.children.forEach((child) => {
-    eachBefore(child, (descendant) => {
-      descendant.bbox.y += virtualRowHeight;
-    });
-  });
-
-  parent.bbox.width = width;
-  parent.bbox.height += virtualRowHeight;
 }

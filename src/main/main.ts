@@ -43,7 +43,7 @@ export function main() {
       const raw = await readFile(IO.outputJsonPath(), 'utf-8');
       return { canceled: false, data: JSON.parse(raw) as Record<string, unknown> };
     } catch (err) {
-      return { canceled: false, error: err instanceof Error ? err.message : String(err) };
+      return { canceled: false, error: err instanceof Error ? err.message + '\n' + err.stack : String(err) };
     }
   });
 }

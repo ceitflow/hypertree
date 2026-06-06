@@ -17,9 +17,9 @@ export class Factory {
     switch (node.type) {
       case GraphNodeEnum.Directory: {
         const { x, y, width, height } = node.bbox;
-        const dirFontSize = Math.max(Math.round(Math.sqrt(node.area)), 120);
+        const dirFontSize = 240// Math.max(Math.round(Math.sqrt(node.area)), 120);
         const text = node.parent ? node.parent.name + '/' + node.name : node.name;
-        return [this.createLabel(x, y, 0, text, dirFontSize, width)];
+        return [this.createLabel(x + node.padding, y, 0, text, dirFontSize, width)];
       }
 
       case GraphNodeEnum.Virtual: {
@@ -221,7 +221,7 @@ export class Factory {
   private static createVirtualNode(node: VirtualGraphNode): PaperNode[] {
     const { x, y, width, height } = node.bbox;
     const graphic = new Graphics() as PaperNode;
-    const color = node.isHeader ? this.directoryDepthColor(node.depth) : '#ff000088';
+    const color = 'transparent' //node.isHeader ? this.directoryDepthColor(node.depth) : '#ff000088';
 
     // graphic.circle(width / 2, height / 2, node.radius).fill(color);
     graphic.rect(0, 0, width, height).fill(color);
@@ -230,7 +230,7 @@ export class Factory {
     graphic.y = y;
     graphic.rotation = 0;
     graphic.label = 'Virtual';
-    graphic.interactive = true;
+    graphic.interactive = !node.isHeader;
     graphic.node = node;
 
     return [graphic];

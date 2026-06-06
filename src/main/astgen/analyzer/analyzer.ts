@@ -159,8 +159,14 @@ export class Analyzer {
   }
 
   getCallExpressionDeclaration(node: CallExpression) {
-    const signature = this.typeCheck.getResolvedSignature(node);
-    return signature?.declaration;
+    try {
+      // TS can throw on programs that aren't type-sound (missing deps/libs).
+      const signature = this.typeCheck.getResolvedSignature(node);
+      return signature?.declaration;
+    } catch (e) {
+      console.warn(`Failed to resolve call signature in ${node.getSourceFile().fileName}: ${(e as Error).message}`);
+      return undefined;
+    }
   }
 
   getTypeFlagCategory(itemFlags: TypeFlags): { astType: string; category: CategoryType } {
