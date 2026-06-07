@@ -8,7 +8,7 @@ import {
   VirtualGraphNode
 } from '../graph';
 import { PaperNode } from './types';
-import { BitmapText, Graphics } from 'pixi.js';
+import { BitmapText, CanvasTextMetrics, Graphics, TextStyle } from 'pixi.js';
 
 export class Factory {
   static createLabels(node: GraphNode) {
@@ -16,10 +16,11 @@ export class Factory {
 
     switch (node.type) {
       case GraphNodeEnum.Directory: {
-        const { x, y, width, height } = node.bbox;
-        const dirFontSize = 240// Math.max(Math.round(Math.sqrt(node.area)), 120);
+        const { x, y, width } = node.bbox;
         const text = node.parent ? node.parent.name + '/' + node.name : node.name;
-        return [this.createLabel(x + node.padding, y, 0, text, dirFontSize, width)];
+        const maxTextWidth = width - node.padding * 2;
+        const dirFontSize = this.fitFontSize(text, Math.max(Math.round(Math.sqrt(node.area)), 120), maxTextWidth);
+        return [this.createLabel(x + node.padding, y, 0, text, dirFontSize, maxTextWidth)];
       }
 
       case GraphNodeEnum.Virtual: {
@@ -37,7 +38,7 @@ export class Factory {
       case GraphNodeEnum.Other: {
         const { x, y, width, height } = node.bbox;
         const fontSize = 20;
-        return [this.createLabel(x + width / 2, y + height / 2, 0, node.name, fontSize, width)];
+        return [this.createLabel(x, y, 0, node.name, fontSize, width)];
       }
 
       case GraphNodeEnum.Declaration: {
@@ -48,14 +49,7 @@ export class Factory {
     }
   }
 
-  private static createLabel(
-    x: number,
-    y: number,
-    angle: number,
-    text: string,
-    fontSize: number,
-    maxWidth: number
-  ) {
+  private static createLabel(x: number, y: number, angle: number, text: string, fontSize: number, maxWidth: number) {
     const label = new BitmapText({
       label: text,
       text,
@@ -82,6 +76,14 @@ export class Factory {
     label.rotation = radians;
 
     return label;
+  }
+
+  private static fitFontSize(text: string, fontSize: number, maxWidth: number): number {
+    if (!text || maxWidth <= 0) return fontSize;
+    const style = new TextStyle({ fontFamily: 'sans-serif', fontWeight: 'bold', fontSize });
+    const { width } = CanvasTextMetrics.measureText(text, style, undefined, false);
+    if (width <= maxWidth) return fontSize;
+    return Math.max(1, Math.floor(fontSize * (maxWidth / width)));
   }
 
   static createLinks(node: GraphNode): Graphics[] {
@@ -169,7 +171,7 @@ export class Factory {
     const graphic = new Graphics() as PaperNode;
 
     graphic.rect(0, 0, width, height).fill('#07256177');
-    graphic.addChild(this.createLinesShapeGraphic(headerHeight, width, height - headerHeight, linesShape, loc));
+    // graphic.addChild(this.createLinesShapeGraphic(headerHeight, width, height - headerHeight, linesShape, loc));
 
     if (node.ast.kind === 'JS') {
       graphic.rect(0, 0, width, height).stroke({
@@ -242,13 +244,6 @@ export class Factory {
 
     graphic.rect(0, 0, width, height).fill('#ff7e5f');
 
-    // const pcx = parent.bbox.x + parent.bbox.width / 2;
-    // const pcy = parent.bbox.y + parent.bbox.height / 2;
-    // const mask = new Graphics({ eventMode: 'none' });
-    // mask.circle(pcx - x, pcy - y, parent.radius).fill('white');
-    // graphic.addChild(mask);
-    // graphic.mask = mask;
-
     graphic.x = x;
     graphic.y = y;
     graphic.rotation = 0;
@@ -261,7 +256,7 @@ export class Factory {
   private static createVirtualNode(node: VirtualGraphNode): PaperNode[] {
     const { x, y, width, height } = node.bbox;
     const graphic = new Graphics() as PaperNode;
-    const color = 'transparent' //node.isHeader ? this.directoryDepthColor(node.depth) : '#ff000088';
+    const color = 'transparent'; //node.isHeader ? this.directoryDepthColor(node.depth) : '#ff000088';
 
     // graphic.circle(width / 2, height / 2, node.radius).fill(color);
     graphic.rect(0, 0, width, height).fill(color);

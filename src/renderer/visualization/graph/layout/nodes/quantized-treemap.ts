@@ -1,11 +1,10 @@
 import { eachAfter, eachBefore } from '../../utils';
+import { GraphNodeBase, GraphNodeEnum } from '../../models';
 import { addCodeHeader, addDirectoryHeader } from './headers/header';
 import { alignRows, getContainerSize, getRowHeight, getRowWidth } from './utils';
-import { CodeGraphNode, DeclarationGraphNode, GraphNodeBase, GraphNodeEnum } from '../../models';
 
 const size = 120;
 const locHeight = 10;
-const locWidth = 5;
 
 export function QuantizedTreemap(root: GraphNodeBase) {
   eachAfter(root, (n) => {
@@ -13,7 +12,7 @@ export function QuantizedTreemap(root: GraphNodeBase) {
     switch (n.type) {
       case GraphNodeEnum.Declaration: {
         n.bbox.width = size;
-        n.bbox.height = Math.max(locHeight, (n as DeclarationGraphNode).ast.loc * locHeight);
+        n.bbox.height = size //Math.max(size, (n as DeclarationGraphNode).ast.loc * locHeight);
         n.area = Math.max(n.bbox.width, n.bbox.height);
         n.margin = { left: 0, top: 0, right: 0, bottom: 0 };
         n.padding = 0;
@@ -28,18 +27,24 @@ export function QuantizedTreemap(root: GraphNodeBase) {
         break;
       }
       case GraphNodeEnum.Code: {
-        n.area = n.children.reduce((sum, child) => sum + child.bbox.height, 0);
-        n.padding = 0;
+        n.area = n.children.reduce((sum, child) => sum + child.area, 0);
+        n.padding = 40;
         n.margin = { left: 0, top: 0, right: 0, bottom: 0 };
-        let maxLineWidth = 0;
-        const lines = (n as CodeGraphNode).ast.linesShape;
-        for (let i = 0; i < lines.length; i+=2) {
-          maxLineWidth = Math.max((lines[i+1] - lines[i]) * locWidth, maxLineWidth)
-        }
 
-        n.bbox.width = Math.max(size * 3, maxLineWidth);
-        n.bbox.height = Math.max(n.area, size);
-        // n.rows = packedRows.rows;
+        if (n.children.length === 0) {
+          n.bbox.width = size;
+          n.bbox.height = size;
+          n.area = size;
+          return;
+        }
+        // 1. rows layout
+        const nodeRows = wrapIntoRows(n.children);
+
+        // 2. post-process fill up the top rows first
+        const packedRows = fillRowsTopDown(nodeRows, getContainerSize(nodeRows).width, n.padding);
+        n.rows = packedRows.rows;
+        n.bbox.width = packedRows.width;
+        n.bbox.height = packedRows.height;
 
         addCodeHeader(n);
         break;
