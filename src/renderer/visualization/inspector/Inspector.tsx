@@ -12,6 +12,7 @@ type Props = {
 export const Inspector = ({ graph }: Props) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
+  const [inspectorVisible, setInspectorVisible] = useState(true);
   const [label, setLabel] = useState<string | null>(null);
   const [children, setChildren] = useState<GraphNode[] | null>(null);
 
@@ -40,6 +41,7 @@ export const Inspector = ({ graph }: Props) => {
 
   useEffect(() => {
     const onSelect = async (node: GraphNode | null) => {
+      setInspectorVisible(true);
       const view = viewRef.current!;
       const rootId = graph.model.root.ast.id;
 
@@ -76,7 +78,15 @@ export const Inspector = ({ graph }: Props) => {
   }, []);
 
   return (
-    <div className={styles.inspectorContainer}>
+    <div className={styles.inspectorContainer} style={{ opacity: inspectorVisible ? 1 : 0 }}>
+      <button
+        type="button"
+        className={styles.closeButton}
+        aria-label="Close inspector"
+        onClick={() => setInspectorVisible(false)}
+      >
+        ×
+      </button>
       <span className={styles.selectedId}>{label || '—'}</span>
       {children && (
         <div className={styles.childrenList}>

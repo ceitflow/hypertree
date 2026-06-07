@@ -3,6 +3,7 @@ import path from 'node:path';
 import { Analyzer, IO } from '../../analyzer';
 import { CodeFile, IdPath, NodeEnum } from '@lib/ast';
 import { DeclarationFactory, ImportFactory } from './definitions';
+import { TsNode } from './types';
 
 export class CodeFileBuilder {
   code: CodeFile;
@@ -172,21 +173,6 @@ export class CodeFileBuilder {
       return;
     }
 
-    if (
-      ts.isClassDeclaration(node) ||
-      ts.isFunctionDeclaration(node) ||
-      ts.isEnumDeclaration(node) ||
-      ts.isInterfaceDeclaration(node) ||
-      ts.isTypeAliasDeclaration(node) ||
-      ts.isArrowFunction(node) ||
-      ts.isCallExpression(node) ||
-      ts.isObjectLiteralExpression(node)
-    ) {
-      const declaration = DeclarationFactory(node, this.analyzer, this.code.id, this.code.depth + 1);
-      this.code.definitions.push(declaration);
-      return;
-    }
-
     if (ts.isArrayBindingPattern(node) || ts.isObjectBindingPattern(node)) {
       // const [one] = [1,2]
       // const { d } = obj;
@@ -221,6 +207,19 @@ export class CodeFileBuilder {
       });
       return;
     }
+
+    // if (
+    //   ts.isClassDeclaration(node) ||
+    //   ts.isFunctionDeclaration(node) ||
+    //   ts.isEnumDeclaration(node) ||
+    //   ts.isInterfaceDeclaration(node) ||
+    //   ts.isTypeAliasDeclaration(node) ||
+    //   ts.isArrowFunction(node) ||
+    //   ts.isCallExpression(node) ||
+    //   ts.isObjectLiteralExpression(node)
+    // )
+    const declaration = DeclarationFactory(node as TsNode, this.analyzer, this.code.id, this.code.depth + 1);
+    this.code.definitions.push(declaration);
     // console.warn(`Export not found, skipping: ${SyntaxKind[node.kind]}`);
   }
 

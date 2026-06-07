@@ -1,7 +1,7 @@
 import ts from 'typescript';
 import { TsNode } from '../types';
 import { Analyzer } from '../../../analyzer';
-import { DeclarationEnum, DeclarationModifier, DeclarationNode, IdPath, NodeEnum } from '@lib/ast';
+import { DeclarationEnum, DeclarationModifier, DeclarationNode, IdPath, NodeEnum, PrimitiveEnum } from '@lib/ast';
 
 const calculateLoc = (node: TsNode): { startLine: number; endLine: number; loc: number } => {
   const sourceFile = node.getSourceFile();
@@ -25,12 +25,7 @@ const createUnknownDeclaration = (id: string, name: string, depth: number): Decl
   }
 });
 
-export const DeclarationFactory = (
-  node: TsNode,
-  analyzer: Analyzer,
-  id: IdPath,
-  depth: number
-): DeclarationNode => {
+export const DeclarationFactory = (node: TsNode, analyzer: Analyzer, id: IdPath, depth: number): DeclarationNode => {
   const { isExport, isDefault } = analyzer.getExportDefaultFlags(node);
   switch (node.kind) {
     case ts.SyntaxKind.Identifier: {
@@ -81,6 +76,23 @@ export const DeclarationFactory = (
         }
       };
     }
+    case ts.SyntaxKind.ArrayLiteralExpression: {
+      const n = node as ts.ArrayLiteralExpression;
+      const parentName = (n.parent as ts.NamedDeclaration | undefined)?.name;
+      const name = parentName && ts.isIdentifier(parentName) ? parentName.text : '';
+      return {
+        id,
+        type: NodeEnum.Declaration,
+        modifier: DeclarationModifier.None,
+        name,
+        depth,
+        ...calculateLoc(n),
+        token: {
+          category: DeclarationEnum.Primitive,
+          type: PrimitiveEnum.Array
+        }
+      };
+    }
     case ts.SyntaxKind.ClassDeclaration: {
       const n = node as ts.ClassDeclaration;
       return {
@@ -114,7 +126,10 @@ export const DeclarationFactory = (
     }
     case ts.SyntaxKind.ArrowFunction: {
       const n = node as ts.ArrowFunction;
-      const name = n.parent.kind === ts.SyntaxKind.VariableDeclaration ? (n.parent as ts.VariableDeclaration).name['text'] || '' : '';
+      const name =
+        n.parent.kind === ts.SyntaxKind.VariableDeclaration
+          ? (n.parent as ts.VariableDeclaration).name['text'] || ''
+          : '';
       return {
         id,
         type: NodeEnum.Declaration,
@@ -127,7 +142,7 @@ export const DeclarationFactory = (
           async: false,
           generator: false
         }
-      }
+      };
     }
     case ts.SyntaxKind.InterfaceDeclaration: {
       const n = node as ts.InterfaceDeclaration;
@@ -200,7 +215,7 @@ export const DeclarationFactory = (
         depth,
         ...calculateLoc(n),
         token: returnValue.token
-      }
+      };
     }
 
     // export default {} as Something;

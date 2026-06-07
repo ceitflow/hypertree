@@ -241,8 +241,9 @@ export class Factory {
     const parent = node.parent;
     const graphic = new Graphics() as PaperNode;
     const result: PaperNode[] = [graphic];
+    const color = node.ast.token.category === 'unknown' ? '#ff0000' : '#ff7e5f';
 
-    graphic.rect(0, 0, width, height).fill('#ff7e5f');
+    graphic.rect(0, 0, width, height).fill(color);
 
     graphic.x = x;
     graphic.y = y;
