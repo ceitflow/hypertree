@@ -60,7 +60,7 @@ export class CodeFileBuilder {
 
   buildDefinitions() {
     if (this.code.name === 'next.config.js') {
-      console.log('wtf')
+      console.log('wtf');
     }
     this.sourceFile.statements.forEach((node) => {
       this.pullStatement(node);
@@ -98,7 +98,6 @@ export class CodeFileBuilder {
 
   buildExports(graph: Map<IdPath, CodeFileBuilder>) {
     this.tsExports.forEach((node, idx) => {
-      const declarationId = this.code.id + IO.separator + idx;
       const depth = this.code.depth + 1;
 
       if (ts.isExportAssignment(node)) {
@@ -110,7 +109,12 @@ export class CodeFileBuilder {
         //     return;
         //   }
         // }
-        const declaration = DeclarationFactory(node.expression as any, this.analyzer, declarationId, depth);
+        const declaration = DeclarationFactory(
+          node.expression as any,
+          this.analyzer,
+          IO.separator + this.code.id,
+          depth
+        );
         this.code.definitions.push(declaration);
         return;
       }
@@ -137,7 +141,7 @@ export class CodeFileBuilder {
             if (!ts.isIdentifier(element.name)) {
               throw new Error(`Expected ExportSpecifier name to be Identifier, got: ${element.name.text}`);
             }
-            const declaration = DeclarationFactory(element, this.analyzer, declarationId, depth);
+            const declaration = DeclarationFactory(element, this.analyzer, IO.separator + this.code.id, depth);
             this.code.definitions.push(declaration);
             // const alias = this.analyzer.findIdentifierAliasImportPath(element.name);
             // if (alias) this.addReExport(element, alias.resolvedPath, alias.isExternal);
@@ -193,7 +197,12 @@ export class CodeFileBuilder {
             stack.push(el.name);
             return;
           }
-          const declaration = DeclarationFactory(el.name, this.analyzer, this.code.id, this.code.depth + 1);
+          const declaration = DeclarationFactory(
+            el.name,
+            this.analyzer,
+            IO.separator + this.code.id,
+            this.code.depth + 1
+          );
           this.code.definitions.push(declaration);
         });
       }
@@ -218,7 +227,12 @@ export class CodeFileBuilder {
     //   ts.isCallExpression(node) ||
     //   ts.isObjectLiteralExpression(node)
     // )
-    const declaration = DeclarationFactory(node as TsNode, this.analyzer, this.code.id, this.code.depth + 1);
+    const declaration = DeclarationFactory(
+      node as TsNode,
+      this.analyzer,
+      IO.separator + this.code.id,
+      this.code.depth + 1
+    );
     this.code.definitions.push(declaration);
     // console.warn(`Export not found, skipping: ${SyntaxKind[node.kind]}`);
   }

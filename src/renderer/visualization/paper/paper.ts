@@ -1,6 +1,7 @@
+import { IdPath } from '@lib/ast';
 import { PaperNode } from './types';
 import { Factory } from './factory';
-import { Graph, GraphNode, GraphNodeEnum } from '../graph';
+import { Edge, Graph, GraphNode, GraphNodeEnum } from '../graph';
 import { Application, Container, Graphics } from 'pixi.js';
 import { CreateViewport, Mouse, ScreenType } from '../../shared/screen';
 
@@ -42,7 +43,7 @@ export class Paper {
     if (!root) {
       return;
     }
-    this.render(root);
+    this.render();
 
     // center in viewport
     const { paper } = this.container;
@@ -58,10 +59,11 @@ export class Paper {
     console.log('map size: ', paper.getSize(), 'zoom', newZoom);
   }
 
-  private render(root: GraphNode) {
+  private render() {
+    const {root, edgesRegistry, nodes: nodeMap} = this.graph.model;
     const container = this.container.paper;
     container.removeChildren();
-    const stack = [root];
+    const stack: GraphNode[] = [root];
 
     while (stack.length) {
       const n = stack.pop()!;
@@ -69,6 +71,15 @@ export class Paper {
       const nodes = Factory.createNode(n);
       const labels = Factory.createLabels(n);
       container.addChild(...nodes, ...labels);
+    }
+
+    for (const edgeList of edgesRegistry.values()) {
+      for (const edge of edgeList) {
+        const source = nodeMap.get(edge.source.fileId);
+        const target = nodeMap.get(edge.target.fileId);
+        if (!source || !target) continue;
+        container.addChild(Factory.createLink(source, target));
+      }
     }
   }
 

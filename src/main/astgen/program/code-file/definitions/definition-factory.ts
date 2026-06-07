@@ -207,11 +207,12 @@ export const DeclarationFactory = (node: TsNode, analyzer: Analyzer, id: IdPath,
       }
       // feed back the return value of call expression
       const returnValue = DeclarationFactory(declaration as any, analyzer, id, depth);
+      const name = (n.parent as ts.VariableDeclaration | undefined)?.name?.['text'] || returnValue.name;
       return {
         id,
         type: NodeEnum.Declaration,
         modifier: DeclarationModifier.None,
-        name: (n.parent as ts.VariableDeclaration).name['text'] || returnValue.name,
+        name,
         depth,
         ...calculateLoc(n),
         token: returnValue.token

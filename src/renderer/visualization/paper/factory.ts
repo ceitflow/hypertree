@@ -3,6 +3,7 @@ import {
   DeclarationGraphNode,
   DirectoryGraphNode,
   GraphNode,
+  GraphNodeBase,
   GraphNodeEnum,
   OtherGraphNode,
   VirtualGraphNode
@@ -86,19 +87,14 @@ export class Factory {
     return Math.max(1, Math.floor(fontSize * (maxWidth / width)));
   }
 
-  static createLinks(node: GraphNode): Graphics[] {
-    const { x, y, width, height } = node.bbox;
-    const px = x + width / 2;
-    const py = y + height / 2;
-    const links: Graphics[] = [];
-    for (const child of node.children) {
-      const cx = child.bbox.x + child.bbox.width / 2;
-      const cy = child.bbox.y + child.bbox.height / 2;
-      const line = new Graphics({ eventMode: 'none' });
-      line.moveTo(px, py).lineTo(cx, cy).stroke({ width: 1, color: '#888888' });
-      links.push(line);
-    }
-    return links;
+  static createLink(source: GraphNodeBase, target: GraphNodeBase): Graphics {
+    const sx = source.bbox.x + source.bbox.width / 2;
+    const sy = source.bbox.y + source.bbox.height / 2;
+    const tx = target.bbox.x + target.bbox.width / 2;
+    const ty = target.bbox.y + target.bbox.height / 2;
+    const line = new Graphics({ eventMode: 'none' });
+    line.moveTo(sx, sy).lineTo(tx, ty).stroke({ width: 1, color: '#888888' });
+    return line;
   }
 
   static createNode(node: GraphNode): PaperNode[] {
