@@ -1,11 +1,16 @@
 import './main.css';
+import { useState } from 'react';
 import { Directory } from '@lib/ast';
 import { Visualization } from './visualization/Visualization';
-import outputData from '../../resources/output.json';
-import { useState } from 'react';
+
+const outputModules = import.meta.glob<Directory>('../../resources/output.json', {
+  eager: true,
+  import: 'default'
+});
+const outputData = Object.values(outputModules)[0];
 
 function App() {
-  const [graphData, setGraphData] = useState<Directory>(() => outputData as Directory);
+  const [graphData, setGraphData] = useState<Directory | undefined>(() => outputData);
 
   return (
     <div className="rootContainer">

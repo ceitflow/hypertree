@@ -12,6 +12,7 @@ export class IO {
     const result = new Set<IdPath>();
     const ignore = ig();
     ignore.add('.git');
+    ignore.add('dist');
     ignore.add('package-lock.json');
     ignore.add('yarn.lock');
     ignore.add('pnpm-lock.yaml');

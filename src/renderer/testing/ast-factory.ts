@@ -7,6 +7,7 @@ export class AstFactory {
     depth = 0,
     loc = 1,
     linesShape = [],
+    // comments = [],
     kind = 'TS',
     isExternalFile,
     imports = [],
@@ -20,6 +21,7 @@ export class AstFactory {
       depth,
       loc,
       linesShape,
+      // comments,
       kind,
       imports,
       definitions

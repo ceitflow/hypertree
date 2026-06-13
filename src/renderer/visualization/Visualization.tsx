@@ -8,7 +8,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ApiService } from '../api.service';
 
 type Props = {
-  data: Directory;
+  data: Directory | undefined;
   onGraphDataChange?: (data: Directory) => void;
 };
 
@@ -33,6 +33,7 @@ export const Visualization = ({ data, onGraphDataChange }: Props) => {
   };
 
   useEffect(() => {
+    if (!data) return;
     const engine = new Engine(mapRef.current!);
     const graphInstance = new Graph(data);
     setGraph(graphInstance);

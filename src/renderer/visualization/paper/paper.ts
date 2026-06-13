@@ -5,6 +5,11 @@ import { Edge, Graph, GraphNode, GraphNodeEnum } from '../graph';
 import { Application, Container, Graphics } from 'pixi.js';
 import { CreateViewport, Mouse, ScreenType } from '../../shared/screen';
 
+// TODO paradigm shift? Rather than absolute sized graph, make it dynamic. Implement LOD that always runs.
+//  On zoom dynamically replace render content. content is now sized to viewport
+//  and it works because you cannot even see some nodes when zoomed out.
+// TODO PaperNode hierarchy (3 LODs steps, high, medium, low?)
+//  in future we'll need aggregation for extremally big sources
 export class Paper {
   screen: ScreenType;
   container: {

@@ -26,6 +26,7 @@ export class CodeFileBuilder {
       kind: ts.ScriptKind[sourceFile['scriptKind'] as number] as keyof typeof ts.ScriptKind,
       loc: sourceFile.getLineAndCharacterOfPosition(sourceFile.end).line + 1,
       linesShape: this.calculateLinesShape(),
+      // comments: this.extractComments(),
       imports: [],
       definitions: []
     };
@@ -56,6 +57,34 @@ export class CodeFileBuilder {
     }
 
     return shape;
+  }
+
+  private extractComments(): (number | string)[] {
+    const text = this.sourceFile.text;
+    const scanner = ts.createScanner(
+      ts.ScriptTarget.Latest,
+      /* skipTrivia */ false,
+      ts.LanguageVariant.Standard,
+      text
+    );
+
+    const comments: (number | string)[] = [];
+    let token = scanner.scan();
+    while (token !== ts.SyntaxKind.EndOfFileToken) {
+      if (
+        token === ts.SyntaxKind.SingleLineCommentTrivia ||
+        token === ts.SyntaxKind.MultiLineCommentTrivia
+      ) {
+        const startPos = scanner.getTokenStart();
+        const endPos = scanner.getTokenEnd();
+        const lineStart = this.sourceFile.getLineAndCharacterOfPosition(startPos).line;
+        const lineEnd = this.sourceFile.getLineAndCharacterOfPosition(endPos).line;
+        comments.push(lineStart, lineEnd, text.slice(startPos, endPos));
+      }
+      token = scanner.scan();
+    }
+
+    return comments;
   }
 
   buildDefinitions() {
