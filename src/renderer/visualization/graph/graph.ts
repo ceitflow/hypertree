@@ -47,7 +47,7 @@ export class Graph {
       if (dir.files.length) {
         let parent: GraphNode = parentNode;
         if (dir.dirs.length) { // wrap files in virtual node if there are other dirs
-          parent = VirtualGraphNode.create(`/${parentNode.id}`, parentNode, false);
+          parent = VirtualGraphNode.create(`/${parentNode.id}`, parentNode, { isFilesContainer: true });
           parent.depth = parentNode.depth + 1;
           parentNode.children.unshift(parent);
         }

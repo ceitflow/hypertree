@@ -253,7 +253,9 @@ export class Factory {
   private static createVirtualNode(node: VirtualGraphNode): PaperNode[] {
     const { x, y, width, height } = node.bbox;
     const graphic = new Graphics() as PaperNode;
-    const color = 'transparent'; //node.isHeader ? this.directoryDepthColor(node.depth) : '#ff000088';
+    let color = 'transparent';
+    if (node.flags.isHeader) color = '#ff000088';
+    // else if (node.flags.isColumn) color = '#00ff0088';
 
     // graphic.circle(width / 2, height / 2, node.radius).fill(color);
     graphic.rect(0, 0, width, height).fill(color);
@@ -262,7 +264,7 @@ export class Factory {
     graphic.y = y;
     graphic.rotation = 0;
     graphic.label = 'Virtual';
-    graphic.interactive = !node.isHeader;
+    graphic.interactive = !node.flags.isHeader;
     graphic.node = node;
 
     return [graphic];

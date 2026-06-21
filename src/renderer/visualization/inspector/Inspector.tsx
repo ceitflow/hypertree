@@ -4,7 +4,15 @@ import { useEffect, useRef, useState } from 'react';
 import { EditorView, basicSetup } from 'codemirror';
 import { ApiService } from '../../api.service';
 import { CodeGraphNode, Graph, GraphNode, GraphNodeEnum } from '../graph';
-import { describeCode, describeDirectory, getChildName, getLabel, lineHighlighter, loadFile, setDoc } from './inspector.utils';
+import {
+  describeCode,
+  describeDirectory,
+  getChildName,
+  getLabel,
+  lineHighlighter,
+  loadFile,
+  setDoc
+} from './inspector.utils';
 import { Decoder, FileType } from './decoder';
 
 type Props = {
@@ -46,6 +54,17 @@ export const Inspector = ({ graph }: Props) => {
   }, []);
 
   useEffect(() => {
+    setInspectorVisible(false);
+    setLabel(null);
+    setChildren(null);
+    setDescription(null);
+    setSelectedNode(null);
+    setPreviewUrl(null);
+    setAnalyzing(false);
+    if (viewRef.current) {
+      setDoc(viewRef.current, '');
+    }
+
     const onSelect = async (node: GraphNode | null) => {
       setInspectorVisible(true);
       setDescription(null);
@@ -86,13 +105,13 @@ export const Inspector = ({ graph }: Props) => {
 
         case GraphNodeEnum.Declaration:
           setChildren(null);
-          await loadFile(view, rootId, node.parent.ast.id, { start: node.ast.startLine, end: node.ast.endLine });
+          await loadFile(view, rootId, node.parent!.ast.id, { start: node.ast.startLine, end: node.ast.endLine });
           break;
       }
     };
     graph.emit.on('select', onSelect);
     return () => graph.emit.off('select', onSelect);
-  }, []);
+  }, [graph]);
 
   const handleAnalyze = async () => {
     if (!selectedNode) return;
@@ -102,7 +121,7 @@ export const Inspector = ({ graph }: Props) => {
     setDescription('Analyzing…');
     const start = performance.now();
     try {
-      if (selectedNode.type === GraphNodeEnum.Code) {
+      if (selectedNode.type === GraphNodeEnum.Code || selectedNode.type === GraphNodeEnum.Other) {
         const raw = await ApiService.readFile(rootId, selectedNode.ast.id);
         const { text } = Decoder.decode(raw, selectedNode.ast.id);
         const result = await describeCode(selectedNode.id, text);
@@ -158,8 +177,8 @@ export const Inspector = ({ graph }: Props) => {
           <div className={styles.childrenList}>
             {children.map((child) => (
               <span key={child.id} className={styles.childItem}>
-              {getChildName(child)} <em className={styles.childType}>({child.type})</em>
-            </span>
+                {getChildName(child)} <em className={styles.childType}>({child.type})</em>
+              </span>
             ))}
             {children.length === 0 && <span className={styles.childItem}>(empty)</span>}
           </div>
