@@ -1,27 +1,34 @@
 import { eachAfter, eachBefore } from '../../utils';
-import { GraphNodeBase, GraphNodeEnum } from '../../models';
 import { addCodeHeader, addDirectoryHeader } from './headers/header';
 import { alignRows, getContainerSize, getRowHeight, getRowWidth } from './utils';
+import { DeclarationGraphNode, GraphNodeBase, GraphNodeEnum } from '../../models';
 
-const size = 120;
-const locHeight = 10;
+const size = 100;
+const locHeight = 5;
+const getVarSize = (n: GraphNodeBase) =>
+  size *
+  (1 + (n.parent!.type === GraphNodeEnum.Virtual || n.parent!.children.length < 6
+    ? Math.max(0, 3 - (n as DeclarationGraphNode).ast.depth)
+    : 0));
 
 export function QuantizedTreemap(root: GraphNodeBase) {
   eachAfter(root, (n) => {
     // preprocessing
     switch (n.type) {
       case GraphNodeEnum.Declaration: {
-        n.bbox.width = size;
-        n.bbox.height = size //Math.max(size, (n as DeclarationGraphNode).ast.loc * locHeight);
+        const s = getVarSize(n);
+        n.bbox.width = s;
+        n.bbox.height = s; //Math.max(s, (n as DeclarationGraphNode).ast.loc * locHeight);
         n.area = Math.max(n.bbox.width, n.bbox.height);
         n.margin = { left: 0, top: 0, right: 0, bottom: 0 };
         n.padding = 0;
         break;
       }
       case GraphNodeEnum.Other: {
-        n.bbox.width = size;
-        n.bbox.height = size;
-        n.area = size;
+        const s = getVarSize(n);
+        n.bbox.width = s;
+        n.bbox.height = s;
+        n.area = s;
         n.margin = { left: 0, top: 0, right: 0, bottom: 0 };
         n.padding = 0;
         break;

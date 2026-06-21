@@ -97,6 +97,8 @@ export class Paper {
     background.on('mouseup', mouse.mouseup);
     background.on('wheel', mouse.wheel);
 
+    // todo screen.on 'change', zoom and translate update LOD and other systems
+
     // todo clear on reloading
     let startX = 0;
     let startY = 0;

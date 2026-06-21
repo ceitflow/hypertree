@@ -10,7 +10,8 @@ export type SelectFolderAnalyzeResult =
 
 export function main() {
   ipcMain.handle('api:readFile', async (_, [rootPath, relPath]: [string, string]): Promise<string> => {
-    return readFile(rootPath + IO.separator + relPath, 'utf-8');
+    const buffer = await readFile(rootPath + IO.separator + relPath);
+    return buffer.toString('base64');
   });
 
   ipcMain.handle('api:readGraph', async (): Promise<Record<string, unknown>> => {

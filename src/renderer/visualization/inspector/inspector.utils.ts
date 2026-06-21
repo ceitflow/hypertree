@@ -1,6 +1,7 @@
 import { EditorView } from 'codemirror';
 import { ApiService } from '../../api.service';
 import { GraphNode, GraphNodeEnum } from '../graph';
+import { DecodeResult, Decoder, FileType } from './decoder';
 import { Decoration, DecorationSet } from '@codemirror/view';
 import { Range, StateEffect, StateField } from '@codemirror/state';
 
@@ -41,6 +42,106 @@ export const lineHighlighter: [StateField<DecorationSet>, ReturnType<typeof Edit
   })
 ];
 
+const OLLAMA_URL = 'http://localhost:11434/api/chat';
+const OLLAMA_MODEL = 'qwen3.5:2b-mlx';
+
+export async function describeCode(fileName: string, content: string): Promise<string> {
+  const response = await fetch(OLLAMA_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: OLLAMA_MODEL,
+      stream: false,
+      think: false,
+      format: 'json',
+      options: {
+        num_ctx: 16384,
+        temperature: 0.2,
+        top_p: 0.85,
+      },
+      messages: [
+        {
+          role: 'user',
+          content: `
+  You are a code summarization assistant.
+
+  Summarize the provided code in a single sentence.
+
+  Rules:
+
+  * Return only the summary text.
+  * Maximum 40 words.
+  * Explain the code's purpose and observable behavior.
+  * Do not describe syntax, language features, or implementation details.
+  * Do not mention class, function, or variable names unless essential.
+  * Prefer high-level intent over low-level mechanics.
+
+  ${fileName} code:
+  ${content}
+`
+        }
+      ]
+    })
+  });
+
+  if (!response.ok) {
+    throw new Error(`Ollama request failed: ${response.status} ${response.statusText}`);
+  }
+
+  const data = await response.json();
+  console.log('Ollama tokens:', { prompt: data.prompt_eval_count, output: data.eval_count });
+  return data.message?.content ?? '';
+}
+
+export async function describeDirectory(dirName: string, summaries: Map<string, string>): Promise<string> {
+  const fileSummaries = [...summaries.entries()].map(([file, summary]) => `${file}: ${summary}`).join('\n');
+
+  const response = await fetch(OLLAMA_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: OLLAMA_MODEL,
+      stream: false,
+      think: false,
+      format: 'json',
+      options: {
+        num_ctx: 16384,
+        temperature: 0.2,
+        top_p: 0.85,
+      },
+      messages: [
+        {
+          role: 'user',
+          content: `
+  You are a code summarization assistant.
+
+  Summarize the purpose of the directory in a single sentence, based on the summaries of the code files it contains.
+
+  Rules:
+
+  * Return only the summary text.
+  * Maximum 40 words.
+  * Explain the directory's overall responsibility and observable behavior.
+  * Do not list the individual files.
+  * Prefer high-level intent over low-level mechanics.
+
+  ${dirName} file summaries:
+  ${fileSummaries}
+`
+        }
+      ]
+    })
+  });
+
+  if (!response.ok) {
+    throw new Error(`Ollama request failed: ${response.status} ${response.statusText}`);
+  }
+
+  const data = await response.json();
+  console.log('Ollama tokens:', { prompt: data.prompt_eval_count, output: data.eval_count });
+  return data.message?.content ?? '';
+}
+
 export function getLabel(node: GraphNode): string {
   if (node.type === GraphNodeEnum.Virtual) return node.parent!['ast'].name + ' virtual';
   return `${node.ast.id} ${node.ast['loc'] ? node.ast['loc'] : ''} loc`;
@@ -59,21 +160,22 @@ export async function loadFile(
   rootId: string,
   filePath: string,
   scrollToLine?: { start: number; end: number }
-): Promise<void> {
-  let content: string;
+): Promise<DecodeResult> {
+  let decoded: DecodeResult;
   try {
-    content = await ApiService.readFile(rootId, filePath);
+    const raw = await ApiService.readFile(rootId, filePath);
+    decoded = Decoder.decode(raw, filePath);
   } catch {
-    content = `/* Failed to load ${filePath} */`;
+    decoded = { type: FileType.Text, text: `/* Failed to load ${filePath} */` };
   }
 
-  setDoc(view, content);
+  setDoc(view, decoded.text);
 
-  if (!scrollToLine) {
+  if (!scrollToLine || decoded.type !== FileType.Text) {
     view.dispatch({
       effects: [setHighlightLines.of(null), EditorView.scrollIntoView(0, { y: 'start' })]
     });
-    return;
+    return decoded;
   }
 
   // TypeScript line numbers are 0-based, CodeMirror's doc.line() is 1-based.
@@ -84,4 +186,5 @@ export async function loadFile(
   view.dispatch({
     effects: [setHighlightLines.of({ start, end }), EditorView.scrollIntoView(line.from, { y: 'start' })]
   });
+  return decoded;
 }
