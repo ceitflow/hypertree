@@ -1,4 +1,7 @@
 import { EditorView } from 'codemirror';
+import { javascript } from '@codemirror/lang-javascript';
+import { HighlightStyle, syntaxHighlighting } from '@codemirror/language';
+import { tags } from '@lezer/highlight';
 import { ApiService } from '../../api.service';
 import { GraphNode, GraphNodeEnum } from '../graph';
 import { DecodeResult, Decoder, FileType } from './decoder';
@@ -6,6 +9,27 @@ import { Decoration, DecorationSet } from '@codemirror/view';
 import { Range, StateEffect, StateField } from '@codemirror/state';
 
 const setHighlightLines = StateEffect.define<{ start: number; end: number } | null>();
+
+export const inspectorLanguage = javascript({ typescript: true });
+
+const inspectorHighlightStyle = HighlightStyle.define([
+  { tag: tags.keyword, color: '#0000ff' },
+  { tag: tags.operator, color: '#000000' },
+  { tag: tags.special(tags.variableName), color: '#001080' },
+  { tag: tags.typeName, color: '#267f99' },
+  { tag: tags.className, color: '#267f99' },
+  { tag: tags.number, color: '#098658' },
+  { tag: tags.string, color: '#a31515' },
+  { tag: tags.regexp, color: '#811f3f' },
+  { tag: tags.comment, color: '#008000', fontStyle: 'italic' },
+  { tag: tags.meta, color: '#808080' },
+  { tag: tags.name, color: '#795e26' },
+  { tag: tags.function(tags.variableName), color: '#795e26' },
+  { tag: tags.definition(tags.variableName), color: '#001080' },
+  { tag: tags.propertyName, color: '#001080' }
+]);
+
+export const inspectorSyntaxHighlighting = syntaxHighlighting(inspectorHighlightStyle);
 
 const highlightDecoration = Decoration.line({ class: 'cm-highlight-line' });
 

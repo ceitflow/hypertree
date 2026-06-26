@@ -87,7 +87,7 @@ export function QuantizedTreemap(root: GraphNodeBase) {
       }
       case GraphNodeEnum.Directory: {
         n.area = n.children.reduce((sum, child) => sum + child.area, 0);
-        const dirMargin = Math.round(Math.sqrt(n.area));
+        const dirMargin = Math.round(Math.sqrt(n.area) * 10);
         n.padding = Math.round(Math.sqrt(n.area));
         n.margin = { left: dirMargin, top: 24, right: dirMargin, bottom: 0 };
 
@@ -99,6 +99,7 @@ export function QuantizedTreemap(root: GraphNodeBase) {
         }
 
         // 1. rows layout
+        const filesContainer = n.children.find(c => c.type === GraphNodeEnum.Virtual && c.flags.isFilesContainer);
         const nodeRows = wrapIntoRows(n.children);
 
         // 2. post-process fill up the top rows first
@@ -109,6 +110,8 @@ export function QuantizedTreemap(root: GraphNodeBase) {
 
         // 3. stack nodes to waste less space
         wrapIntoColumns(packedRows.rows, n as DirectoryGraphNode);
+
+        // todo need to run aspect ratio again,
 
         addDirectoryHeader(n);
         break;

@@ -88,9 +88,6 @@ export class CodeFileBuilder {
   }
 
   buildDefinitions() {
-    if (this.code.name === 'next.config.js') {
-      console.log('wtf');
-    }
     this.sourceFile.statements.forEach((node) => {
       this.pullStatement(node);
     });
@@ -167,8 +164,11 @@ export class CodeFileBuilder {
               // const { resolvedPath, isExternal } = this.analyzer.getResolvedImportPath(element.parent.parent);
               // this.addReExport(element, resolvedPath, isExternal);
             }
-            if (!ts.isIdentifier(element.name)) {
-              throw new Error(`Expected ExportSpecifier name to be Identifier, got: ${element.name.text}`);
+            // JS allows string-literal export names: export { x as 'abc' } (see TS#40594)
+            if (!ts.isIdentifier(element.name) && !ts.isStringLiteral(element.name)) {
+              throw new Error(
+                `Expected ExportSpecifier name to be Identifier or StringLiteral, got: ${ts.SyntaxKind[element.name['kind']]}`
+              );
             }
             const declaration = DeclarationFactory(element, this.analyzer, IO.separator + this.code.id, depth);
             this.code.definitions.push(declaration);

@@ -3,12 +3,14 @@ import { EditorState } from '@codemirror/state';
 import { useEffect, useRef, useState } from 'react';
 import { EditorView, basicSetup } from 'codemirror';
 import { ApiService } from '../../api.service';
-import { CodeGraphNode, Graph, GraphNode, GraphNodeEnum } from '../graph';
+import { CodeGraphNode, Graph, GraphNode, GraphNodeEnum, VirtualGraphNode } from '../graph';
 import {
   describeCode,
   describeDirectory,
   getChildName,
   getLabel,
+  inspectorLanguage,
+  inspectorSyntaxHighlighting,
   lineHighlighter,
   loadFile,
   setDoc
@@ -39,6 +41,8 @@ export const Inspector = ({ graph }: Props) => {
       doc: '',
       extensions: [
         basicSetup,
+        inspectorLanguage,
+        inspectorSyntaxHighlighting,
         EditorState.readOnly.of(true),
         EditorView.editable.of(false),
         EditorView.lineWrapping,
@@ -84,10 +88,17 @@ export const Inspector = ({ graph }: Props) => {
 
       switch (node.type) {
         case GraphNodeEnum.Virtual:
-        case GraphNodeEnum.Directory:
-          setChildren(node.children as GraphNode[]);
+        case GraphNodeEnum.Directory: {
+          const flattenColumns = (nodes: GraphNode[]): GraphNode[] =>
+            nodes.flatMap((child) =>
+              child.type === GraphNodeEnum.Virtual && (child as VirtualGraphNode).flags.isColumn
+                ? flattenColumns(child.children as GraphNode[])
+                : [child]
+            );
+          setChildren(flattenColumns(node.children as GraphNode[]));
           setDoc(view, '');
           break;
+        }
 
         case GraphNodeEnum.Code:
           setChildren(null);

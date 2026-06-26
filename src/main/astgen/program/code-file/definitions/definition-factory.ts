@@ -45,7 +45,8 @@ export const DeclarationFactory = (node: TsNode, analyzer: Analyzer, id: IdPath,
     }
     case ts.SyntaxKind.ExportSpecifier: {
       const n = node as ts.ExportSpecifier;
-      const originalName = n.propertyName?.text; // defined if 'import { original as alias }'
+      // propertyName is the local binding; name is the exported name (Identifier or JS string literal)
+      const valueNode = n.propertyName ?? (ts.isIdentifier(n.name) ? n.name : undefined);
       return {
         id,
         type: NodeEnum.Declaration,
@@ -55,7 +56,7 @@ export const DeclarationFactory = (node: TsNode, analyzer: Analyzer, id: IdPath,
         ...calculateLoc(n),
         token: {
           category: analyzer.evaluateType(node)?.category as any,
-          type: analyzer.evaluateType(n.name as ts.Identifier)?.category as any
+          type: (valueNode ? analyzer.evaluateType(valueNode)?.category : undefined) as any
         }
       };
     }

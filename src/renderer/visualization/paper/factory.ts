@@ -148,7 +148,7 @@ export class Factory {
 
     const graphic = new Graphics() as PaperNode;
 
-    graphic.rect(0, 0, width, height).fill(color);
+    graphic.rect(0, 0, width, height).fill(color).stroke({ width: 24, color: '#ff000088' });
     // graphic.circle(node.radius, node.radius, node.radius).fill(color);
 
     graphic.x = x;

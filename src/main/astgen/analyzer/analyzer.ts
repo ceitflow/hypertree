@@ -174,11 +174,17 @@ export class Analyzer {
   }
 
   evaluateType(item: Node) {
-    const symbol = this.typeCheck.getSymbolAtLocation(isIdentifier(item) ? this.resolveAliasedNode(item) : item);
-    if (!symbol) {
-      // console.error(`Unable to determine type symbol: ${item['text']}`);
+    let symbol: Symbol | undefined;
+    try {
+      symbol = this.typeCheck.getSymbolAtLocation(isIdentifier(item) ? this.resolveAliasedNode(item) : item);
+      if (!symbol) {
+        return;
+      }
+    } catch (e) {
+      console.error(`Unable to determine type symbol: ${item['text']}`);
       return;
     }
+
 
     const resolvedSymbol = symbol.flags & SymbolFlags.Alias ? this.typeCheck.getAliasedSymbol(symbol) : symbol;
     if (!resolvedSymbol.valueDeclaration) {
