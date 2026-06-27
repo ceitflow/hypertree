@@ -3,13 +3,11 @@ import { BaseOpt, GraphNodeBase } from './base';
 import { GraphNodeEnum, ParentType } from './types';
 
 export class OtherGraphNode extends GraphNodeBase {
-  static defaultWidth = 60;
   readonly type = GraphNodeEnum.Other;
 
   constructor(
     opt: BaseOpt,
     public ast: OtherFile,
-    public layoutColumns: number
   ) {
     super(opt);
   }
@@ -18,13 +16,12 @@ export class OtherGraphNode extends GraphNodeBase {
     // if (ast.bigFile) bbox.height = 10;
     return new OtherGraphNode(
       {
+        id: ast.id,
+        name: ast.name,
         parent,
-        area: ast.loc,
-        bbox: { x: 0, y: 0, width: OtherGraphNode.defaultWidth, height: ast.loc },
-        margin: { top: 0, bottom: 10, left: 0, right: 10 }
+        area: ast.loc
       },
-      ast,
-      1
+      ast
     );
   }
 }

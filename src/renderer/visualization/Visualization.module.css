@@ -1,0 +1,32 @@
+.visualization-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.diagram {
+  display: flex;
+  width: 100%;
+  height: 100%;
+}
+
+.openFolderButton {
+  position: fixed;
+  top: 0px;
+  left: 600px;
+  z-index: 10000;
+  padding: 8px 14px;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(30, 30, 35, 0);
+  color: #333;
+  box-shadow: 0 2px 2px rgba(0, 0, 0, 0.35);
+}
+
+.openFolderButton:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}

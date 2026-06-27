@@ -1,20 +1,20 @@
 import './main.css';
+import { useState } from 'react';
 import { Directory } from '@lib/ast';
-import { TreeMap } from './treemap/TreeMap';
-import outputData from '../../resources/output.json';
-import { MockAstData } from './testing/mock-ast-data';
+import { Visualization } from './visualization/Visualization';
+
+const outputModules = import.meta.glob<Directory>('../../resources/output.json', {
+  eager: true,
+  import: 'default'
+});
+const outputData = Object.values(outputModules)[0];
 
 function App() {
-  // todo in future
-  //  -store holds ast root (Directory)
-  //  - pass store to treemap and it creates new graph internally
-
-  // todo pull all comments, hyperlinks
+  const [graphData, setGraphData] = useState<Directory | undefined>(() => outputData);
 
   return (
     <div className="rootContainer">
-      <TreeMap data={outputData as Directory} />
-      {/*<TreeMap data={MockAstData} />*/}
+      <Visualization data={graphData} onGraphDataChange={setGraphData} />
     </div>
   );
 }

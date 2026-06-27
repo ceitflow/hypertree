@@ -5,6 +5,8 @@ import { BaseNode, NodeEnum, IdPath } from './id.type';
 export type CodeFile = BaseNode<NodeEnum.Code> & {
   isExternalFile: boolean; // node_modules
   loc: number;
+  linesShape: number[]; // flat [start, end] pairs per line, length = 2 * loc
+  // comments: (number | string)[]; // [lineStart, lineEnd, comment] triplets
   kind: keyof typeof ScriptKind;
   imports: CodeFileImport[]; // add importGroups (for knowing what was in each import together)
   definitions: DeclarationNode[];

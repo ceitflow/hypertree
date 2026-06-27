@@ -21,10 +21,13 @@
     "build:linux": "electron-vite build && electron-builder --linux"
   },
   "dependencies": {
+    "@codemirror/lang-javascript": "^6.2.5",
     "@electron-toolkit/preload": "^3.0.2",
     "@electron-toolkit/utils": "^4.0.0",
     "@pixi/devtools": "^2.0.1",
+    "@types/d3": "^7.4.3",
     "codemirror": "^6.0.2",
+    "d3": "^7.9.0",
     "ignore": "^7.0.5",
     "lodash": "^4.17.23",
     "mitt": "^3.0.1",

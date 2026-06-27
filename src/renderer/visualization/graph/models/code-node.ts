@@ -10,26 +10,17 @@ export class CodeGraphNode extends GraphNodeBase {
   constructor(
     opt: BaseOpt,
     public ast: CodeFile,
-    public layoutColumns = 1
   ) {
     super(opt);
   }
 
   static create(parent: ParentType, ast: CodeFile) {
-    const m = Math.round(Math.sqrt(ast.loc));
-    const padding = { top: Math.max(m, 6), bottom: 0, left: 0, right: 0 };
     return new CodeGraphNode(
       {
+        id: ast.id,
+        name: ast.name,
         parent,
-        area: ast.loc,
-        bbox: {
-          x: 0,
-          y: 0,
-          width: CodeGraphNode.defaultWidth + padding.left + padding.right,
-          height: ast.loc + padding.top + padding.bottom
-        },
-        margin: { top: 0, bottom: m, left: 0, right: m },
-        padding
+        area: ast.loc
       },
       ast
     );
@@ -43,7 +34,6 @@ export class DeclarationGraphNode extends GraphNodeBase {
   constructor(
     opt: BaseOpt,
     public ast: DeclarationNode,
-    public isSplit = false
   ) {
     super(opt);
   }
@@ -51,10 +41,10 @@ export class DeclarationGraphNode extends GraphNodeBase {
   static create(parent: CodeGraphNode, ast: DeclarationNode) {
     return new DeclarationGraphNode(
       {
+        id: ast.id,
+        name: ast.name,
         parent,
-        area: ast.loc,
-        bbox: { x: 0, y: 0, width: CodeGraphNode.defaultWidth, height: ast.loc },
-        margin: { top: 0, bottom: 4, left: 0, right: 0 }
+        area: ast.loc
       },
       ast
     );

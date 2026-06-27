@@ -3,6 +3,7 @@ import path from 'node:path';
 import { Analyzer, IO } from '../../analyzer';
 import { CodeFile, IdPath, NodeEnum } from '@lib/ast';
 import { DeclarationFactory, ImportFactory } from './definitions';
+import { TsNode } from './types';
 
 export class CodeFileBuilder {
   code: CodeFile;
@@ -24,9 +25,66 @@ export class CodeFileBuilder {
       isExternalFile: analyzer.isExternalFile(sourceFile),
       kind: ts.ScriptKind[sourceFile['scriptKind'] as number] as keyof typeof ts.ScriptKind,
       loc: sourceFile.getLineAndCharacterOfPosition(sourceFile.end).line + 1,
+      linesShape: this.calculateLinesShape(),
+      // comments: this.extractComments(),
       imports: [],
       definitions: []
     };
+  }
+
+  private calculateLinesShape(): number[] {
+    const lineStarts = this.sourceFile.getLineStarts();
+    const text = this.sourceFile.text;
+    const shape: number[] = [];
+
+    const isWhitespace = (ch: string) => ch === ' ' || ch === '\t' || ch === '\n' || ch === '\r';
+
+    for (let line = 0; line < lineStarts.length; line++) {
+      let lineStart = lineStarts[line];
+      let lineEnd = line + 1 < lineStarts.length ? lineStarts[line + 1] : text.length;
+      // omit trailing whitespace (line breaks included)
+      while (lineEnd > lineStart && isWhitespace(text[lineEnd - 1])) {
+        lineEnd--;
+      }
+      // omit leading whitespace, so start points at the first real char on the line
+      while (lineStart < lineEnd && isWhitespace(text[lineStart])) {
+        lineStart++;
+      }
+      // convert absolute offsets to per-line character positions (0 = first column on the left)
+      const start = this.sourceFile.getLineAndCharacterOfPosition(lineStart).character;
+      const end = this.sourceFile.getLineAndCharacterOfPosition(lineEnd).character;
+      shape.push(start, end);
+    }
+
+    return shape;
+  }
+
+  private extractComments(): (number | string)[] {
+    const text = this.sourceFile.text;
+    const scanner = ts.createScanner(
+      ts.ScriptTarget.Latest,
+      /* skipTrivia */ false,
+      ts.LanguageVariant.Standard,
+      text
+    );
+
+    const comments: (number | string)[] = [];
+    let token = scanner.scan();
+    while (token !== ts.SyntaxKind.EndOfFileToken) {
+      if (
+        token === ts.SyntaxKind.SingleLineCommentTrivia ||
+        token === ts.SyntaxKind.MultiLineCommentTrivia
+      ) {
+        const startPos = scanner.getTokenStart();
+        const endPos = scanner.getTokenEnd();
+        const lineStart = this.sourceFile.getLineAndCharacterOfPosition(startPos).line;
+        const lineEnd = this.sourceFile.getLineAndCharacterOfPosition(endPos).line;
+        comments.push(lineStart, lineEnd, text.slice(startPos, endPos));
+      }
+      token = scanner.scan();
+    }
+
+    return comments;
   }
 
   buildDefinitions() {
@@ -66,7 +124,6 @@ export class CodeFileBuilder {
 
   buildExports(graph: Map<IdPath, CodeFileBuilder>) {
     this.tsExports.forEach((node, idx) => {
-      const declarationId = this.code.id + IO.separator + idx;
       const depth = this.code.depth + 1;
 
       if (ts.isExportAssignment(node)) {
@@ -78,7 +135,12 @@ export class CodeFileBuilder {
         //     return;
         //   }
         // }
-        const declaration = DeclarationFactory(node.expression as any, this.analyzer, declarationId, depth);
+        const declaration = DeclarationFactory(
+          node.expression as any,
+          this.analyzer,
+          IO.separator + this.code.id,
+          depth
+        );
         this.code.definitions.push(declaration);
         return;
       }
@@ -102,10 +164,13 @@ export class CodeFileBuilder {
               // const { resolvedPath, isExternal } = this.analyzer.getResolvedImportPath(element.parent.parent);
               // this.addReExport(element, resolvedPath, isExternal);
             }
-            if (!ts.isIdentifier(element.name)) {
-              throw new Error(`Expected ExportSpecifier name to be Identifier, got: ${element.name.text}`);
+            // JS allows string-literal export names: export { x as 'abc' } (see TS#40594)
+            if (!ts.isIdentifier(element.name) && !ts.isStringLiteral(element.name)) {
+              throw new Error(
+                `Expected ExportSpecifier name to be Identifier or StringLiteral, got: ${ts.SyntaxKind[element.name['kind']]}`
+              );
             }
-            const declaration = DeclarationFactory(element, this.analyzer, declarationId, depth);
+            const declaration = DeclarationFactory(element, this.analyzer, IO.separator + this.code.id, depth);
             this.code.definitions.push(declaration);
             // const alias = this.analyzer.findIdentifierAliasImportPath(element.name);
             // if (alias) this.addReExport(element, alias.resolvedPath, alias.isExternal);
@@ -141,18 +206,6 @@ export class CodeFileBuilder {
       return;
     }
 
-    if (
-      ts.isClassDeclaration(node) ||
-      ts.isFunctionDeclaration(node) ||
-      ts.isEnumDeclaration(node) ||
-      ts.isInterfaceDeclaration(node) ||
-      ts.isTypeAliasDeclaration(node)
-    ) {
-      const declaration = DeclarationFactory(node, this.analyzer, this.code.id, this.code.depth + 1);
-      this.code.definitions.push(declaration);
-      return;
-    }
-
     if (ts.isArrayBindingPattern(node) || ts.isObjectBindingPattern(node)) {
       // const [one] = [1,2]
       // const { d } = obj;
@@ -173,7 +226,12 @@ export class CodeFileBuilder {
             stack.push(el.name);
             return;
           }
-          const declaration = DeclarationFactory(el.name, this.analyzer, this.code.id, this.code.depth + 1);
+          const declaration = DeclarationFactory(
+            el.name,
+            this.analyzer,
+            IO.separator + this.code.id,
+            this.code.depth + 1
+          );
           this.code.definitions.push(declaration);
         });
       }
@@ -183,10 +241,28 @@ export class CodeFileBuilder {
       // export const a = ..., b = ...;
       // const isExport = node.modifiers?.some((m) => m.kind === ts.SyntaxKind.ExportKeyword);
       node.declarationList.declarations.forEach((d) => {
-        this.pullStatement(d);
+        this.pullStatement(d.initializer || d.name);
       });
       return;
     }
+
+    // if (
+    //   ts.isClassDeclaration(node) ||
+    //   ts.isFunctionDeclaration(node) ||
+    //   ts.isEnumDeclaration(node) ||
+    //   ts.isInterfaceDeclaration(node) ||
+    //   ts.isTypeAliasDeclaration(node) ||
+    //   ts.isArrowFunction(node) ||
+    //   ts.isCallExpression(node) ||
+    //   ts.isObjectLiteralExpression(node)
+    // )
+    const declaration = DeclarationFactory(
+      node as TsNode,
+      this.analyzer,
+      IO.separator + this.code.id,
+      this.code.depth + 1
+    );
+    this.code.definitions.push(declaration);
     // console.warn(`Export not found, skipping: ${SyntaxKind[node.kind]}`);
   }
 

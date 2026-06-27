@@ -2,6 +2,7 @@ import { Directory } from '@lib/ast';
 import { VisibilityGraph } from './edges';
 import { BaseOpt, GraphNodeBase } from './base';
 import { GraphNodeEnum, ParentType } from './types';
+import { Vector3 } from '../../../shared/screen';
 
 export class DirectoryGraphNode extends GraphNodeBase {
   readonly type = GraphNodeEnum.Directory;
@@ -10,6 +11,7 @@ export class DirectoryGraphNode extends GraphNodeBase {
     rootNodeId: 0,
     vertices: new Map()
   };
+  labelPoints: Vector3[] = [];
 
   constructor(
     opt: BaseOpt,
@@ -19,6 +21,6 @@ export class DirectoryGraphNode extends GraphNodeBase {
   }
 
   static create(parent: ParentType, ast: Directory) {
-    return new DirectoryGraphNode({ parent, padding: { top: 10, right: 10, bottom: 10, left: 10 } }, ast);
+    return new DirectoryGraphNode({ id: ast.id, parent, name: ast.name }, ast);
   }
 }

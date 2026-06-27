@@ -2,11 +2,13 @@ import {
   CodeGraphNode,
   DeclarationGraphNode,
   DirectoryGraphNode,
-  GraphData,
   GraphNode,
   OtherGraphNode,
+  Edge,
+  GraphData,
+  GraphNodeEnum,
   VirtualGraphNode,
-  Edge
+  GraphNodeBase
 } from './models';
 import mitt from 'mitt';
 import { Layout } from './layout/layout';
@@ -23,9 +25,11 @@ export class Graph {
   }
 
   private initialize(astRoot: Directory): GraphData {
-    const root = DirectoryGraphNode.create(null, astRoot);
+    const nodes = new Map<IdPath, GraphNodeBase>();
     const edges = new Map<IdPath, Edge[]>(); // todo from and to, know total traffic for each node
-
+    const root = DirectoryGraphNode.create(null, astRoot);
+    root.depth = 0;
+    nodes.set(root.ast.id, root);
     const stack: { dir: Directory; parentNode: DirectoryGraphNode }[] = [{ dir: astRoot, parentNode: root }];
 
     // copy ast tree into graph node tree
@@ -34,30 +38,44 @@ export class Graph {
 
       for (const subdir of dir.dirs) {
         const dirNode = DirectoryGraphNode.create(parentNode, subdir);
+        dirNode.depth = parentNode.depth + 1;
+        nodes.set(dirNode.ast.id, dirNode);
         parentNode.children.push(dirNode);
         stack.push({ dir: subdir, parentNode: dirNode });
       }
 
       if (dir.files.length) {
-        const virtualNode = VirtualGraphNode.create(parentNode, false);
-
+        let parent: GraphNode = parentNode;
+        if (dir.dirs.length) { // wrap files in virtual node if there are other dirs
+          parent = VirtualGraphNode.create(`/${parentNode.id}`, parentNode, { isFilesContainer: true });
+          parent.depth = parentNode.depth + 1;
+          parentNode.children.unshift(parent);
+        }
         for (const file of dir.files) {
           let fileNode: GraphNode;
           if (file.type === NodeEnum.Code) {
-            fileNode = CodeGraphNode.create(virtualNode, file);
+            fileNode = CodeGraphNode.create(parent, file);
             fileNode.children = DeclarationGraphNode.createFromCodeFile(fileNode);
             fileNode.ast.imports.forEach((imp) => {
               if (!edges.has(file.id)) edges.set(file.id, []);
               edges.get(file.id)!.push(Edge.create(imp, file.id, imp.from));
             });
           } else {
-            fileNode = OtherGraphNode.create(virtualNode, file);
+            fileNode = OtherGraphNode.create(parent, file);
           }
-          virtualNode.children.push(fileNode);
+          fileNode.depth = parent.depth + 1;
+          nodes.set(fileNode.ast.id, fileNode);
+          fileNode.children.forEach((c) => {
+            if (c.type === GraphNodeEnum.Declaration) {
+              c.depth = fileNode.depth + 1;
+              nodes.set(c.ast.id, c);
+            }
+          });
+          parent.children.push(fileNode);
         }
-        parentNode.children.push(virtualNode);
       }
     }
-    return { root, edgesRegistry: edges };
+
+    return { root, edgesRegistry: edges, nodes };
   }
 }

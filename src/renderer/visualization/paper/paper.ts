@@ -1,9 +1,15 @@
+import { IdPath } from '@lib/ast';
 import { PaperNode } from './types';
 import { Factory } from './factory';
-import { Graph, GraphNode, GraphNodeEnum } from '../graph';
+import { Edge, Graph, GraphNode, GraphNodeEnum } from '../graph';
 import { Application, Container, Graphics } from 'pixi.js';
 import { CreateViewport, Mouse, ScreenType } from '../../shared/screen';
 
+// TODO paradigm shift? Rather than absolute sized graph, make it dynamic. Implement LOD that always runs.
+//  On zoom dynamically replace render content. content is now sized to viewport
+//  and it works because you cannot even see some nodes when zoomed out.
+// TODO PaperNode hierarchy (3 LODs steps, high, medium, low?)
+//  in future we'll need aggregation for extremally big sources
 export class Paper {
   screen: ScreenType;
   container: {
@@ -23,7 +29,7 @@ export class Paper {
       background,
       paper: new Container({ label: 'paper', zIndex: 2, parent: engine.stage })
     };
-    this.screen = CreateViewport(this.engine, this.container.paper, { zoom: { min: 0.03 } });
+    this.screen = CreateViewport(this.engine, this.container.paper, { zoom: { min: 0.007 } });
 
     // auto resize
     const resizeObserver = new ResizeObserver(entries => {
@@ -42,20 +48,44 @@ export class Paper {
     if (!root) {
       return;
     }
-    this.render(root);
+    this.render();
 
     // center in viewport
     const { paper } = this.container;
     const dx = paper.width / 2;
     const dy = paper.height / 2;
-    paper.children.forEach((c) => {
-      c.x += dx;
-      c.y += dy;
-    });
-    console.log('map size: ', paper.getSize());
-    paper.pivot.set(paper.width / 2, paper.height / 2);
+    // paper.children.forEach((c) => {
+    //   c.x += dx;
+    //   c.y += dy;
+    // });
+    // paper.pivot.set(dx, dy);
     this.screen.transformer.updateExtentArea({ x: 0, y: 0, width: paper.width, height: paper.height });
-    this.screen.controller.zoom.zoomToFit();
+    const newZoom = this.screen.controller.zoom.zoomToFit();
+    console.log('map size: ', paper.getSize(), 'zoom', newZoom);
+  }
+
+  private render() {
+    const {root, edgesRegistry, nodes: nodeMap} = this.graph.model;
+    const container = this.container.paper;
+    container.removeChildren();
+    const stack: GraphNode[] = [root];
+
+    while (stack.length) {
+      const n = stack.pop()!;
+      stack.push(...n.children);
+      const nodes = Factory.createNode(n);
+      const labels = Factory.createLabels(n);
+      container.addChild(...nodes, ...labels);
+    }
+
+    for (const edgeList of edgesRegistry.values()) {
+      for (const edge of edgeList) {
+        const source = nodeMap.get(edge.source.fileId);
+        const target = nodeMap.get(edge.target.fileId);
+        if (!source || !target) continue;
+        container.addChild(Factory.createLink(source, target));
+      }
+    }
   }
 
   private addEvents() {
@@ -66,6 +96,8 @@ export class Paper {
     background.on('mousemove', mouse.mousemove);
     background.on('mouseup', mouse.mouseup);
     background.on('wheel', mouse.wheel);
+
+    // todo screen.on 'change', zoom and translate update LOD and other systems
 
     // todo clear on reloading
     let startX = 0;
@@ -102,23 +134,5 @@ export class Paper {
       });
       c.on('wheel', (e) => mouse.wheel(e as WheelEvent));
     });
-  }
-
-  private render(root: GraphNode) {
-    const container = this.container.paper;
-    container.removeChildren();
-    const stack = [root];
-
-    while (stack.length) {
-      const n = stack.pop()!;
-      stack.push(...n.children);
-      const nodes = Factory.createNode(n);
-      const labels = Factory.createLabels(n); // todo if declaration split then show '1/2 ...'
-      container.addChild(...nodes, ...labels);
-      if (n.type === GraphNodeEnum.Directory) {
-        // debug only
-        Factory.createVisibilityVertices(n).forEach(r => container.addChild(r));
-      }
-    }
   }
 }

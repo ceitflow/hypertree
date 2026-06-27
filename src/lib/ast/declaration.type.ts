@@ -8,6 +8,8 @@ export enum DeclarationModifier {
 
 export type DeclarationNode = BaseNode<NodeEnum.Declaration> & {
   loc: number;
+  startLine: number;
+  endLine: number;
   // referencedImportTokens: string[];
   modifier: DeclarationModifier;
   token:

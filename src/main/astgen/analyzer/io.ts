@@ -2,6 +2,7 @@ import ig from 'ignore';
 import path from 'node:path';
 import { IdPath } from '@lib/ast';
 import { readdirSync, readFileSync, statSync, existsSync, writeFileSync } from 'node:fs';
+import { app } from 'electron';
 
 export class IO {
   static separator = path.sep;
@@ -11,6 +12,7 @@ export class IO {
     const result = new Set<IdPath>();
     const ignore = ig();
     ignore.add('.git');
+    ignore.add('dist');
     ignore.add('package-lock.json');
     ignore.add('yarn.lock');
     ignore.add('pnpm-lock.yaml');
@@ -57,7 +59,11 @@ export class IO {
     }
   }
 
+  static outputJsonPath(): string {
+    return path.join(app.getAppPath(), 'resources', 'output.json');
+  }
+
   static writeOutput(json: string) {
-    writeFileSync('/Users/ceitflow/WebstormProjects/hypertree/hypertree/resources' + '/output.json', json);
+    writeFileSync(this.outputJsonPath(), json);
   }
 }

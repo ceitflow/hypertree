@@ -14,5 +14,6 @@ export enum GraphNodeEnum {
 export type GraphNode = DirectoryGraphNode | CodeGraphNode | OtherGraphNode | DeclarationGraphNode | VirtualGraphNode;
 
 export type ParentType = GraphNode | null;
+export type Size = { width: number; height: number };
 export type BBox = { x: number; y: number; width: number; height: number };
-export type Margin = { top: number; bottom: number; left: number; right: number };
+export type Margin = { left: number; top: number; right: number; bottom: number };

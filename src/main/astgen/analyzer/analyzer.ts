@@ -55,26 +55,47 @@ export class Analyzer {
     if (!moduleSpecifier) {
       return undefined;
     }
-    const literal = moduleSpecifier as StringLiteral;
-    const result = this.typeCheck.getSymbolAtLocation(literal)?.valueDeclaration?.getSourceFile();
+
+    const moduleName = this.getModuleNameFromSpecifier(moduleSpecifier);
+    if (!moduleName) {
+      return undefined;
+    }
+
+    const result = this.typeCheck.getSymbolAtLocation(moduleSpecifier)?.valueDeclaration?.getSourceFile();
     if (result) {
       return { file: result, notPresentInProgram: false };
     }
 
     // else create SourceFile manually as its not registered in Program for some reason
     // - could be missing .d.ts definitions, and/or the file is .js
-    const resolvedFileName = resolveModuleName(
-      literal.text,
-      literal.getSourceFile().fileName,
-      this.program.getCompilerOptions(),
-      sys
-    ).resolvedModule?.resolvedFileName;
+    try {
+      const resolvedFileName = resolveModuleName(
+        moduleName,
+        moduleSpecifier.getSourceFile().fileName,
+        this.program.getCompilerOptions(),
+        sys
+      ).resolvedModule?.resolvedFileName;
 
-    if (resolvedFileName !== undefined) {
-      const file = createSourceFile(resolvedFileName, IO.readSourceFile(resolvedFileName), ScriptTarget.Latest, true);
-      return { file, notPresentInProgram: true };
+      if (resolvedFileName !== undefined) {
+        const file = createSourceFile(resolvedFileName, IO.readSourceFile(resolvedFileName), ScriptTarget.Latest, true);
+        return { file, notPresentInProgram: true };
+      }
+    } catch (e) {
+      console.warn(
+        `Failed to resolve import "${moduleName}" in ${moduleSpecifier.getSourceFile().fileName}: ${(e as Error).message}`
+      );
     }
 
+    return undefined;
+  }
+
+  private getModuleNameFromSpecifier(moduleSpecifier: Expression): string | undefined {
+    if (ts.isStringLiteral(moduleSpecifier) || ts.isNoSubstitutionTemplateLiteral(moduleSpecifier)) {
+      return moduleSpecifier.text;
+    }
+    if (ts.isParenthesizedExpression(moduleSpecifier)) {
+      return this.getModuleNameFromSpecifier(moduleSpecifier.expression);
+    }
     return undefined;
   }
 
@@ -83,7 +104,18 @@ export class Analyzer {
   }
 
   getResolvedImportPath(node: ImportDeclaration | ExportDeclaration): { resolvedPath: string; isExternal: boolean } {
-    const relativePath = (node.moduleSpecifier as StringLiteral).text;
+    if (!node.moduleSpecifier) {
+      return { resolvedPath: '', isExternal: false };
+    }
+
+    const relativePath = this.getModuleNameFromSpecifier(node.moduleSpecifier);
+    if (!relativePath) {
+      console.warn(
+        `Unsupported module specifier in ${node.getSourceFile().fileName}: ${ts.SyntaxKind[node.moduleSpecifier.kind]}`
+      );
+      return { resolvedPath: '', isExternal: false };
+    }
+
     const src = this.getSourceFileFromImport(node.moduleSpecifier);
     if (src) {
       const isExternal =
@@ -142,11 +174,17 @@ export class Analyzer {
   }
 
   evaluateType(item: Node) {
-    const symbol = this.typeCheck.getSymbolAtLocation(isIdentifier(item) ? this.resolveAliasedNode(item) : item);
-    if (!symbol) {
-      // console.error(`Unable to determine type symbol: ${item['text']}`);
+    let symbol: Symbol | undefined;
+    try {
+      symbol = this.typeCheck.getSymbolAtLocation(isIdentifier(item) ? this.resolveAliasedNode(item) : item);
+      if (!symbol) {
+        return;
+      }
+    } catch (e) {
+      console.error(`Unable to determine type symbol: ${item['text']}`);
       return;
     }
+
 
     const resolvedSymbol = symbol.flags & SymbolFlags.Alias ? this.typeCheck.getAliasedSymbol(symbol) : symbol;
     if (!resolvedSymbol.valueDeclaration) {
@@ -159,8 +197,14 @@ export class Analyzer {
   }
 
   getCallExpressionDeclaration(node: CallExpression) {
-    const signature = this.typeCheck.getResolvedSignature(node);
-    return signature?.declaration;
+    try {
+      // TS can throw on programs that aren't type-sound (missing deps/libs).
+      const signature = this.typeCheck.getResolvedSignature(node);
+      return signature?.declaration;
+    } catch (e) {
+      console.warn(`Failed to resolve call signature in ${node.getSourceFile().fileName}: ${(e as Error).message}`);
+      return undefined;
+    }
   }
 
   getTypeFlagCategory(itemFlags: TypeFlags): { astType: string; category: CategoryType } {
