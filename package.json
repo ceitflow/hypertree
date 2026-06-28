@@ -2,8 +2,9 @@
   "name": "hypertree",
   "version": "1.0.0",
   "description": "An Electron application with React and TypeScript",
+  "license": "BSD-3-Clause",
   "main": "./out/main/index.js",
-  "author": "example.com",
+  "author": "ceitflow",
   "homepage": "https://electron-vite.org",
   "scripts": {
     "format": "prettier --write .",
